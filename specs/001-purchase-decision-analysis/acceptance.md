@@ -104,6 +104,40 @@ instruction نادیده گرفته می‌شود.
 می‌شود، **Then** محصول live-ready نامیده نمی‌شود؛ **And** mock report برابر `MOCK_ASSISTED` است و rating آن در
 breakdown `AI_ASSISTED_SUCCESS` شمرده نمی‌شود.
 
+### `AC-AI-005` — independent evaluation evidence
+**Given** output ساختاری معتبر است ولی semantic review انسانی انجام نشده، **When** artifact ارزیابی ساخته می‌شود،
+**Then** structural validity، outcome equality و unknown preservation مستقل ثبت می‌شوند؛ **And** semantic support،
+readability، actionability و added usefulness برابر `null/pending` می‌مانند؛ **And** overall success ادعا نمی‌شود.
+
+### `AC-AI-006` — value-aware claim support
+**Given** claim مثبت target fit به evidence معتبر از نظر ID اشاره می‌کند، **When** value آن unknown، negative یا
+contradictory است یا attribution آن user-reported نیست، **Then** validator claim را رد می‌کند؛ **And** فقط value مثبت
+صریح با wording user-reported قابل قبول است. متن آزاد نامرتبط یا عدد/alternative ساختگی همچنان نیازمند review انسانی است.
+
+### `AC-AI-007` — complete conservative cost ledger
+**Given** live call با schema/instructions و retry bound رزرو شده، **When** usage واقعی، retry یا usage نامعلوم settle
+می‌شود، **Then** reservation کل request را پوشش می‌دهد، settlement تکراری دوباره charge نمی‌کند، usage واقعی clip
+نمی‌شود و discrepancy/unknown conservatively ثبت می‌شود؛ **And** network بیرون transaction می‌ماند.
+
+### `AC-AI-008` — Iran provider eligibility and direct-adapter isolation
+**Given** backend و کاربران اولیه در ایران هستند، **When** live generator انتخاب می‌شود، **Then** direct OpenAI
+هیچ‌گاه انتخاب نمی‌شود و تنها AvalAI با credential مستقل، eligibility gate مستقل و مدل دقیق مصوب قابل انتخاب است.
+
+### `AC-AI-009` — documented AvalAI Responses contract
+**Given** stub سازگار با AvalAI، **When** adapter فراخوانی می‌شود، **Then** `/v1/responses`،
+`gpt-5.6-luna`، JSON Schema strict، `store=false`، timeout، usage و `avalai-request-id` طبق قرارداد مستند مصرف
+می‌شوند؛ malformed، timeout، 429 و خطای دائمی fail closed هستند.
+
+### `AC-AI-010` — total toman evaluation cap
+**Given** تعرفهٔ AvalAI، exchange rate تازه و margin محافظه‌کارانه، **When** dataset هفت‌تایی preflight می‌شود،
+**Then** کل requestها و retryها پیش از call در cap صریح حداکثر ۱۰۰٬۰۰۰ تومان جا می‌گیرند یا هیچ call مدل انجام
+نمی‌شود؛ گزارش هزینه estimate را از invoice قطعی جدا می‌کند.
+
+### `AC-UI-001` — concise Persian result
+**Given** report روی viewport desktop یا mobile نمایش داده می‌شود، **When** کاربر summary، reasons، mode و feedback را
+می‌خواند، **Then** متن طبیعی و scoped است، ابهام مدل برجسته است، چهار dimension در mobile یک card با چهار row است،
+و ratingهای ۱ و ۵ به‌ترتیب label دسترس‌پذیر «اصلاً کمک نکرد» و «خیلی کمک کرد» دارند.
+
 ## Revision and feedback
 
 ### `AC-EDT-001` — stale and new revision
@@ -193,9 +227,10 @@ responseها خارج از ترتیب می‌رسند، **Then** فقط token ج
 | `FR-007..FR-009` | `SYN-001..SYN-005` | `AC-JRN-002..003` |
 | `FR-010..FR-014` | `SYN-001..SYN-010` | `AC-RUB-001..005`, `AC-EVD-001..002` |
 | `FR-015..FR-019` | `SYN-001..SYN-009` | `AC-RUB-001..008` |
-| `FR-020..FR-023` | `SYN-010` | `AC-AI-001..004` |
+| `FR-020..FR-023`, `FR-037..FR-044` | `SYN-010` | `AC-AI-001..010` |
 | `FR-024..FR-031` | `SYN-011`, `SYN-012` | `AC-EDT-001..002`, `AC-HIS-001..011` |
 | `FR-032..FR-036` | `SYN-011`, `SYN-012` | `AC-FBK-001..005`, `AC-HIS-005` |
+| `FR-040` | `SYN-001`, `SYN-011` | `AC-UI-001`, `AC-FBK-001` |
 
 ## Review boundary
 

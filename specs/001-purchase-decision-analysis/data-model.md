@@ -93,6 +93,8 @@ persist نمی‌شود.
 | `latency_ms` | nullable non-negative integer | latency کل adapter |
 | `reserved_cost_microusd` | non-negative bigint | worst-case reservation پیش از call |
 | `estimated_cost_microusd` | non-negative bigint | settlement محافظه‌کارانه |
+| `provider_request_id` | nullable bounded string | AvalAI request ID برای ردیابی هزینه؛ payload نیست |
+| `provider_estimated_cost_toman` | nullable decimal | estimate گزارش‌شده provider؛ invoice قطعی نیست |
 | `created_at` / `completed_at` | timestamptz | window و audit عملیاتی |
 
 ## AILiveBudgetWindow
@@ -109,8 +111,13 @@ persist نمی‌شود.
 reservation با `select_for_update` روی window روز انجام می‌شود، سقف per-guest را از `AIInvocation`های همان روز
 می‌شمارد و worst-case cost تمام attemptهای مجاز را رزرو می‌کند. provider call خارج transaction است. settlement در
 transaction کوتاه reservation را آزاد و usage اعلام‌شده را charge می‌کند؛ اگر usage قابل اعتماد موجود نباشد کل
-reservation charge می‌شود. success failure count را صفر می‌کند و failure گذرا/provider آن را افزایش می‌دهد؛ رسیدن
+reservation charge می‌شود. settlement تکراری no-op است، usage واقعی تا reservation clip نمی‌شود و overage در اختلاف
+دو field و spent total باقی می‌ماند. success failure count را صفر می‌کند و failure گذرا/provider آن را افزایش می‌دهد؛ رسیدن
 به threshold، circuit مشترک را تا cooldown باز می‌کند. rejected invocation provider call ندارد.
+
+نام fieldهای `*_microusd` واحد تعرفهٔ مدل AI را نگه می‌دارند و با پول خرید (`price_toman`/`budget_toman`) مخلوط
+نمی‌شوند. برای AvalAI، preflight با نرخ تازهٔ `IRT-per-UNIT` و margin ۱۵٪ cap تومان را به سقف محافظه‌کارانهٔ
+micro-USD تبدیل می‌کند. `provider_estimated_cost_toman` فقط evidence provider است؛ transaction lookup/invoice مرجع نهایی است.
 
 ## UsefulnessFeedback
 

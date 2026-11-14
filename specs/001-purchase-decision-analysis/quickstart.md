@@ -83,22 +83,24 @@ guest/session را تا expiry همان analysis تازه تمدید می‌کن
 
 ## فعال‌سازی و ارزیابی live AI
 
-فعال‌سازی عمومی با وجود key به‌تنهایی مجاز نیست. ابتدا باید backend و کاربران در فهرست رسمی regionهای پشتیبانی‌شده
-باشند. سپس فقط در `.env` محلی backend این مقادیر را تنظیم کنید (هیچ مقدار secret در repository یا frontend نباشد):
+فعال‌سازی عمومی با وجود key به‌تنهایی مجاز نیست. direct OpenAI برای deployment ایران غیرفعال است. فقط پس از پاسخ
+مکتوب provider درباره eligibility/upstream و تأیید credit موجود، در `.env` محلی backend این مقادیر را تنظیم کنید:
 
 ```dotenv
 BEFOREBUY_AI_MODE=live
-BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED=1
-OPENAI_API_KEY=<set-locally>
+BEFOREBUY_AI_PROVIDER=avalai
+BEFOREBUY_AVALAI_ELIGIBILITY_CONFIRMED=1
+AVALAI_API_KEY=<set-locally>
 ```
 
-برای run شش‌موردی evaluation، یک cap دلاری مستقل و صریح تعیین کنید. command قبل از call، credential/region/cap و
-worst-case reservation را کنترل می‌کند و raw prompt/response را چاپ یا persist نمی‌کند:
+برای run هفت‌موردی synthetic evaluation، cap صریح حداکثر ۱۰۰٬۰۰۰ تومان تعیین کنید. command قبل از model call،
+credential/eligibility/credit/rate/cap و reservation کامل retryها را کنترل می‌کند و raw prompt/response را persist نمی‌کند:
 
 ```bash
-BEFOREBUY_LIVE_EVAL_BUDGET_USD=<explicit-cap> \
-docker compose run --rm api python backend/manage.py evaluate_live_ai
+BEFOREBUY_LIVE_EVAL_BUDGET_TOMAN=100000 \
+docker compose run --rm api python backend/manage.py evaluate_live_ai --artifact-dir artifacts/ai-evaluation
+docker compose run --rm api python backend/manage.py assess_ai_review artifacts/ai-evaluation/<run-id>.json
 ```
 
-خروجی فقط summary خودکار latency/cost/contract است. scoreهای readability، actionability و added usefulness باید
-طبق `ai-evaluation.md` به‌صورت review انسانی ثبت شوند. mock test یا summary خودکار جای live evidence نیست.
+خروجی automatic فقط structural/operational evidence است و semantic fields تا review انسانی `null` می‌مانند.
+mock test یا summary خودکار جای live/human evidence نیست.

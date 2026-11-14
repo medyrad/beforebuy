@@ -108,6 +108,8 @@ class AIInvocation(models.Model):
     latency_ms = models.PositiveIntegerField(null=True)
     reserved_cost_microusd = models.PositiveBigIntegerField(default=0)
     estimated_cost_microusd = models.PositiveBigIntegerField(default=0)
+    provider_request_id = models.CharField(max_length=128, null=True)
+    provider_estimated_cost_toman = models.DecimalField(max_digits=18, decimal_places=6, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True)
 

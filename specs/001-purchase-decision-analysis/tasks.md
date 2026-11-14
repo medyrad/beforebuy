@@ -5,8 +5,8 @@ description: "Dependency-ordered implementation tasks for Purchase Decision Anal
 # Tasks: تحلیل تصمیم خرید تلفن همراه
 
 **Input**: `spec.md`, `plan.md`, `data-model.md`, `contracts/openapi.yaml`, `research.md`, `quickstart.md`  
-**Milestone authorization**: M1/M2 are accepted. Phase 5 may complete only **M3** IDs `T038`–`T040`;
-M4 remains unchecked and unimplemented.  
+**Milestone authorization**: M1/M2 are accepted. Phase 5.2 may complete only the Iran-provider **M3 adaptation** IDs
+`T049`–`T052`; `T039` remains open until real live/human evidence and M4 remains unchecked/unimplemented.  
 **TDD**: Every behavioral test task runs red before its paired implementation task; PostgreSQL is mandatory for race claims.
 
 ## Phase 1: Setup and reproducibility — M1
@@ -113,6 +113,38 @@ M4 remains unchecked and unimplemented.
 - [ ] T039 [P] **[M3]** Write provider-contract and live evaluation tests that remain separate from mock tests in `backend/tests/ai/` — contract/harness tests pass؛ task remains open until an authorized real-provider run supplies live evidence
 - [x] T040 **[M3]** Implement one real `ExplanationGenerator` adapter in `backend/analysis/ai/` and prove no deterministic result override; retain explicit limited fallback
 
+### Phase 7.1: Verified M3 review corrections — Phase 5.1
+
+- [x] T044 [P] **[M3]** Add failing claim/evaluation tests for value-aware target support, contradictory inputs,
+  independent structural versus human criteria, semantic limits, Persian-digit fixtures and reproducible synthetic
+  review artifacts in `backend/tests/ai/` and `backend/tests/unit/test_explanation.py`
+- [x] T045 [P] **[M3]** Add failing cost-ledger tests for complete request reservation, concurrent windows, retry/unknown
+  usage, observed overage and idempotent settlement in `backend/tests/ai/`; then implement one shared pricing/reservation
+  module used by adapter and evaluation command without moving network calls into transactions
+- [x] T046 **[M3]** Implement deterministic headline/reasons and value-aware typed claim validation in
+  `backend/analysis/domain/`, `backend/analysis/ai/` and `backend/analysis/services.py`; document which semantic checks
+  remain human-only and never present them as automatic
+- [x] T047 **[M3]** Replace fabricated evaluation success with per-case operational evidence and a synthetic human-review
+  artifact tied to run/model/prompt/schema in `backend/analysis/ai/evaluation.py`, management commands and
+  `specs/001-purchase-decision-analysis/ai-evaluation.md`; keep `T039` open without a real run/review
+- [x] T048 **[M3]** Improve only result copy, mobile dimension density and accessible feedback endpoints in the existing
+  React/Vite UI; run focused/full regressions and refreshed desktop/mobile browser screenshots, then archive the Phase 5
+  handoff and record Phase 5.1 evidence in `docs/handoff.md`
+
+### Phase 7.2: Iran-appropriate provider adaptation — Phase 5.2
+
+- [x] T049 **[M3]** Compare at most two Iran-serving hosted providers from current primary sources; record protocol,
+  exact model, schema/usage/error behavior, tariff, credit/top-up, retention and unresolved upstream authorization in
+  `research.md`, `docs/decisions.md` and `docs/tooling.md`; keep direct OpenAI disabled
+- [x] T050 [P] **[M3]** Add failing AvalAI adapter/factory/evaluation tests for documented Responses schema, usage/request
+  metadata, errors, fresh IRT conversion and a total 100,000-toman retry-inclusive cap in `backend/tests/ai/`
+- [x] T051 **[M3]** Implement the single selected AvalAI `gpt-5.6-luna` Responses adapter through the existing
+  `ExplanationGenerator`, provider-specific tariff/conversion gates, minimal invocation metadata migration and
+  fail-closed factory without a provider registry
+- [x] T052 **[M3]** Prepare the unchanged synthetic baseline-versus-AI artifact workflow, run affected/full regressions,
+  execute a live run only if all eligibility/credential/credit gates are already satisfied, and update `docs/handoff.md`؛
+  leave `T039` open until live evidence and human review both exist
+
 ---
 
 ## Phase 8: Production packaging and operations — M4
@@ -131,7 +163,7 @@ T005 → T006→T007, T008→T009, T010→T011, T012→T013, T014→T015
 Foundation → T016/T017/T018/T019/T020 → T021/T022/T023/T024/T025
 US1 backend → T028→T029 and T031→T032 → T035→T036→T037
 M1 complete → M2 (T026/T027/T030/T033/T034)
-M1 complete + explicit provider decisions → M3 (T038–T040)
+M1 complete + explicit provider decisions → M3 (T038–T040) → review corrections (T044–T048) → Iran adaptation (T049–T052)
 M1+M2+M3 readiness → M4 (T041–T043)
 ```
 
@@ -153,6 +185,7 @@ M1+M2+M3 readiness → M4 (T041–T043)
 1. Treat accepted M1/M2 as the integration baseline; do not recreate them.
 2. Freeze provider/contract/evaluation decisions in T038, then execute T039/T040 with provider-boundary red-green cycles.
 3. Keep live mode opt-in؛ verify PostgreSQL-backed budget/circuit state، deterministic authority و limited fallback.
-4. Run live evaluation only with supported region، local credential و explicit dollar cap; otherwise record zero calls/cost
-   and leave the live-evidence task incomplete.
-5. Stop after M3 adapter readiness؛ M4 production operations require later explicit authorization.
+4. Run live evaluation only with AvalAI eligibility، local credential/credit، fresh IRT rate و explicit cap at most
+   100,000 toman; otherwise record zero calls/cost and leave the live-evidence task incomplete.
+5. Complete verified Phase 5.1 corrections while leaving T039 open until real live/human evidence؛ M4 requires later authorization.
+6. Phase 5.2 does not reactivate direct OpenAI, purchase credit, create an account, deploy or implement M4.

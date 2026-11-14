@@ -18,8 +18,8 @@ export function ReportView({ analysis, onEdit, onRetry, onRate, onRemoveRating, 
   const mode = report.mode === 'MOCK_ASSISTED'
     ? { title: 'نسخهٔ نمایشی', detail: 'توضیح این گزارش با مولد آزمایشی ساخته شده است؛ هوش مصنوعی زنده نیست.', className: 'mock' }
     : report.mode === 'RULE_BASED_LIMITED'
-      ? { title: 'گزارش محدود و قاعده‌محور', detail: 'توضیح تکمیلی در دسترس نبود؛ نتیجهٔ قطعی rubric همچنان نمایش داده می‌شود.', className: 'limited' }
-      : { title: 'توضیح هوش مصنوعی', detail: 'نتیجهٔ اصلی همچنان فقط از rubric قطعی می‌آید.', className: 'live' }
+      ? { title: 'گزارش محدود', detail: 'توضیح هوشمند در دسترس نبود؛ جمع‌بندی اصلی همچنان معتبر است.', className: 'limited' }
+      : { title: 'توضیح هوش مصنوعی', detail: 'هوش مصنوعی فقط توضیح تکمیلی را نوشته است؛ جمع‌بندی اصلی تغییر نمی‌کند.', className: 'live' }
 
   const cards = [
     ['دلیل خرید یا تعویض', report.dimensions.justification],
@@ -27,6 +27,8 @@ export function ReportView({ analysis, onEdit, onRetry, onRate, onRemoveRating, 
     ['مناسب‌بودن مدل', report.dimensions.target_fit],
     ['بررسی محدودیت‌ها', report.dimensions.tradeoff],
   ] as const
+  const reasons = report.explanation_blocks.filter((block) => block.kind !== 'ai_context')
+  const aiContext = report.explanation_blocks.filter((block) => block.kind === 'ai_context')
 
   return <article className="report" aria-labelledby="report-title">
     <header className="report-hero">
@@ -38,7 +40,7 @@ export function ReportView({ analysis, onEdit, onRetry, onRate, onRemoveRating, 
     </header>
 
     <section aria-labelledby="dimensions-title">
-      <div className="section-heading compact-heading"><div><p className="eyebrow">جمع‌بندی جداگانه</p><h2 id="dimensions-title">هر بُعد، یک پاسخ مستقل</h2></div></div>
+      <div className="section-heading compact-heading"><div><p className="eyebrow">چهار بخش تصمیم</p><h2 id="dimensions-title">جمع‌بندی برای تصمیم شما</h2></div></div>
       <div className="dimension-grid">
         {cards.map(([title, value]) => <div className="dimension-card" key={title}><h3>{title}</h3><p>{faLabel(value)}</p></div>)}
       </div>
@@ -47,7 +49,8 @@ export function ReportView({ analysis, onEdit, onRetry, onRate, onRemoveRating, 
     <div className="report-details">
       <section className="detail-card" aria-labelledby="reasons-title">
         <h2 id="reasons-title">دلیل‌های پشتیبان</h2>
-        {report.explanation_blocks.length ? <ul>{report.explanation_blocks.map((block, index) => <li key={`${block.text_fa}-${index}`}>{block.text_fa}</li>)}</ul> : <p>این نسخه فقط جمع‌بندی قطعی را دارد و توضیح تکمیلی تولید نشده است.</p>}
+        {reasons.length ? <ul>{reasons.map((block, index) => <li key={`${block.text_fa}-${index}`}>{block.text_fa}</li>)}</ul> : <p>از پاسخ‌های فعلی دلیل تکمیلی دیگری به دست نیامد.</p>}
+        {aiContext.length > 0 && <><h3>توضیح تکمیلی</h3><ul>{aiContext.map((block, index) => <li key={`${block.text_fa}-${index}`}>{block.text_fa}</li>)}</ul></>}
         <p className="money-summary">قیمت واردشده: <strong>{number.format(analysis.price_toman)} تومان</strong><br />بودجه: <strong>{analysis.budget_toman === null ? 'نامعلوم' : `${number.format(analysis.budget_toman)} تومان`}</strong></p>
       </section>
       <section className="detail-card" aria-labelledby="actions-title">
@@ -59,7 +62,10 @@ export function ReportView({ analysis, onEdit, onRetry, onRate, onRemoveRating, 
 
     <section className="feedback-card" aria-labelledby="feedback-title">
       <div><h2 id="feedback-title">این تحلیل چقدر به تصمیم شما کمک کرد؟</h2><p>اختیاری است و فقط برای همین نسخه ثبت می‌شود.</p></div>
-      <fieldset disabled={pendingAction === 'feedback'}><legend className="sr-only">امتیاز مفیدبودن</legend><div className="rating-row">{[1, 2, 3, 4, 5].map((rating) => <label key={rating}><input type="radio" name="rating" aria-label={number.format(rating)} checked={report.feedback?.rating === rating} onChange={() => onRate(rating)} /><span>{number.format(rating)}</span></label>)}</div></fieldset>
+      <fieldset disabled={pendingAction === 'feedback'}><legend className="sr-only">امتیاز مفیدبودن</legend><div className="rating-row">{[1, 2, 3, 4, 5].map((rating) => {
+        const endpoint = rating === 1 ? '، اصلاً کمک نکرد' : rating === 5 ? '، خیلی کمک کرد' : ''
+        return <label key={rating}><input type="radio" name="rating" aria-label={`${number.format(rating)}${endpoint}`} checked={report.feedback?.rating === rating} onChange={() => onRate(rating)} /><span>{number.format(rating)}</span></label>
+      })}</div><div className="rating-scale" aria-hidden="true"><span dir="rtl">اصلاً کمک نکرد</span><span dir="rtl">خیلی کمک کرد</span></div></fieldset>
       {report.feedback && <button className="text-button" type="button" onClick={onRemoveRating} disabled={pendingAction === 'feedback'}>حذف امتیاز</button>}
     </section>
 

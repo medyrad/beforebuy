@@ -121,9 +121,11 @@ Post-design re-check: مدل داده history کامل، provider registry، eve
   و حفظ unknownها را کنترل می‌کند. این validator semantic entailment متن آزاد را تضمین نمی‌کند؛ این محدودیت با
   evaluation مستقل و review انسانی مدیریت می‌شود و برای عبور مدل validation شل نمی‌شود.
 - mock report صریحاً mode `MOCK_ASSISTED` دارد؛ `AI_ASSISTED_SUCCESS` فقط برای provider واقعی است و rating/metric
-  mock با live-AI مخلوط نمی‌شود. adapter انتخابی OpenAI Responses API با مدل `gpt-6-luna` و SDK `3.49.0` است؛
-  live mode پیش‌فرض خاموش می‌ماند. timeout `8s`، حداکثر دو attempt، request byte/token upper-bound، output ceiling
-  `512` token، per-guest روزانه `10` و deployment budget روزانه `$1.00` configurable هستند. timeout، quota، schema
+  mock با live-AI مخلوط نمی‌شود. direct OpenAI برای deployment ایران غیرفعال است. adapter انتخابی Phase 5.2
+  AvalAI Responses API با مدل دقیق `gpt-5.6-luna` و SDK موجود OpenAI `3.49.0` روی base URL مستند AvalAI است؛
+  Responses support از مستندات خود AvalAI آمده، نه از ادعای generic compatibility. live mode پیش‌فرض خاموش
+  می‌ماند. timeout `8s`، حداکثر دو attempt، request byte/token upper-bound، output ceiling `512` token و per-guest
+  روزانه `10` هستند. budget deployment بدون تنظیم صریح fail closed است و evaluation cap کل `100,000` تومان است. timeout، quota، schema
   failure یا unsupported claim به report صریح `RULE_BASED_LIMITED` می‌انجامد؛ outcome تغییر نمی‌کند.
 - reservation سراسری و per-guest count با PostgreSQL و lock کوتاه انجام می‌شود؛ provider call بیرون transaction است.
   reservation بدبینانه همه attemptهای مجاز را پیشاپیش حساب می‌کند و circuit پس از failureهای متوالی موقتاً باز می‌شود.
@@ -179,7 +181,10 @@ specs/001-purchase-decision-analysis/
     └── technical-plan.md
 ```
 
-`tasks.md` در Phase 3 با `$speckit-tasks` ساخته شده است؛ در Phase 5 فقط `T038–T040` مجاز به implementation هستند.
+`tasks.md` در Phase 3 با `$speckit-tasks` ساخته شده است؛ در Phase 5.2 فقط taskهای `T049–T052` مجازند.
+headline و reasonهای پایه از engine/evidence قطعی ساخته می‌شوند؛ AI فقط explanation تکمیلی می‌دهد. هزینه با یک
+ماژول مشترک از کل instructions/input/schema/framing margin و output bound رزرو و با usage واقعی idempotent settle
+می‌شود. ارزیابی automatic و human را جدا نگه می‌دارد و هیچ semantic معیار اندازه‌گیری‌نشده‌ای را pass/zero نمی‌کند.
 
 ### Planned source code (repository root)
 

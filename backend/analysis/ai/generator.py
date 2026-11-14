@@ -9,13 +9,8 @@ class MockExplanationGenerator:
             mode="MOCK_ASSISTED",
             outcome_id=request.primary_outcome,
             acknowledged_unknown_ids=request.unknowns,
-            headline_fa="این گزارش آزمایشی است و بر اساس قواعد قطعی تهیه شده است.",
-            claims=[ExplanationClaim(
-                claim_type="DETERMINISTIC_OUTCOME",
-                text_fa="نتیجه از قواعد نسخه‌دار محاسبه شده است.",
-                evidence_ids=[],
-                rule_ids=request.rule_ids,
-            )],
+            headline_fa="جمع‌بندی آزمایشی",
+            claims=[],
         )
 
 

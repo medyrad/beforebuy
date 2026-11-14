@@ -364,6 +364,7 @@ components:
             type: object
             required: [text_fa, evidence_ids, rule_ids]
             properties:
+              kind: { enum: [deterministic_reason, ai_context] }
               text_fa: { type: string }
               evidence_ids: { type: array, items: { type: string } }
               rule_ids: { type: array, items: { type: string } }

@@ -4,7 +4,7 @@ from django.db import close_old_connections
 from django.test import TransactionTestCase
 from django.utils import timezone
 
-from analysis.ai.contracts import ExplanationResponse
+from analysis.ai.contracts import ExplanationClaim, ExplanationResponse
 from analysis.models import GuestContext, UsefulnessFeedback
 from analysis import services
 from tests.api.payloads import valid_analysis_payload
@@ -22,7 +22,8 @@ class BlockingGenerator:
             raise AssertionError("test barrier was not released")
         return ExplanationResponse(
             mode="MOCK_ASSISTED", outcome_id=request.primary_outcome,
-            acknowledged_unknown_ids=request.unknowns, headline_fa=self.headline, claims=[]
+            acknowledged_unknown_ids=request.unknowns, headline_fa=self.headline,
+            claims=[ExplanationClaim("DETERMINISTIC_OUTCOME", self.headline, [], request.rule_ids)],
         )
 
 
@@ -33,7 +34,8 @@ class ImmediateGenerator:
     def generate(self, request):
         return ExplanationResponse(
             mode="MOCK_ASSISTED", outcome_id=request.primary_outcome,
-            acknowledged_unknown_ids=request.unknowns, headline_fa=self.headline, claims=[]
+            acknowledged_unknown_ids=request.unknowns, headline_fa=self.headline,
+            claims=[ExplanationClaim("DETERMINISTIC_OUTCOME", self.headline, [], request.rule_ids)],
         )
 
 
@@ -86,7 +88,7 @@ class PublicationRaceTests(TransactionTestCase):
         self.assertTrue(started.wait(timeout=10))
         winner = services.reanalyze_analysis(self.guest, item.id, 1, old_report_id, ImmediateGenerator("جدید"))
         release.set(); thread.join(timeout=10)
-        self.assertEqual(winner.report.headline_fa, "جدید")
+        self.assertEqual(winner.report.explanation_blocks[-1]["text_fa"], "جدید")
         self.assertEqual(len(errors), 1)
         self.assertIsInstance(errors[0], services.OperationConflict)
         self.assertFalse(UsefulnessFeedback.objects.filter(analysis=item).exists())

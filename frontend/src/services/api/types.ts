@@ -22,7 +22,7 @@ export interface Report {
   unknowns: string[]
   actions: string[]
   headline_fa: string
-  explanation_blocks: Array<{ text_fa: string; evidence_ids: string[]; rule_ids: string[] }>
+  explanation_blocks: Array<{ kind?: 'deterministic_reason' | 'ai_context'; text_fa: string; evidence_ids: string[]; rule_ids: string[] }>
   feedback: Feedback | null
 }
 

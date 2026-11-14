@@ -43,6 +43,67 @@ class ExplanationContractTests(SimpleTestCase):
         with self.assertRaises(validator.UnsupportedExplanation):
             validator.validate_explanation(self.request, response)
 
+    def test_positive_target_fit_requires_explicit_positive_user_report(self):
+        for value, attribution in [
+            ("NO_INFORMATION", "USER_REPORTED"),
+            ("USER_REPORTS_IT_DOES_NOT_FIT", "USER_REPORTED"),
+            ("USER_REPORTS_IT_FITS", "UNKNOWN"),
+        ]:
+            with self.subTest(value=value, attribution=attribution):
+                request = contracts.ExplanationRequest(**{
+                    **self.request.__dict__,
+                    "evidence": [{"id": "ev-fit", "type": "TARGET_FIT_REPORT", "source_id": "F-003",
+                                  "value": value, "attribution": attribution}],
+                })
+                response = contracts.ExplanationResponse(
+                    mode="AI_ASSISTED_SUCCESS", outcome_id=request.primary_outcome,
+                    acknowledged_unknown_ids=request.unknowns, headline_fa="جمع‌بندی",
+                    claims=[contracts.ExplanationClaim(
+                        claim_type="USER_REPORTED_TARGET_FIT", text_fa="طبق پاسخ شما این مدل مناسب است.",
+                        evidence_ids=["ev-fit"], rule_ids=[]
+                    )],
+                )
+                with self.assertRaises(validator.UnsupportedExplanation):
+                    validator.validate_explanation(request, response)
+
+    def test_explicit_positive_user_report_can_support_scoped_fit_claim(self):
+        request = contracts.ExplanationRequest(**{
+            **self.request.__dict__,
+            "evidence": [{"id": "ev-fit", "type": "TARGET_FIT_REPORT", "source_id": "F-003",
+                          "value": "USER_REPORTS_IT_FITS", "attribution": "USER_REPORTED"}],
+        })
+        response = contracts.ExplanationResponse(
+            mode="AI_ASSISTED_SUCCESS", outcome_id=request.primary_outcome,
+            acknowledged_unknown_ids=request.unknowns, headline_fa="جمع‌بندی",
+            claims=[contracts.ExplanationClaim(
+                claim_type="USER_REPORTED_TARGET_FIT", text_fa="طبق پاسخ شما این مدل برای نیازتان مناسب است.",
+                evidence_ids=["ev-fit"], rule_ids=[]
+            )],
+        )
+        self.assertIs(validator.validate_explanation(request, response), response)
+
+    def test_free_prose_semantics_are_not_misrepresented_as_code_enforced(self):
+        response = contracts.ExplanationResponse(
+            mode="AI_ASSISTED_SUCCESS", outcome_id=self.request.primary_outcome,
+            acknowledged_unknown_ids=self.request.unknowns,
+            headline_fa="نتیجهٔ درست با یک متن نامرتبط",
+            claims=[contracts.ExplanationClaim(
+                claim_type="CURRENT_DEVICE_CONTEXT",
+                text_fa="مدل ساختگی X با قیمت ۹۹ میلیون بهترین جایگزین است.",
+                evidence_ids=["ev-q001"], rule_ids=[]
+            )],
+        )
+        self.assertIs(validator.validate_explanation(self.request, response), response)
+
+    def test_contradictory_headline_is_a_documented_human_review_limit(self):
+        response = contracts.ExplanationResponse(
+            mode="AI_ASSISTED_SUCCESS", outcome_id=self.request.primary_outcome,
+            acknowledged_unknown_ids=self.request.unknowns,
+            headline_fa="این خرید اصلاً توجیه ندارد و حتماً بالاتر از بودجه است.",
+            claims=[],
+        )
+        self.assertIs(validator.validate_explanation(self.request, response), response)
+
     def test_outcome_contradiction_is_rejected(self):
         self.assertIsNotNone(self.request, "ExplanationRequest is not implemented")
         response = contracts.ExplanationResponse(
@@ -80,4 +141,14 @@ class ExplanationContractTests(SimpleTestCase):
         }
         _result, report = services.build_report(data, MalformedGenerator())
         self.assertEqual(report["mode"], "RULE_BASED_LIMITED")
-        self.assertEqual(report["explanation_blocks"], [])
+        self.assertTrue(report["explanation_blocks"])
+        self.assertTrue(all(block["evidence_ids"] for block in report["explanation_blocks"]))
+
+    def test_unknown_budget_produces_a_scoped_reason_without_numeric_formatting(self):
+        data = {
+            "product_label": "گوشی نمونه", "price_toman": 20_000_000, "budget_toman": None,
+            "answers": {"Q-001": "UNUSABLE", "Q-002": "RESTORE_ESSENTIAL_ACCESS",
+                        "Q-003": ["GENERAL_USE"], "Q-004": "FLEXIBLE", "Q-006": ["NONE"]},
+        }
+        _result, report = services.build_report(data)
+        self.assertTrue(any("بودجه را نامعلوم" in block["text_fa"] for block in report["explanation_blocks"]))

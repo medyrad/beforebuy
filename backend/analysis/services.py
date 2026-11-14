@@ -11,6 +11,7 @@ from .ai.generator import MockExplanationGenerator
 from .ai.validator import UnsupportedExplanation, validate_explanation
 from .domain.engine import analyze
 from .domain.money import normalize_budget, normalize_toman
+from .domain.presentation import deterministic_headline, deterministic_reason_blocks
 from .models import Analysis, CurrentReport, GuestContext, UsefulnessFeedback
 
 
@@ -45,17 +46,17 @@ def _report_payload(result, explanation):
         "evidence": result.evidence,
         "unknowns": result.unknowns,
         "actions": result.actions,
-        "headline_fa": explanation.headline_fa,
-        "explanation_blocks": [
-            {"text_fa": claim.text_fa, "evidence_ids": claim.evidence_ids, "rule_ids": claim.rule_ids}
+        "headline_fa": deterministic_headline(result),
+        "explanation_blocks": deterministic_reason_blocks(result) + [
+            {"kind": "ai_context", "text_fa": claim.text_fa,
+             "evidence_ids": claim.evidence_ids, "rule_ids": claim.rule_ids}
             for claim in explanation.claims
         ],
     }
 
 
-def build_report(data, generator=None):
-    result = analyze(data)
-    request = ExplanationRequest(
+def build_explanation_request(data, result):
+    return ExplanationRequest(
         schema_version="PDA-EXPLAIN-v1",
         rubric_id=result.rubric_id,
         target_label=data["product_label"],
@@ -66,6 +67,11 @@ def build_report(data, generator=None):
         unknowns=result.unknowns,
         actions=result.actions,
     )
+
+
+def build_report(data, generator=None):
+    result = analyze(data)
+    request = build_explanation_request(data, result)
     try:
         explanation = (generator or MockExplanationGenerator()).generate(request)
         validate_explanation(request, explanation)
@@ -76,7 +82,7 @@ def build_report(data, generator=None):
             mode="RULE_BASED_LIMITED",
             outcome_id=result.primary_outcome,
             acknowledged_unknown_ids=result.unknowns,
-            headline_fa="توضیح تکمیلی در دسترس نیست؛ نتیجه فقط بر قواعد قطعی تکیه دارد.",
+            headline_fa="",
             claims=[],
         )
     return result, _report_payload(result, explanation)

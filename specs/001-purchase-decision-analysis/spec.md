@@ -2,8 +2,8 @@
 
 **Feature Branch**: `main` (feature جدید یا branch جدید ایجاد نشد)  
 **Created**: 2026-11-14  
-**Last corrected**: 2026-11-14 — Phase 5 M3 live-explanation authorization and safety/cost closure  
-**Status**: M1/M2 accepted; M3 adapter and evaluation harness are authorized. M4 remains deferred.  
+**Last corrected**: 2026-11-14 — Phase 5.2 Iran provider selection  
+**Status**: M1/M2 accepted; M3 corrective implementation is authorized, while live/human evidence remains pending. M4 remains deferred.  
 **Supporting artifacts**: [Scenarios](scenarios.md) · [Questionnaire](questionnaire.md) ·
 [Decision rubric](decision-rubric.md) · [Written acceptance](acceptance.md)
 
@@ -161,6 +161,32 @@ report persistشده، شامل limited report، آغاز و ۹۰ روز بعد 
   analytics dashboard یا external analytics SDK در این slice مجاز نیست.
 - **FR-036**: تنها metric این slice MUST average ratingهای submitted و currently retained، همراه response
   count و breakdown بر اساس report mode باشد؛ MUST NOT کاهش regret یا causal purchase outcome ادعا کند.
+- **FR-037**: primary headline، outcome، budget arithmetic و دلیل‌های پایه MUST deterministic باشند. توضیح AI MAY
+  فقط context تکمیلی supplied را بازگو کند. suitability مثبت target فقط وقتی مجاز است که evidence دارای value
+  صریح `USER_REPORTS_IT_FITS` و attribution برابر `USER_REPORTED` باشد و MUST همچنان user-reported معرفی شود؛
+  unknown، negative یا contradictory evidence MUST NOT آن را پشتیبانی کند.
+- **FR-038**: ارزیابی M3 MUST structural validity، outcome equality، unknown preservation، semantic support،
+  readability، actionability و added usefulness را جدا ثبت کند. معیارهای semantic بدون review انسانی MUST
+  `pending/null` بمانند، نه zero/pass. artifact review MUST فقط caseهای synthetic و rendered explanation را با
+  case/run/model/prompt/schema پیوند دهد و MUST NOT credential، raw transport یا input واقعی ذخیره کند.
+- **FR-039**: reservation هزینه MUST instructions، input، response schema، framing margin، output bound و همهٔ
+  attemptهای مجاز را پوشش دهد. settlement MUST idempotent باشد؛ usage مشاهده‌شده MUST clip نشود؛ usage نامعلوم پس
+  از retry/timeout MUST محافظه‌کارانه محاسبه شود؛ و over-reservation discrepancy MUST صادقانه ثبت و call بعدی را
+  در صورت عبور budget متوقف کند. این cap تخمین اپلیکیشن است، نه تضمین invoice provider.
+- **FR-040**: نتیجه MUST با فارسی طبیعی و ساختار فعلی نمایش داده شود: ابهام target-model prominent، وضعیت
+  mock/limited فقط یک‌بار، summary چهار dimension در mobile به‌صورت یک card/چهار row بدون scroll افقی، و endpointهای
+  rating با label صریح «اصلاً کمک نکرد» و «خیلی کمک کرد» برای keyboard/screen-reader.
+- **FR-041**: deployment و کاربران اولیه ایران هستند. direct OpenAI MUST غیرفعال بماند و
+  `BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED` یا تغییر base URL MUST NOT قرارداد OpenAI را برای ایران مجاز تلقی کند.
+- **FR-042**: live adapter انتخابی MUST فقط پروتکل، model ID، structured-output schema، usage و error behavior
+  مستند خود provider ایرانی را اجرا کند. انتخاب Phase 5.2 برابر AvalAI Responses API با `gpt-5.6-luna` است؛
+  این انتخاب approval تولید نیست و upstream authorization و مسیر دقیق پردازش ثالث تا پاسخ مکتوب provider unknown می‌ماند.
+- **FR-043**: تعرفهٔ مدل Phase 5.2 MUST برابر تعرفهٔ فعلی AvalAI (`$5/M` input، `$0.5/M` cached input و
+  `$30/M` output) محاسبه شود. conversion جاری IRT-per-UNIT MUST پیش از call از User API خوانده شود و margin
+  محافظه‌کارانه اعمال شود؛ پول خرید (`*_toman`) و پول AI MUST در fieldها و گزارش‌ها جدا بمانند.
+- **FR-044**: کل evaluation اولیه، شامل همه retryها، MUST پیش از provider call در سقف `100,000` تومان رزرو شود.
+  credential، balance واجد شرایط، rate تازه، cap محلی `<=100,000` و clarification eligibility همگی gate هستند؛
+  estimate اپلیکیشن تضمین invoice نیست و `T039` تا live evidence واقعی و human review کامل باز می‌ماند.
 
 ### Key Entities
 
@@ -187,6 +213,8 @@ report persistشده، شامل limited report، آغاز و ۹۰ روز بعد 
   behavior صریح است.
 - **SC-007**: expired/deleted item از direct access unavailable است و late result آن را resurrect نمی‌کند.
 - **SC-008**: requirement، question، rule، scenario و acceptance IDها resolve و mapping همه FRها را پوشش می‌دهد.
+- **SC-009**: ۱۰۰٪ مسیرهای live مستقیم OpenAI را رد می‌کنند و evaluation AvalAI یا همهٔ retryهای هفت case را
+  پیش از call زیر cap ۱۰۰٬۰۰۰ تومان رزرو می‌کند یا تعداد model call را صفر نگه می‌دارد.
 
 ## Decisions, assumptions and deferrals
 

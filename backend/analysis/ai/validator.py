@@ -20,7 +20,7 @@ def validate_explanation(request: ExplanationRequest, response: ExplanationRespo
     allowed_claim_types = {
         "DETERMINISTIC_OUTCOME", "CURRENT_DEVICE_CONTEXT", "EXPECTED_BENEFIT_CONTEXT",
         "INTENDED_USE_CONTEXT", "URGENCY_CONTEXT", "BUDGET_CONTEXT", "BUDGET_MISMATCH",
-        "TARGET_FIT_CONTEXT", "TARGET_CAPABILITY_SUPPORTED", "TRADEOFF_CONTEXT", "NEXT_ACTION",
+        "TARGET_FIT_CONTEXT", "USER_REPORTED_TARGET_FIT", "TRADEOFF_CONTEXT", "NEXT_ACTION",
     }
     evidence_types = {
         "CURRENT_DEVICE_CONTEXT": {"CURRENT_DEVICE_STATE"},
@@ -30,7 +30,7 @@ def validate_explanation(request: ExplanationRequest, response: ExplanationRespo
         "BUDGET_CONTEXT": {"PURCHASE_PRICE", "STATED_BUDGET"},
         "BUDGET_MISMATCH": {"PURCHASE_PRICE", "STATED_BUDGET"},
         "TARGET_FIT_CONTEXT": {"TARGET_FIT_REPORT"},
-        "TARGET_CAPABILITY_SUPPORTED": {"TARGET_FIT_REPORT"},
+        "USER_REPORTED_TARGET_FIT": {"TARGET_FIT_REPORT"},
         "TRADEOFF_CONTEXT": {"TRADEOFFS"},
     }
     for claim in response.claims:
@@ -50,9 +50,14 @@ def validate_explanation(request: ExplanationRequest, response: ExplanationRespo
             or any(evidence[item]["type"] not in expected_types for item in claim.evidence_ids)
         ):
             raise UnsupportedExplanation("evidence type cannot support claim")
-        if claim.claim_type == "TARGET_CAPABILITY_SUPPORTED":
-            if not claim.evidence_ids or any(evidence[item]["type"] != "TARGET_FIT_REPORT" for item in claim.evidence_ids):
-                raise UnsupportedExplanation("evidence content cannot support target capability")
+        if claim.claim_type == "USER_REPORTED_TARGET_FIT":
+            if not claim.evidence_ids or any(
+                evidence[item]["type"] != "TARGET_FIT_REPORT"
+                or evidence[item].get("value") != "USER_REPORTS_IT_FITS"
+                or evidence[item].get("attribution") != "USER_REPORTED"
+                for item in claim.evidence_ids
+            ):
+                raise UnsupportedExplanation("evidence value cannot support user-reported target fit")
         if claim.claim_type == "BUDGET_MISMATCH" and request.dimensions["budget"] != "ABOVE_BUDGET":
             raise UnsupportedExplanation("claim contradicts deterministic budget")
         if claim.claim_type == "DETERMINISTIC_OUTCOME" and not claim.rule_ids:

@@ -1,11 +1,14 @@
 import json
+import threading
 import uuid
 from datetime import timedelta
 
-from django.test import RequestFactory, TestCase, override_settings
+from django.db import close_old_connections
+from django.test import RequestFactory, TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 
 from analysis.ai.openai_adapter import (
+    LiveBudgetLedger,
     LiveBudgetRejected,
     OpenAIExplanationGenerator,
     ProviderResult,
@@ -50,6 +53,36 @@ class LiveBudgetControlTests(TestCase):
         self.assertNotIn("برچسب خصوصی", stored)
         self.assertNotIn("headline_fa", stored)
 
+    def test_observed_usage_is_not_clipped_and_repeated_settlement_is_idempotent(self):
+        ledger = LiveBudgetLedger(daily_budget_microusd=1_000_000, per_guest_daily_limit=10,
+                                  circuit_threshold=5, circuit_cooldown_seconds=300)
+        invocation_id, day = ledger.reserve(guest_id=self.guest.id, operation_id=uuid.uuid4(), model="gpt-6-luna",
+                                            schema_version="PDA-EXPLAIN-v1", reserved_cost_microusd=10)
+        usage = ProviderUsage(1_000_000, 1_000_000)
+        ledger.settle(invocation_id=invocation_id, day=day, succeeded=True, attempts=1, usage=usage, latency_ms=10)
+        first = AILiveBudgetWindow.objects.get().spent_estimate_microusd
+        ledger.settle(invocation_id=invocation_id, day=day, succeeded=True, attempts=1, usage=usage, latency_ms=10)
+        invocation = AIInvocation.objects.get(id=invocation_id)
+        window = AILiveBudgetWindow.objects.get()
+        self.assertGreater(invocation.estimated_cost_microusd, invocation.reserved_cost_microusd)
+        self.assertEqual(window.spent_estimate_microusd, first)
+        self.assertEqual(window.reserved_cost_microusd, 0)
+        restrictive = LiveBudgetLedger(daily_budget_microusd=100, per_guest_daily_limit=10,
+                                       circuit_threshold=5, circuit_cooldown_seconds=300)
+        with self.assertRaises(LiveBudgetRejected):
+            restrictive.reserve(guest_id=self.guest.id, operation_id=uuid.uuid4(), model="gpt-6-luna",
+                                schema_version="PDA-EXPLAIN-v1", reserved_cost_microusd=1)
+
+    def test_retry_with_unknown_total_usage_settles_conservatively(self):
+        transport = FakeTransport([
+            ProviderTransientError("timeout"),
+            ProviderResult(json.dumps(valid_payload()), ProviderUsage(10, 10)),
+        ])
+        self.generator(transport).generate(explanation_request())
+        invocation = AIInvocation.objects.get()
+        self.assertEqual(invocation.attempt_count, 2)
+        self.assertEqual(invocation.estimated_cost_microusd, invocation.reserved_cost_microusd)
+
     @override_settings(BEFOREBUY_AI_PER_GUEST_DAILY_LIMIT=1)
     def test_per_guest_limit_rejects_without_provider_call(self):
         first = FakeTransport([ProviderResult(json.dumps(valid_payload()), ProviderUsage(10, 10))])
@@ -91,3 +124,32 @@ class LiveBudgetControlTests(TestCase):
         self.assertIsInstance(
             configured_explanation_generator(request, self.guest), UnavailableLiveExplanationGenerator
         )
+
+
+class LiveBudgetConcurrencyTests(TransactionTestCase):
+    def test_row_locked_window_allows_only_one_competing_reservation(self):
+        guest = GuestContext.objects.create(access_expires_at=timezone.now() + timedelta(days=90))
+        barrier = threading.Barrier(2)
+        results = []
+
+        def reserve():
+            close_old_connections()
+            try:
+                barrier.wait(timeout=5)
+                ledger = LiveBudgetLedger(daily_budget_microusd=1_000, per_guest_daily_limit=10,
+                                          circuit_threshold=5, circuit_cooldown_seconds=300)
+                ledger.reserve(guest_id=guest.id, operation_id=uuid.uuid4(), model="gpt-6-luna",
+                               schema_version="PDA-EXPLAIN-v1", reserved_cost_microusd=600)
+                results.append("reserved")
+            except LiveBudgetRejected:
+                results.append("rejected")
+            finally:
+                close_old_connections()
+
+        threads = [threading.Thread(target=reserve) for _ in range(2)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=10)
+        self.assertEqual(sorted(results), ["rejected", "reserved"])
+        self.assertEqual(AILiveBudgetWindow.objects.get().reserved_cost_microusd, 600)

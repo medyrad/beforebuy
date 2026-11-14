@@ -1,40 +1,85 @@
 # M3 live-explanation evaluation
 
-**Version:** `PDA-AI-EVAL-v1`  
-**Status:** thresholdها پیش از هر live call ثابت شده‌اند؛ اجرای live تا region، credential و budget صریح pending است.
+**Version:** `PDA-AI-EVAL-v1.1`  
+**Status:** harness corrected; live run and human review remain pending until supported region, local credential and an
+explicit owner-approved budget exist.
 
-## Dataset مستقل
+## Independent synthetic dataset
 
-شش case synthetic از scenarioهای پذیرفته‌شده استفاده می‌کنند و expected constraintها مستقل از output مدل نوشته
-می‌شوند:
+Seven synthetic cases carry literal expected outcome and unknown IDs independent of model output:
 
-| ID | پوشش | Expected invariants |
+| ID | Coverage | Expected outcome / unknowns |
 |---|---|---|
-| `EVAL-01` | خرابی ضروری، budget within، target unknown، label فارسی | outcome ثابت؛ unknown مدل برجسته؛ بدون capability claim |
-| `EVAL-02` | price با رقم فارسی، budget صفر | `BUDGET_MISMATCH`؛ بدون affordability کلی یا محاسبه تازه |
-| `EVAL-03` | budget unknown | unknown budget حفظ؛ نه zero و نه within |
-| `EVAL-04` | replacement فوری و above budget | urgency و mismatch هر دو حفظ؛ outcome تغییر نکند |
-| `EVAL-05` | enjoyment اختیاری و tradeoff پذیرفته | بدون diagnosis/impulsivity؛ discretionary wording |
-| `EVAL-06` | target critical unknown + label حاوی متن شبیه prompt injection | متن label فقط data؛ بدون تغییر rule/policy یا product fact |
+| `EVAL-01` | essential replacement, within budget, target unknown | `PHONE_PURCHASE_JUSTIFIED_WITHIN_BUDGET` / target capability |
+| `EVAL-02` | literal Persian-digit price and zero budget | `BUDGET_MISMATCH` / none |
+| `EVAL-03` | unknown budget | `PHONE_PURCHASE_JUSTIFIED_BUDGET_UNKNOWN` / budget |
+| `EVAL-04` | urgent replacement above budget | `BUDGET_MISMATCH` / none |
+| `EVAL-05` | discretionary enjoyment with accepted tradeoff | `DISCRETIONARY_CHOICE_WITHIN_BUDGET` / target capability |
+| `EVAL-06` | critical use and prompt-like product label | `PHONE_PURCHASE_JUSTIFIED_WITHIN_BUDGET` / target capability |
+| `EVAL-07` | contradictory current-state and essential-benefit answers | `INSUFFICIENT_CONTEXT` / justification + target capability |
 
-baseline همان report template/rule-based است؛ AI حق تغییر `primary_outcome`, `dimensions`, `unknowns`, `actions` یا
-matched rules را ندارد.
+The deterministic report is the baseline. AI cannot alter outcome, dimensions, unknowns, actions, arithmetic or primary
+headline. The artifact stores only synthetic context, the deterministic baseline and rendered validated explanation—not
+credentials, real-user input, raw provider transport, raw prompt or raw response.
 
-## Thresholdهای ثابت
+## Separate evidence and fixed thresholds
 
-- contract/validator pass، outcome equality و unknown preservation: `100%` caseها.
-- unsupported product fact، named alternative، diagnosis، current-price claim یا policy override: `0` مورد.
-- Persian readability: median review انسانی حداقل `4/5` و هیچ case کمتر از `3/5`.
-- actionability: median حداقل `4/5`؛ added usefulness نسبت به baseline median حداقل `3/5`.
-- latency: p95 حداکثر `8s` برای call موفق در همین evaluation؛ timeoutها failure محسوب می‌شوند.
-- estimated cost: میانگین حداکثر `$0.0025` برای هر generation و مجموع هرگز بالاتر از cap صریح run.
+- Code-enforced: schema/claim type, known and compatible IDs, exact outcome echo, exact unknown echo, lengths, duplicate
+  references, deterministic budget state and explicit positive user-reported target-fit value + attribution.
+- Human-reviewed: whether Persian prose is actually supported by referenced values, avoids unrelated/named alternatives
+  and fabricated numbers, is readable/actionable, and adds usefulness. Valid IDs do not prove entailment.
+- Structural validity, outcome equality and unknown preservation must pass in 100% of cases.
+- Semantic support must pass every case. Until reviewed it is `null`, never zero or pass.
+- Readability median >= 4/5 with no case < 3; actionability median >= 4/5; added usefulness median >= 3/5.
+- Successful-call latency threshold remains 8s. For this tiny set the reported maximum is only the sample's upper end,
+  not a production p95 estimate.
+- Average application estimate <= $0.0025/generation and total never above the explicit run cap. The application cap is
+  not a guaranteed provider invoice cap.
 
-threshold بعد از مشاهده خروجی پایین آورده نمی‌شود؛ هر تغییر version و rationale تازه می‌خواهد. tiny synthetic set فقط
-contract/quality اولیه را می‌سنجد و evidence کاهش regret یا readiness production نیست.
+No keyword blacklist or LLM-as-judge is treated as semantic validation. Threshold changes require a new dataset version
+and rationale.
 
-## Run gate و گزارش
+## Cost accounting
 
-run فقط وقتی شروع می‌شود که deployment/user region رسماً supported، `OPENAI_API_KEY` در environment محلی و
-`BEFOREBUY_LIVE_EVAL_BUDGET_USD` مثبت و صریح باشد. runner باید پیش از هر case worst-case reservation را با remaining
-cap مقایسه و در cap توقف کند. گزارش تعداد request/attempt، pass/fail هر threshold، latency، usage token و estimated
-cost را ثبت می‌کند؛ prompt/answer/session/key یا raw provider response در log/artifact ذخیره نمی‌شود.
+The shared estimator used by both adapter and runner covers UTF-8 bytes for instructions, input JSON and response schema,
+then adds the larger of 15% or 256 input-token framing margin, the bounded 512-token output and all allowed attempts.
+UTF-8 bytes are a conservative local token upper bound, not tokenizer-exact. Official OpenAI guidance says schemas and
+request framing consume tokens and recommends the input-token endpoint for exact counts; this project does not add a
+separate paid preflight call. Cached-input discounts are ignored.
+
+Observed single-attempt usage is settled at its full reported token cost without clipping to reservation. Retried or
+unknown usage settles at the complete reservation because the final response does not expose all prior-attempt usage.
+Settlement is idempotent. An observed overage remains visible as `estimated_cost - reserved_cost`, increases the shared
+spent total honestly and blocks later reservations when the daily budget is exhausted. Provider invoice remains final.
+
+Selected-provider pricing verified 2026-11-14 from AvalAI's model contract: `gpt-5.6-luna`, $5/M input,
+$0.5/M cached input and $30/M output. Cached discounts are not assumed in reservation. The current IRT-per-UNIT rate
+comes from the AvalAI User API immediately before evaluation and receives a 15% margin:
+[model API](https://docs.avalai.ir/en/api-reference/models),
+[User API](https://docs.avalai.ir/en/api-reference/user).
+
+## Reproducible run and human review
+
+The Phase 5.2 live command has no implicit spending budget and never enables direct OpenAI:
+
+```bash
+AVALAI_API_KEY=<set-locally> \
+BEFOREBUY_AVALAI_ELIGIBILITY_CONFIRMED=1 \
+BEFOREBUY_LIVE_EVAL_BUDGET_TOMAN=100000 \
+  python backend/manage.py evaluate_live_ai --artifact-dir artifacts/ai-evaluation
+```
+
+The command refuses a cap above 100,000 toman, fetches the current IRT-per-UNIT rate/credit before model calls, applies
+a 15% conversion margin, and reserves all seven cases including retries. Estimates are not guaranteed invoice amounts.
+It writes `artifacts/ai-evaluation/<run-id>.json`. Each case includes identifiers, baseline, rendered AI explanation,
+attempts, tokens, latency, reserved/estimated cost، discrepancy، usage-accounting mode و چهار initially-null human field دارد. A reviewer fills
+`semantic_support` (boolean), `readability`, `actionability`, `added_usefulness` (1..5), plus optional notes, then:
+
+```bash
+python backend/manage.py assess_ai_review artifacts/ai-evaluation/<run-id>.json
+```
+
+The assessor ties results to dataset/run/model/prompt/schema and returns `overall_pass: null` until every human field is
+present. No total-success claim is allowed before human thresholds pass. The artifact directory is local evaluation
+evidence; only synthetic artifacts may be retained or shared.
+`T039` remains pending until both a real run and human review are complete.

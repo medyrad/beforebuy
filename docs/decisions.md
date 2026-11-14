@@ -93,6 +93,19 @@
 - validation فقط schema، outcome/unknown echo، IDها و سازگاری claim/evidence/rule را تضمین می‌کند. وجود evidence ID
   اثبات semantic support متن فارسی نیست؛ این ریسک در evaluation مستقل و review انسانی باقی می‌ماند.
 
+## اصلاحات Phase 5.1 — verified AI review
+
+- headline، arithmetic و reasonهای پایه deterministic شدند؛ AI فقط explanation تکمیلی supplied context است.
+  suitability مثبت فقط با value صریح `USER_REPORTS_IT_FITS` و attribution کاربر پذیرفته و همچنان user-reported است.
+- semantic entailment متن آزاد، عدد/alternative ساختگی و headline متناقض با blacklist یا LLM judge خودکار اعلام
+  نمی‌شود؛ این‌ها در artifact انسانی `pending/null` می‌مانند.
+- dataset `PDA-AI-EVAL-v1.1` هفت case با expected outcome/unknown مستقل، رقم فارسی واقعی و contradictory-input دارد.
+  artifact محلی synthetic مجاز است؛ real input، credential و raw transport ممنوع‌اند.
+- قیمت رسمی `gpt-6-luna` در 2026-11-14 دوباره تأیید شد. estimator مشترک instructions/input/schema/framing
+  margin/output/all attempts را رزرو می‌کند؛ observed usage clip نمی‌شود و settlement تکراری idempotent است.
+- ساختار و visual language رابط حفظ شد؛ copy طبیعی‌تر، summary mobile یک card چهارردیفی و endpointهای feedback
+  برای screen reader صریح شدند. هیچ M4 یا live call مجاز/اجرا نشد.
+
 ## پیش‌فرض‌های Phase 0 که در Phase 2 مصوب شدند
 
 React + TypeScript + Vite، Django REST Framework، PostgreSQL، monorepo modular monolith، Docker Compose،
@@ -111,8 +124,28 @@ scaffold و implementation فقط برای M2 را می‌دهد؛ production de
 ## پرسش‌های باز
 
 1. backup retention/erasure lifecycle پیش از production readiness در فاز deployment چه خواهد بود؟
-2. region واقعی backend/کاربران و budget دلاری صریح live evaluation چیست؟ تا پاسخ، adapter قابل تست است ولی live
-   evaluation و activation pending باقی می‌مانند.
+2. **بسته‌شده در Phase 5.2:** backend/کاربران ایران و cap کل ۱۰۰٬۰۰۰ تومان تأیید شد. eligibility/upstream AvalAI،
+   credential و credit محلی همچنان gateهای باز live evaluation هستند.
 
 questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchase-decision-analysis/` مستند شده‌اند.
 تایید specification با اجرای implementation یکی نیست.
+
+## تصمیم‌های Phase 5.2 — provider ایران
+
+- context قطعی: کاربران اولیه و backend در ایران هستند؛ قیمت و بودجهٔ خرید همچنان تومان است.
+- direct OpenAI برای این deployment approved نیست. adapter مستقیم و region confirmation آن غیرفعال می‌ماند؛
+  base URL سفارشی قرارداد یا eligibility آن را تغییر نمی‌دهد.
+- shortlist به AvalAI و Liara محدود شد. AvalAI به‌عنوان تنها candidate انتخاب شد؛ Liara برای model بررسی‌شده
+  Structured Outputs را غیرفعال و پلن پایه را ۲۹۹هزار تومان اعلام می‌کند.
+- قرارداد انتخابی AvalAI Responses API، مدل دقیق `gpt-5.6-luna`، schema strict، `store=false`، timeout ۸ ثانیه،
+  حداکثر دو attempt transient و usage/request-id provider است. OpenAI-compatible بودن مبنای Responses support نیست؛
+  endpoint Responses در مستندات خود AvalAI آمده است.
+- تعرفهٔ ثبت‌شده در 2026-11-14: input `$5/M`، cached input `$0.5/M` و output `$30/M`. User API نرخ جاری
+  IRT-per-UNIT را می‌دهد؛ IRT در قرارداد AvalAI تومان است. reservation با margin ارزی ۱۵٪ انجام می‌شود و پول AI
+  از `price_toman`/`budget_toman` خرید جدا است.
+- سقف کل evaluation اولیه، همراه retry، دقیقاً ۱۰۰٬۰۰۰ تومان است. این سقف مجوز subscription/top-up/registration
+  یا infrastructure نیست. command علاوه بر cap محلی، credential، credit/rate تازه و eligibility را fail closed می‌کند.
+- unresolved: AvalAI در policy خود عدم بهره‌برداری از API data را می‌گوید، اما authorization و data path/retention
+  upstream برای کاربران ایران را مستند نکرده است. همچنین مصرف signup grant برای همین model بدون base top-up باید از
+  `/credit` یا پاسخ provider تأیید شود. تا آن زمان production activation و live evaluation eligible تلقی نمی‌شوند.
+- T039 فقط پس از artifact live هفت case و review انسانی کامل می‌شود؛ test stub یا output ساختاری به‌تنهایی کافی نیست.

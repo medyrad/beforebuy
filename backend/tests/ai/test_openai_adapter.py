@@ -77,6 +77,9 @@ class OpenAIAdapterContractTests(SimpleTestCase):
         self.assertEqual(transport.calls[0]["model"], "gpt-6-luna")
         self.assertEqual(transport.calls[0]["max_output_tokens"], 512)
         self.assertFalse(transport.calls[0]["store"])
+        estimate = generator.estimate(explanation_request())
+        self.assertGreater(estimate.serialized_request_bytes, len(transport.calls[0]["input_json"].encode("utf-8")))
+        self.assertGreater(estimate.conservative_input_tokens, estimate.serialized_request_bytes)
 
     def test_malformed_or_incomplete_output_is_rejected(self):
         for raw in ("not-json", json.dumps({"mode": "AI_ASSISTED_SUCCESS"})):

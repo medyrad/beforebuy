@@ -77,6 +77,12 @@ snapshotها برای provenance حفظ شده‌اند ولی inactive محسو
 نتیجه measured فعلی فقط provenance/price/config comparison است؛ call زنده، latency، quality فارسی و cost مشاهده‌شده
 هنوز وجود ندارد. dataset و thresholdهای pre-registered در [ai-evaluation.md](ai-evaluation.md) هستند.
 
+بازبینی Phase 5.1 در 2026-11-14 قیمت Standard کوتاه‌متن `gpt-6-luna` را بدون تغییر، ورودی `$0.10/M` و خروجی
+`$0.50/M`، تأیید کرد. راهنمای رسمی token counting تصریح می‌کند schema و framing token مصرف می‌کنند و tokenizer محلی
+برای payload کامل دقیق نیست. بنابراین estimator مشترک کل instructions/input/schema را با margin محافظه‌کار، output
+bound و همه attemptها پوشش می‌دهد؛ cached discount فرض نمی‌شود و cap برنامه تضمین invoice نیست. endpoint شمارش دقیق
+به‌دلیل call شبکهٔ اضافه وارد مسیر نشد. semantic support نیز فقط با review انسانی artifact synthetic سنجیده می‌شود.
+
 ## Backend skill evaluation
 
 local catalog مهارت متمرکز Django/DRF نداشت. candidateهای public زیر از نظر scope بررسی شدند:
@@ -98,10 +104,43 @@ API contract و behavioral test را پوشش دهد. JWT، repository pattern،
   هم‌نسخه اجرا می‌شوند و MCP چون capability لازم اضافه‌ای نداشت deferred ماند:
   <https://github.com/microsoft/playwright-mcp>.
 - code intelligence فقط پس از vertical slice نماینده و طبق benchmark ثبت‌شده در `docs/tooling.md` بررسی می‌شود.
-- live AI activation به supported region، credential و spending authorization وابسته است؛ backup retention و exact
-  production sizing همچنان deployment gate هستند.
+- live AI activation به clarification eligibility/upstream از AvalAI، credential/credit محلی، rate تازه و spending
+  cap تومان وابسته است؛ backup retention و exact production sizing همچنان deployment gate هستند.
 
 ## Rejected complexity
 
 Redis، Celery، WebSocket، microservice، event sourcing، full report history، analytics SDK، provider registry، JWT،
 account system و SSR برای requirement فعلی benefit concrete ندارند و انتخاب نشدند.
+
+## Phase 5.2 — provider مناسب deployment ایران
+
+این ارزیابی در 2026-11-14 فقط دو hosted provider را از منابع primary خودشان مقایسه کرد. ادعای performance
+maintainer اندازه‌گیری این workspace نیست و listing یک مدل، مجوز upstream یا data-handling آن upstream را ثابت نمی‌کند.
+
+| معیار | AvalAI | Liara AI |
+|---|---|---|
+| خدمت به ایران | دامنه و API ایرانی، IRT/UNIT و endpoint داخلی را صریح مستند می‌کند | سرویس و پلن AI ایرانی با قیمت تومان |
+| مدل دقیق بررسی‌شده | `gpt-5.6-luna`؛ schema=true، tier 0، input `$5/M`، cached `$0.5/M`، output `$30/M` | `x-ai/grok-3-mini-beta`؛ output `$0.5/M`، Structured Outputs غیرفعال |
+| پروتکل | `/v1/responses` و `/v1/chat/completions` هر دو مستند؛ انتخاب این پروژه Responses است | پارامترهای chat-style؛ Responses support در منبع رسمی پیدا نشد |
+| JSON Schema | `supports_response_schema=true` و راهنمای Structured Outputs | برای مدل بررسی‌شده غیرفعال |
+| timeout/error/usage | 429/Retry-After، backoff محدود، status/request-id و User API usage/transaction مستند | مانیتور مصرف/هزینه و RPS؛ contract خطا/usage کافی برای این adapter پیدا نشد |
+| retention/logging | policy می‌گوید API data برای بهره‌برداری پردازش نمی‌شود؛ transaction record حداقل ۹۰ روز. مسیر/مدت نگهداری prompt نزد upstream روشن نیست | پلن میرزاخانی ۳۰ روز log و نمودار؛ policy مدل/upstream کافی پیدا نشد |
+| هزینه ورود | ۲۰هزار تومان اعتبار فعال‌سازی claim شده و بسته اختیاری است؛ FAQ برای برخی packageها حداقل base balance ۱۰۰هزار تومان ذکر می‌کند، پس eligibility اعتبار رایگان باید از `/credit` تأیید شود | پلن پایه AI ماهانه ۲۹۹هزار تومان؛ خارج از اختیار «بدون خرید» این فاز |
+| کیفیت فارسی | ادعای specific و benchmark فارسی برای مدل منتخب پیدا نشد؛ تا live dataset این پروژه **اندازه‌گیری‌نشده** | در این workspace **اندازه‌گیری‌نشده** |
+
+**انتخاب محدود:** AvalAI + `gpt-5.6-luna` + Responses API، چون protocol و schema واقعی، تعرفه، request ID و
+cost/usage API را مستند می‌کند و subscription اجباری نشان نمی‌دهد. این انتخاب فقط integration/evaluation candidate
+است؛ activation تولید تا پاسخ مکتوب AvalAI دربارهٔ (۱) مجوز/مسیر upstream برای کاربران و backend ایران، (۲) محل و
+مدت نگهداری prompt/output در AvalAI و upstream، و (۳) اینکه signup grant بدون top-up برای API همین مدل قابل مصرف است،
+blocked می‌ماند. هیچ پیام خارجی از طرف پروژه در این فاز ارسال نشده است.
+
+AvalAI تعرفه را به USD/UNIT اعلام و هزینه را با exchange rate به IRT (تومان) گزارش می‌کند؛ `IRT` در API آن تومان
+است، نه ریال. اگر سند حسابداری مبلغی را ریال نشان دهد conversion صریح `10 rial = 1 toman` است. پیش از هر live run،
+rate همان روز باید از `GET /user/v1/credit` خوانده شود و margin نرخ ارز ۱۵٪ به reservation افزوده شود. cap کل
+ارزیابی ۱۰۰٬۰۰۰ تومان است و estimate محلی invoice قطعی نیست؛ lookup تراکنش provider مرجع هزینهٔ واقعی است.
+
+منابع رسمی AvalAI: <https://docs.avalai.ir/en/quickstart>،
+<https://docs.avalai.ir/en/api-reference/models>، <https://docs.avalai.ir/en/api-reference/user>،
+<https://avalai.ir/privacy-policy/>، <https://avalai.ir/>. منابع رسمی Liara:
+<https://liara.ir/pricing/> و
+<https://liara.ir/products/ai/xAI%3A%20Grok%203%20Mini%20Beta/>.
