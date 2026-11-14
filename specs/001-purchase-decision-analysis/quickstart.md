@@ -61,10 +61,10 @@ npm run dev -- --host 127.0.0.1
 POSTGRES_PORT=55439 .venv/bin/python backend/manage.py check --settings=config.settings.test
 POSTGRES_PORT=55439 .venv/bin/python backend/manage.py makemigrations --check --dry-run --settings=config.settings.test
 
-cd backend
-POSTGRES_PORT=55439 ../.venv/bin/python manage.py test tests --settings=config.settings.test
+# canonical backend suite from repository root
+scripts/test-backend.sh
 
-cd ../frontend
+cd frontend
 npm ci --ignore-scripts --no-audit --no-fund
 npm run typecheck
 npm run lint
@@ -72,6 +72,10 @@ npm test
 npm run build
 PLAYWRIGHT_HTML_OPEN=never npm run test:e2e
 ```
+
+`scripts/test-backend.sh` به‌طور صریح از working directory `backend/` و label برابر `tests` استفاده می‌کند؛ بنابراین
+با package مستقل `tests/e2e` در ریشه collision ندارد. پورت‌های Compose توسعه با وجود قابلیت تغییر از طریق
+`API_HOST_PORT` و `POSTGRES_HOST_PORT` فقط روی loopback منتشر می‌شوند.
 
 Playwright `1.65.1` در macOS 12 از Chrome نصب‌شده با channel `chrome` استفاده می‌کند؛ bundled Chromium این host
 را پشتیبانی نمی‌کند. browser test به API Docker روی پورت `58000` نیاز دارد. حالت محدود فقط وقتی

@@ -1,128 +1,149 @@
-# تحویل Phase 6.1 — اصلاح و اثبات production configuration
+# تحویل Phase 6.2 — بستن gapهای محیط توسعه
 
 **تاریخ:** ۱۵ نوامبر ۲۰۲۶  
-**baseline بازبینی‌شده:** `bf5f6cc8ee0a6407ca851f274dee692d5c00efd6`  
-**وضعیت:** اصلاحات production configuration پیاده و در rehearsal محلی ایزوله verified شد؛ live AI و انتشار عمومی pending  
-**مرز:** بدون deployment عمومی، provider/paid call، خرید اعتبار، تغییر M3 یا تکمیل T039
+**baseline بازبینی‌شده:** `80af259202937bc6c7bf8e69bd4881ee971db24b`  
+**وضعیت:** migration دادهٔ development، loopback port binding و فرمان canonical backend تکمیل و محلی verify شدند  
+**مرز:** بدون provider call، خرید، deployment عمومی، تغییر production routing یا تکمیل `T039`
 
 ## نتیجه و Spec Kit
 
-- requirementهای corrective با `FR-051..FR-053` و `SC-010..SC-012` و taskهای `T058..T061` به feature موجود اضافه شدند.
-- `$speckit-analyze` پس از prerequisite رسمی اجرا شد: ۶۵ requirement/criterion و ۶۱ task، بدون duplicate ID،
-  placeholder، constitution conflict یا finding بحرانی/high. یک نکتهٔ low فقط نام دقیق overlay بود که به
-  `compose.production.live.yaml` حل شد.
-- `$speckit-implement` فقط `T058..T061` را با red/green اجرا کرد. هر چهار task کامل‌اند؛ `T039` باز است.
-- checklistهای Spec Kit بدون تغییر reviewer state برابر requirements `30/30` و technical-plan `25/25` باقی ماندند.
-- handoff Phase 6 در `docs/archive/phase-6-handoff.md` آرشیو شد.
+- taskهای محدود `T062..T065` به feature موجود اضافه شدند؛ `T039` همچنان unchecked است.
+- requirement یا plan محصول تغییر نکرد، بنابراین طبق دستور Phase 6.2 اجرای `$speckit-analyze` لازم نبود.
+- prerequisite رسمی `$speckit-implement` feature را در
+  `/Users/mehdi/Projex/beforebuy/specs/001-purchase-decision-analysis` یافت؛ checklistهای requirements برابر
+  `30/30` و technical-plan برابر `25/25` و بدون مورد باز بودند.
+- implementation فقط migration توسعه، loopback binding، test wrapper، testهای Compose و مستندات مرتبط را پوشش داد.
+  production Compose، AI configuration و frontend تغییر نکردند.
 
-## finding PostgreSQL و اصلاح volume
+## finding دقیق PostgreSQL development
 
-finding baseline تأیید شد. image دقیق production:
+finding baseline تأیید شد. container اولیه `beforebuy-db-1` از image زیر استفاده می‌کرد:
 
-`postgres:18.1-alpine@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29`
+`postgres@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29`
 
-| بررسی | مقدار مشاهده‌شده |
+| بررسی | مقدار مشاهده‌شده پیش از cutover |
 |---|---|
-| image RepoDigest | `postgres@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29` |
 | image `PGDATA` | `/var/lib/postgresql/18/docker` |
 | image `VOLUME` | `/var/lib/postgresql` |
 | runtime `SHOW data_directory` | `/var/lib/postgresql/18/docker` |
-| named-volume destination پس از اصلاح | `/var/lib/postgresql` |
-| mount DB | فقط `volume beforebuy-m61_postgres_data /var/lib/postgresql`؛ secret bind جدا؛ anonymous volume صفر |
+| named mount قدیمی | `beforebuy_beforebuy_pgdata -> /var/lib/postgresql/data` |
+| محل واقعی داده | anonymous volume `19a94ccdea7cc860ef2d58f4f7c453c7a0ec94dfef01765b57904a36d16e86ba -> /var/lib/postgresql` |
+| database / user / owner | هر سه `beforebuy`؛ ownership مبهم نبود |
+| migration state | `0001/0002` applied؛ `0003/0004` pending |
 
-mount قبلی production روی `/var/lib/postgresql/data`، `PGDATA` واقعی را نمی‌پوشاند. `compose.production.yaml` به
-layout رسمی PostgreSQL 18 اصلاح شد. مستند رسمی image نیز تغییر 18+ به version-specific `PGDATA` و parent volume را
-تأیید می‌کند: <https://github.com/docker-library/docs/blob/master/postgres/content.md#pgdata>.
+restart persistence به‌عنوان مدرک استفاده نشد. mount inspection نشان داد named volume قدیمی `PGDATA` را نمی‌پوشاند
+و دادهٔ واقعی در anonymous parent volume بود.
 
-برای حفاظت داده، پیش از تغییر config همهٔ volume/containerهای موجود inspect شدند. project production قبلی وجود نداشت.
-container توسعهٔ موجود همان اشکال را نشان داد: named volume قدیمی روی `/var/lib/postgresql/data` و anonymous parent
-volume روی `/var/lib/postgresql`؛ `SHOW data_directory` نیز مسیر 18 را داد. از database توسعه dump ایمنی custom-format
-گرفته شد و هیچ volume توسعه حذف، reinitialize یا remount نشد. تغییر توسعه به‌علت نیاز به migration داده، خارج scope
-production Phase 6.1 ماند و در operations به‌عنوان gap جدا ثبت شد.
+## backup، restore و تطبیق داده
 
-## آزمون recreation و persistence
+ابتدا API متوقف شد؛ database source تا پایان dump روشن ولی بدون client connection دیگر بود. backup نهایی custom-format
+در مسیر خارج repository ساخته شد:
 
-rehearsal با project مستقل `beforebuy-m61`، HTTPS port `58445` و named volume
-`beforebuy-m61_postgres_data` انجام شد. داده‌ها کاملاً synthetic بودند:
+```text
+/Users/mehdi/Backups/beforebuy/phase-6.2-20261115/beforebuy-development-pre-cutover.dump
+SHA-256: 76f733b802ef1e62ac482e8d6781a7b0d5ef00b745078bf5aa341edfbba7a4f4
+directory mode: 0700
+dump mode: 0600
+```
 
-- یک analysis و current report در mode mock؛
-- session مالک browser و feedback برابر ۵؛
-- `AIEvaluationAuthorization`: authorized=`100000`، reserved=`7000`، spent=`23000` تومان؛
-- `AILiveBudgetWindow`: reserved=`111` و spent=`222` microusd؛
-- یک `AIInvocation` با provider=`synthetic` و attempt صفر.
+`pg_restore --list` archive را خواند. dump در **named volume تازه**
+`beforebuy_beforebuy_pgdata_v18` و همان image digest restore شد. سپس migrationهای `0003` و `0004` فقط روی مقصد
+اعمال و `migrate --check` بدون migration pending اجرا شد. source anonymous volume، named volume قدیمی و backup حذف یا
+تغییر داده نشدند.
 
-`docker compose down` بدون `--volumes` هر سه container و network را حذف کرد. همان named volume با labelهای
-`project=beforebuy-m61` و `volume=postgres_data` باقی ماند و stack از production config دوباره ساخته شد. پس از recreate:
+مقایسهٔ source و destination بدون نمایش محتوای رکورد:
 
-- `data_directory` همان `/var/lib/postgresql/18/docker` و mount همان named volume بود؛
-- countها analysis=`1`، session=`2`، feedback=`1` و invocation=`1` باقی ماندند؛
-- accounting دقیقاً `100000/7000/23000` و `111/222` باقی ماند؛
-- Playwright با storage state مالک، analysis و rating ۵ را دوباره خواند: `1 passed`؛
-- health پس از recreate برابر `200` بود.
+| evidence | source | destination پس از restore/migrate |
+|---|---:|---:|
+| guest context | 154 | 154 |
+| analysis | 29 | 29 |
+| current report | 29 | 29 |
+| feedback | 0 | 0 |
+| Django session | 154 | 154 |
+| live budget window | 0 | 0 |
+| AI invocation | 0 | 0 |
+| evaluation authorization | table هنوز موجود نبود | 0 پس از migration |
+| ownership/FK orphan | 0 | 0 |
+| decoded owner session / missing owner | `154 / 0` | `154 / 0` |
+| ownership digest | `720b8cdc0c9eefdcf1cf48d2744a0434` | همان |
+| session digest | `e1037e32a62d969e3416bf7646263a41` | همان |
 
-بنابراین evidence به restart وابسته نیست و persistence به anonymous volume متکی نیست.
+accounting source خالی بود؛ در نتیجه authorization یا spending موجودی برای reset وجود نداشت و migration نیز allowance
+جدیدی نساخت. هیچ evaluation spending authorization تغییر یا ایجاد نشد.
 
-پس از جمع‌آوری evidence، container/networkهای rehearsal بدون `--volumes` متوقف و حذف شدند. volume اصلی synthetic
-و volume خالی live-config check عمداً حذف نشدند؛ certificate، dump، cookie، storage state و secretهای runtime از
-workspace خارج و به‌صورت recoverable به Trash محلی منتقل شدند و هیچ‌کدام وارد Git نمی‌شوند.
+## cutover، recreation و port evidence
 
-## production AI configuration
+`compose.yaml` اکنون volume صریح `beforebuy_beforebuy_pgdata_v18` را روی `/var/lib/postgresql` mount می‌کند و
+portهای قابل‌تنظیم را به این شکل منتشر می‌کند:
 
-`compose.production.yaml` اکنون همهٔ non-secretهای factory را صریح map می‌کند: mode، provider، model، AvalAI
-eligibility، timeout، attempts، input/output limits، guest quota، deployment budget، USD→toman rate، margin و circuit
-threshold/cooldown. `BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED` و `BEFOREBUY_E2E_TEST_CONTROLS` در production صفرند.
+- PostgreSQL: `127.0.0.1:${POSTGRES_HOST_PORT:-55439}:5432`
+- API: `127.0.0.1:${API_HOST_PORT:-58000}:8000`
 
-- base production default برابر mock است و بدون AvalAI secret healthy شد؛ settings واقعی container:
-  provider=`avalai`، model=`gpt-5.6-luna`، eligible=false، key_present=false، budget/rate=`0` و test_controls=false.
-- اجرای live بدون overlay/config کامل با exit=`1` و پیام actionable برای eligibility، file credential، budget و rate رد شد.
-- `compose.production.live.yaml` فقط در live، file secret را به `/run/secrets/avalai_api_key` mount می‌کند.
-- credential کاملاً synthetic با overlay و factory transport stub بارگذاری شد: `loaded_from_file=true`،
-  `stub_selected=true`، provider calls=`0` و test controls=false.
-- test rendering واقعی با `docker compose --env-file ... config --format json` ثابت کرد marker موجود فقط در host
-  env-file وارد container نمی‌شود، اما متغیرهای صریح map‌شده مقدار درست می‌گیرند.
+container موقت restore متوقف و حذف شد؛ سپس source DB متوقف و stack با `docker compose up -d --force-recreate --wait`
+بازسازی شد. هیچ `down --volumes` یا حذف volume اجرا نشد. runtime پس از cutover:
 
-هیچ AvalAI/OpenAI call، token، usage یا هزینه‌ای در این Phase وجود نداشت.
+- mount فقط `beforebuy_beforebuy_pgdata_v18 -> /var/lib/postgresql` و anonymous mount صفر؛
+- `SHOW data_directory=/var/lib/postgresql/18/docker`؛
+- published bindings دقیقاً `127.0.0.1:55439` و `127.0.0.1:58000`؛
+- readiness API در `http://127.0.0.1:58000/api/v1/health/ready` برابر `200` و `{"status":"ready"}`.
 
-## health host، proxy و CSRF
+برای اثبات persistence مستقل از container، DB و API یک بار دیگر با `--force-recreate` ساخته شدند. هر دو container ID
+عوض شدند، اما countها، ownership digest و session digest ثابت ماندند؛ mount همچنان named parent volume بود و
+readiness دوباره `200` شد.
 
-healthcheck دیگر `Host: localhost` ثابت نمی‌فرستد و از `BEFOREBUY_HEALTHCHECK_HOST` استفاده می‌کند. production settings
-خالی‌بودن، نبودن در `DJANGO_ALLOWED_HOSTS` و wildcard را fail closed رد می‌کند.
+## reconciliation تست‌های backend
 
-در runtime با host مصنوعی `rehearsal.beforebuy.test`:
+فرمان canonical از ریشه repository:
 
-- readiness با Host allowlisted برابر `200`؛
-- Host نامعتبر برابر `400`؛
-- `X-Forwarded-Proto=https` و secure redirect/proxy setting حفظ شد؛
-- cookieهای CSRF و session دارای `Secure` و `SameSite=Lax` بودند و session نیز `HttpOnly` بود؛
-- POST same-origin بدون CSRF token برابر `403`؛ flow معتبر CSRF در regressionهای backend پاس شد.
+```bash
+scripts/test-backend.sh
+```
 
-هیچ wildcard host، خاموش‌کردن validation یا تغییر gateway trust boundary انجام نشد.
+wrapper از working directory `backend/` و label `tests` استفاده می‌کند؛ در نتیجه package ریشهٔ `tests/e2e` وارد
+discovery Django نمی‌شود. روی macOS مسیر Docker Desktop CLI را در صورت وجود به `PATH` اضافه می‌کند.
 
-## verification اجراشده
+گزارش قدیمی `128 discovered, 125 passed, 1 skipped` اشتباه جمع ساده نبود. identifier دقیق skip:
 
-| فرمان/بررسی | نتیجه |
-|---|---|
-| focused production settings/Host tests | ۱۰/۱۰ پاس روی PostgreSQL |
-| rendered Compose behavior tests | ۳/۳ پاس |
-| backend canonical suite از `backend/` با dev venv | ۱۲۵ پاس، ۱ skip؛ ۱۲۸ test discovered |
-| Django system check | issue صفر |
-| `makemigrations --check --dry-run` | `No changes detected` |
-| Playwright seed قبل recreation | ۱ پاس |
-| Playwright owner read بعد recreation | ۱ پاس |
-| production image build و سه service `up --wait` | موفق و هر سه healthy |
-| provider activity | صفر call و صفر هزینه |
+```text
+setUpClass (tests.test_production_compose.ProductionComposeTests)
+reason: Docker CLI is required to render production Compose
+```
 
-دو اجرای نامعتبر evidence محسوب نشدند: اجرای host اولیه با port/password نادرست پیش از اتصال test DB متوقف شد؛ اجرای
-suite در image production به‌علت نبود dev-only `PyYAML` شش import error داشت. dependency توسعه به image production
-اضافه نشد و suite canonical با venv توسعه اجرا و پاس شد. `manage.py test` از repo root نیز به‌علت collision `tests/e2e`
-صفر test کشف می‌کند؛ working directory معتبر `backend/` است.
+این class سه test method داشت. هر سه در discovery برابر ۳ محسوب شدند، اما `SkipTest` در `setUpClass` فقط یک skip event
+ثبت کرد؛ بنابراین `128 - 3 = 125` method اجرا شد و یک class-level skip گزارش شد. «دو test باقی‌مانده» missing،
+deselected یا error نبودند؛ تفاوت حساب ناشی از جایگزین‌شدن سه method کشف‌شده با یک skip event بود.
 
-## gateهای باقی‌مانده
+اجرای تازه با wrapper و `-v 2`:
 
-- `T039`: live AvalAI evidence هفت case و review انسانی کامل؛ همچنان unchecked.
+| discovered | run | passed | skipped | failed | errors |
+|---:|---:|---:|---:|---:|---:|
+| 130 | 130 | 130 | 0 | 0 | 0 |
+
+افزایش ۱۲۸ به ۱۳۰ فقط دو test جدید development Compose است. هر سه test production Compose این بار واقعاً اجرا و
+پاس شدند؛ بنابراین skipped identifier در اجرای canonical تازه وجود ندارد. testهای جدید ابتدا روی mount قدیمی و
+bind بدون `host_ip` هر دو RED شدند، سپس پس از اصلاح هر دو GREEN شدند.
+
+## rollback
+
+مواد rollback عمداً نگه‌داری می‌شوند:
+
+- source واقعی و untouched:
+  `19a94ccdea7cc860ef2d58f4f7c453c7a0ec94dfef01765b57904a36d16e86ba`؛
+- named volume قدیمی و untouched: `beforebuy_beforebuy_pgdata`؛
+- dump محافظت‌شده و checksum بالا؛
+- destination فعال: `beforebuy_beforebuy_pgdata_v18`.
+
+برای rollback ابتدا `docker compose stop api db` اجرا شود. روی source یا destination فعال restore نکنید. dump را در
+یک named volume تازه با همان image digest restore، migration و fingerprintها را verify و سپس آن volume تازه را با
+override محلی Compose فعال کنید. source anonymous volume schema قبل از `0003/0004` دارد و نباید با code جاری مستقیم
+فعال شود. هیچ‌گاه `docker compose down --volumes` اجرا نکنید و backup را به Trash منتقل نکنید.
+
+## فایل‌ها و gateهای باقی‌مانده
+
+- `T039`: live AvalAI evidence هفت case و human semantic review کامل؛ همچنان unchecked.
 - clarification مکتوب provider دربارهٔ eligibility/upstream/data retention و credit بدون خرید.
-- target-host certificate/secret واقعی، systemd activation، monitoring و تصمیم صریح public deployment.
-- migration امن volume توسعهٔ موجود از anonymous PostgreSQL 18 parent به named volume؛ production اصلاح شده است.
-- هیچ full-product convergence یا public/live readiness ادعا نمی‌شود.
+- target-host certificate/secret واقعی، host cleanup schedule activation، monitoring و تصمیم صریح public release.
+- live AI call در این phase: صفر؛ provider cost: صفر.
+- deletion نامرتبط `test.txt` preserve و از commit Phase 6.2 خارج می‌شود.
 
-**Production configuration gaps corrected and locally verified; live AI and public release pending**
+**Development PostgreSQL migrated to the verified PostgreSQL 18 named-volume layout; live AI and public release remain pending.**

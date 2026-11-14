@@ -14,19 +14,20 @@ curl --fail http://127.0.0.1:58000/api/v1/session
 ```
 
 پورت‌های پیش‌فرض میزبان `58000` برای API و `55439` برای PostgreSQL هستند و با `API_HOST_PORT` و
-`POSTGRES_HOST_PORT` تغییر می‌کنند. API از Django development server استفاده می‌کند؛ این انتخاب فقط برای توسعه است.
+`POSTGRES_HOST_PORT` تغییر می‌کنند. هر دو port در development Compose صریحاً فقط روی `127.0.0.1` bind می‌شوند.
+API از Django development server استفاده می‌کند؛ این انتخاب فقط برای توسعه است.
 
 ## تست و migration
 
 ```bash
 POSTGRES_PORT=55439 .venv/bin/python backend/manage.py check --settings=config.settings.test
 POSTGRES_PORT=55439 .venv/bin/python backend/manage.py makemigrations --check --dry-run --settings=config.settings.test
-cd backend
-POSTGRES_PORT=55439 ../.venv/bin/python manage.py test tests --settings=config.settings.test
+scripts/test-backend.sh
 ```
 
-پس از اضافه‌شدن `tests/e2e` در M2، test label باید از working directory `backend/` اجرا شود تا با namespace ریشه
-تداخل نکند. اجرای `manage.py test tests` از ریشه اکنون عمداً command معتبر suite backend محسوب نمی‌شود.
+wrapper از ریشه به `backend/` می‌رود، environment توسعه را بدون تغییر label بارگذاری و فقط `backend/tests` را با
+`config.settings.test` اجرا می‌کند. این command با namespace ریشهٔ `tests/e2e` تداخل ندارد. در macOS، اگر Docker
+Desktop نصب باشد، مسیر CLI آن را به `PATH` اضافه می‌کند تا testهای rendered Compose به‌جای class-level skip اجرا شوند.
 race testها به PostgreSQL واقعی متصل‌اند و از `threading.Event` استفاده می‌کنند، نه sleep.
 
 ## live AI و کنترل هزینه
@@ -233,11 +234,36 @@ docker compose --project-name beforebuy-prod --env-file /etc/beforebuy/productio
 
 ## محدودیت‌های فعلی
 
+### volume توسعه و rollback Phase 6.2
+
+PostgreSQL توسعه با image دقیق `postgres@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29`
+اجرا می‌شود. `PGDATA=/var/lib/postgresql/18/docker` است؛ بنابراین Compose اکنون named volume
+`beforebuy_beforebuy_pgdata_v18` را روی `/var/lib/postgresql` mount می‌کند. source پیش از migration، anonymous volume
+`19a94ccdea7cc860ef2d58f4f7c453c7a0ec94dfef01765b57904a36d16e86ba` بود؛ named volume قدیمی
+`beforebuy_beforebuy_pgdata` نیز حذف نشده است.
+
+backup قبل cutover در مسیر محدود محلی زیر نگه‌داری می‌شود و نباید commit، منتقل به Trash یا حذف شود:
+
+```text
+/Users/mehdi/Backups/beforebuy/phase-6.2-20261115/beforebuy-development-pre-cutover.dump
+SHA-256: 76f733b802ef1e62ac482e8d6781a7b0d5ef00b745078bf5aa341edfbba7a4f4
+```
+
+directory با mode `0700` و dump با `0600` ساخته شده‌اند. rollback باید ابتدا writeها را با
+`docker compose stop api db` متوقف کند. source volume قدیمی را migrate یا overwrite نکنید. برای recovery، dump را
+در **یک named volume تازه** با همین image digest restore، `migrate --check` و fingerprintهای ownership/session/accounting
+را بررسی و سپس نام volume جدید را در یک override محلی Compose جایگزین کنید. هرگز روی volume فعال restore نکنید و
+`docker compose down --volumes` اجرا نکنید. source anonymous volume فقط fallback read-only/forensic است؛ چون schema آن
+پیش از migrationهای `0003/0004` است، با code جاری به‌عنوان database فعال استفاده نمی‌شود.
+
+در cutover ثبت‌شده، source دارای ۱۵۴ guest/session، ۲۹ analysis/report، feedback صفر و accounting row صفر بود؛
+orphan صفر و همهٔ ۱۵۴ session به owner موجود decode شدند. نبود accounting row یعنی authorization قابل reset وجود
+نداشت؛ migration هیچ allowance تازه‌ای ایجاد نکرد. restore مقصد همان countها و digestها را حفظ کرد، چهار migration
+را اعمال کرد و پس از recreation containerها نیز بدون anonymous volume ثابت ماند.
+
 - live adapter وجود دارد ولی evaluation واقعی و کیفیت فارسی/latency آن تا فراهم‌شدن gateها اندازه‌گیری نشده است.
 - cookie از دست‌رفته یا منقضی recovery و cross-device access ندارد.
 - `check --deploy` باید با `config.settings.production` و secretهای runtime اجرا شود؛ TLS در gateway خاتمه می‌یابد.
 - logging پیکربندی‌شده answer، session/CSRF و raw AI payload را ثبت نمی‌کند.
-- `compose.yaml` توسعه در baseline موجود برای PostgreSQL 18 هنوز mount قدیمی `/var/lib/postgresql/data` دارد و
-  container فعلی توسعه `PGDATA` را روی anonymous parent volume نگه می‌دارد. Phase 6.1 برای جلوگیری از جابه‌جایی
-  خودسرانهٔ دادهٔ توسعه فقط production را اصلاح کرد؛ پیش از اصلاح جداگانهٔ development باید dump/restore یا migration
-  رسمی volume برنامه‌ریزی و همان داده verify شود.
+- انتشار عمومی همچنان نیازمند certificate/secret واقعی target host، activation زمان‌بندی‌شده cleanup، monitoring و
+  تصمیم صریح release است؛ migration توسعه هیچ‌یک از این gateها یا `T039` را تغییر نمی‌دهد.

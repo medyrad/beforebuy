@@ -173,3 +173,13 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
 - health probe از `BEFOREBUY_HEALTHCHECK_HOST` صریح استفاده می‌کند. این host باید بدون wildcard عضو
   `DJANGO_ALLOWED_HOSTS` باشد؛ `Host: localhost` ثابت یا تضعیف host validation پذیرفته نیست.
 - rehearsal Phase 6.1 محلی و synthetic است؛ هیچ provider call، deployment عمومی یا تغییر gateهای T039 انجام نشد.
+
+## اصلاحات Phase 6.2 — development environment
+
+- PostgreSQL توسعه با همان image digest پین‌شدهٔ 18.1 باید named volume را روی parent رسمی
+  `/var/lib/postgresql` mount کند؛ portهای قابل‌تنظیم API و database فقط روی `127.0.0.1` منتشر می‌شوند.
+- data موجود فقط با توقف write، dump منطقی محافظت‌شده، restore در named volume تازه و مقایسهٔ
+  row/ownership/session/accounting منتقل می‌شود. source anonymous volume، named volume قدیمی و backup برای rollback
+  حفظ می‌شوند؛ حذف volume یا restore روی volume فعال مجاز نیست.
+- فرمان canonical backend از ریشه `scripts/test-backend.sh` است و label `tests` را از working directory backend
+  اجرا می‌کند تا با `tests/e2e` collision نداشته باشد. live AI، public release و `T039` با این اصلاح تغییری نمی‌کنند.

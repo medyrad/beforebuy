@@ -181,6 +181,19 @@ description: "Dependency-ordered implementation tasks for Purchase Decision Anal
 - [x] T061 **[M4]** Run focused and affected regressions, record mock/live configuration and non-localhost Host/CSRF/proxy
   evidence, update operations/handoff, and preserve `T039` plus public/live release gates as incomplete.
 
+### Phase 8.2: Development environment corrections — Phase 6.2
+
+- [x] T062 **[M4]** Add a failing rendered-Compose test for the PostgreSQL 18 parent-volume destination and explicit
+  loopback publication of the configurable development database/API ports; add one root-level canonical backend test
+  command that targets only `backend/tests`.
+- [x] T063 **[M4]** Quiesce development writes, capture a protected logical backup of the existing PostgreSQL database,
+  restore it into a new named PostgreSQL 18 parent volume, and verify migrations, row-count fingerprints, ownership,
+  sessions, feedback and AI accounting without exposing record contents.
+- [x] T064 **[M4]** Switch development Compose to the verified new named volume and loopback bindings, recreate containers
+  without deleting volumes, and prove the restored records, named-volume mount, persistence and a small API smoke survive.
+- [x] T065 **[M4]** Run the canonical backend suite with verbose skip evidence, reconcile discovered versus executed counts,
+  and update startup, rollback, operations and handoff documentation while keeping `T039` and public-release gates open.
+
 ---
 
 ## Dependencies and execution order
@@ -192,7 +205,7 @@ Foundation → T016/T017/T018/T019/T020 → T021/T022/T023/T024/T025
 US1 backend → T028→T029 and T031→T032 → T035→T036→T037
 M1 complete → M2 (T026/T027/T030/T033/T034)
 M1 complete + explicit provider decisions → M3 (T038–T040) → review corrections (T044–T048) → Iran adaptation (T049–T052) → accounting corrections (T053–T057)
-M1+M2 implementation baseline → M4 packaging/local rehearsal (T041–T043) → configuration corrections (T058–T061)
+M1+M2 implementation baseline → M4 packaging/local rehearsal (T041–T043) → production configuration corrections (T058–T061) → development environment corrections (T062–T065)
 T039 live evidence + provider/human gates + M4 packaging evidence → public-release readiness review
 ```
 
@@ -219,3 +232,5 @@ T039 live evidence + provider/human gates + M4 packaging evidence → public-rel
 5. Complete verified Phase 5.1 corrections while leaving T039 open until real live/human evidence؛ M4 requires later authorization.
 6. Phase 5.2 does not reactivate direct OpenAI, purchase credit, create an account, deploy or implement M4.
 7. Phase 6 implements T041–T043 only in an isolated local rehearsal; it neither performs a public deployment nor closes T039.
+8. Phase 6.2 migrates only the existing development database through a protected logical backup into a new named
+   PostgreSQL 18 parent volume; source volumes and rollback backup remain intact, and no provider or public deployment runs.

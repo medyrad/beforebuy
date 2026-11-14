@@ -4,7 +4,7 @@
 
 ## وضعیت فعلی
 
-**Phase 6.1 — production configuration corrections** محلی پیاده و rehearse شده است. Django/DRF API، engine قطعی،
+**Phase 6.2 — development environment corrections** محلی پیاده و verify شده است. Django/DRF API، engine قطعی،
 persistence، رابط React فارسی/RTL، history، browser journey، adapter محدود AvalAI و بستهٔ production سه‌سرویسی موجودند.
 mode پیش‌فرض همچنان mock است؛ live evaluation، target-host release gates و deployment عمومی pending هستند.
 
@@ -34,12 +34,16 @@ docker compose run --rm api python backend/manage.py migrate --noinput
 docker compose up -d --wait
 curl --fail http://127.0.0.1:58000/api/v1/session
 
+# از ریشهٔ repository؛ فقط backend/tests را اجرا می‌کند
+scripts/test-backend.sh
+
 cd frontend
 npm ci
 npm run dev -- --host 127.0.0.1
 ```
 
 رابط در `http://127.0.0.1:5173/` باز می‌شود و `/api` را از proxy هم‌origin به backend می‌فرستد.
+پورت‌های قابل‌تنظیم API و PostgreSQL توسعه فقط روی `127.0.0.1` منتشر می‌شوند.
 
 smoke کامل cookie/CSRF و فرمان‌های تست/frontend در
 [`quickstart.md`](specs/001-purchase-decision-analysis/quickstart.md) ثبت شده‌اند. output عادی فعلی mock با

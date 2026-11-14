@@ -11,9 +11,9 @@ services:
       timeout: 3s
       retries: 20
     ports:
-      - "${POSTGRES_HOST_PORT:-55439}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-55439}:5432"
     volumes:
-      - beforebuy_pgdata:/var/lib/postgresql/data
+      - beforebuy_pgdata_v18:/var/lib/postgresql
 
   api:
     build:
@@ -32,10 +32,11 @@ services:
     volumes:
       - .:/app
     ports:
-      - "${API_HOST_PORT:-58000}:8000"
+      - "127.0.0.1:${API_HOST_PORT:-58000}:8000"
     depends_on:
       db:
         condition: service_healthy
 
 volumes:
-  beforebuy_pgdata:
+  beforebuy_pgdata_v18:
+    name: beforebuy_beforebuy_pgdata_v18
