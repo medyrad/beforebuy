@@ -1,5 +1,26 @@
 # خلاصه محصول
 
+## جهت مصوب Phase 7 — Personalized Shopping Copilot
+
+Beforebuy اکنون به‌عنوان دستیار شخصی خرید چنددسته‌ای تعریف می‌شود: کاربر در گفت‌وگوی فارسی/RTL مسئله، بودجه،
+کاربرد، محدودیت و recipient را روشن می‌کند؛ سپس پژوهش on-demand و محدود، evidence قابل‌ردیابی و «میز انتخاب»
+برای مقایسهٔ گزینه‌ها دریافت می‌کند. هدف همچنان informed choice و کاهش ابهام است، نه افزایش خرید یا بودجه.
+
+- تجربهٔ اصلی conversation-first است و پرسش‌نامهٔ ثابت تلفن feature 001 مسیر legacy محسوب می‌شود.
+- پوشش UI چنددسته‌ای با data readiness هر category یکی نیست؛ electronics، home appliance و sports/fashion فقط
+  سه contract/fixture نماینده‌اند تا هرکدام source gate مستقل داشته باشند.
+- Choice Desk ranking، total payable cost، hard constraint، tradeoff، evidence coverage و unknown را کنار هم نشان
+  می‌دهد. arithmetic/filter/rank قطعی از rule نسخه‌دار است و LLM authoritative نیست.
+- memory فقط opt-in است؛ preference صریح، inferred candidate و self/gift/household context جدا می‌مانند.
+- runtime جدید direct OpenAI Responses و user-owned API key را هدف می‌گیرد، اما key eligibility یا region support
+  را ثابت نمی‌کند. با کاربران/backend ایران activation تا پشتیبانی رسمی blocked است.
+- research bounded است؛ bypass، crawl انبوه، checkout، affiliate optimization و price alert خارج scope هستند.
+- معماری React + Vite، Django/DRF، PostgreSQL، same-origin، Compose و تک‌سرور حفظ می‌شود.
+
+Specification canonical این جهت در `specs/002-personalized-shopping-copilot/` است. feature 001 و داده/شواهد آن تا
+تصمیم cutover حفظ می‌شوند و `T039` آن همچنان pending است. Phase 7 فقط specification/planning است؛ implementation
+شروع نشده است.
+
 ## مسئله و ارزش پیشنهادی
 
 Purchase Regret Predictor یک دستیار مستقل برای تصمیم خرید است. پرسش محوری آن این است: «آیا این خرید با نیازها و شرایط من منطقی است؟» ارزش محصول در افزایش خرید نیست؛ در روشن‌کردن تناسب نیاز، فشار بودجه، توجیه تعویض دستگاه فعلی، نگرانی‌ها، ابهام‌ها و گزینه‌های جایگزین است.
@@ -18,7 +39,7 @@ Purchase Regret Predictor یک دستیار مستقل برای تصمیم خر�
 4. گزارش تصمیم‌یار توضیح‌پذیر را می‌بیند.
 5. بعداً تحلیل‌های قبلی را باز می‌کند و بازخورد ساده‌ی مفیدبودن می‌دهد.
 
-## MVP پیشنهادی
+## MVP تاریخی feature 001
 
 - فقط تلفن همراه.
 - رابط فارسی با پشتیبانی RTL و دسترس‌پذیری.
@@ -60,7 +81,7 @@ Purchase Regret Predictor یک دستیار مستقل برای تصمیم خر�
 - داده شخصی باید حداقلی باشد؛ فقط latest required answer/report state نگه‌داری می‌شود و logical revision ID
   ownership نتیجه و rating را روشن می‌کند. backup lifecycle پیش از production readiness باید مشخص شود.
 
-## خارج از دامنه اولیه
+## خارج از دامنهٔ feature 001 (historical)
 
 - فروشگاه، checkout، پرداخت و affiliate monetization.
 - scraping خودکار فروشگاه‌ها.

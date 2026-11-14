@@ -99,3 +99,14 @@ license کامل Playwright که skill آن در repository نگهداری می�
 code-intelligence در Phase 4 نصب نشد. vertical slice اکنون موجود است، اما benchmark حداکثر دو candidate همچنان
 یک ارزیابی جدا با taskهای یکسان و native `rg` است. live-AI pending است؛ deployment tooling در Phase 6 trigger و فقط
 برای بسته‌بندی/rehearsal محلی استفاده شد.
+
+## Phase 7 design and source-planning inventory
+
+| Need | Selected tool/skill | Alternatives | Evidence | Version/commit | Install phase | Verification | Reason for deferral |
+|---|---|---|---|---|---|---|---|
+| Choice Desk visual direction | Anthropic `frontend-design` project-local + project RTL overlay | Anthropic `web-artifacts-builder`؛ inactive Vercel snapshots | official skill is docs-only and Apache-2.0; artifact builder carries React 18/Parcel/Tailwind/shadcn stack overlap. No maintainer performance claim was treated as measured quality. | `1780c5e5a552fd4d1c9d6a7b0cab26b0c2bef064`; SHA256 `SKILL.md=d91970639e9f5c37682ac7ab60094d35f1c7c1f38d731bd56396563aee10c1d3` | Phase 7 planning | frontmatter parsed، license file present، project path installed؛ current-turn skill catalog predates install, so native catalog discovery is pending next session | actual UI influence/browser quality waits for Milestone C implementation |
+| Source feasibility | bounded `curl` probes + official pages; no crawler installed | browser fleet، scraping service، OpenAI built-in web search as market source | robots/page response measured for limited domains and separately recorded from indexed documentation; Digikala/Torob timeout and sports extraction gap remain explicit | observations 2026-11-15 | Phase 7 planning only | status/content-type/bytes for successful probes in `source-feasibility.md`; no corpus or large crawl | fetch/extractor dependencies wait for approved allowlist and Milestone B |
+| New AI runtime direction | no package installed; plan direct OpenAI Responses using existing seam | AvalAI legacy adapter، generic multi-provider framework، self-hosted model | official Responses/streaming/vision/data/key/pricing/regions docs; Iran unsupported gate remains. No live call or Persian quality measurement. | exact model/provider SDK revalidation deferred | Milestone D | documentation/contract only؛ call count zero | install/activation deferred until model capability, license, region and explicit spend gates |
+
+Installed files are `.agents/skills/frontend-design/SKILL.md` and `LICENSE.txt`; upstream license is Apache-2.0. The
+project overlay forbids introducing Next.js, Tailwind/shadcn or Vercel deployment requirements merely from design guidance.

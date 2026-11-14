@@ -1,0 +1,66 @@
+openapi: 3.1.0
+info: {title: Beforebuy Shopping Copilot API, version: 0.1.0-planned}
+servers: [{url: /api}]
+paths:
+  /session:
+    get: {summary: Bootstrap guest/CSRF context, responses: {'200': {description: Ready}}}
+  /conversations:
+    get: {summary: List owner conversations, responses: {'200': {description: List}}}
+    post: {summary: Create conversation, responses: {'201': {description: Created}, '403': {description: CSRF rejected}}}
+  /conversations/{conversationId}:
+    get: {summary: Read authoritative state, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'200': {description: State}, '404': {description: Unavailable}}}
+    delete: {summary: Delete and cancel, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'204': {description: Deleted}}}
+  /conversations/{conversationId}/messages:
+    post:
+      summary: Submit message/start bounded operation
+      parameters: [{$ref: '#/components/parameters/ConversationId'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text, expected_brief_revision]
+              properties:
+                text: {type: string, minLength: 1, maxLength: 8000}
+                upload_ids: {type: array, maxItems: 3, items: {type: string, format: uuid}}
+                expected_brief_revision: {type: integer, minimum: 0}
+      responses: {'202': {description: Accepted}, '409': {description: Stale}, '422': {description: Invalid}}
+  /uploads:
+    post:
+      summary: Upload a bounded owner-scoped image for a conversation
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [conversation_id, image]
+              properties:
+                conversation_id: {type: string, format: uuid}
+                image: {type: string, format: binary}
+      responses: {'201': {description: Validated upload reference}, '413': {description: Too large}, '415': {description: Unsupported content}, '422': {description: Invalid image}}
+  /conversations/{conversationId}/research:
+    post: {summary: Start explicit bounded research, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'202': {description: Accepted}, '409': {description: Brief not ready}, '422': {description: Source unavailable}}}
+  /operations/{operationId}/events:
+    get:
+      summary: Replay/follow SSE
+      parameters: [{name: operationId, in: path, required: true, schema: {type: string, format: uuid}}, {name: Last-Event-ID, in: header, required: false, schema: {type: string}}]
+      responses: {'200': {description: SSE per stream-events.md, content: {text/event-stream: {schema: {type: string}}}}, '404': {description: Unavailable}}
+  /operations/{operationId}/cancel:
+    post: {summary: Cancel operation, parameters: [{name: operationId, in: path, required: true, schema: {type: string, format: uuid}}], responses: {'202': {description: Requested}, '409': {description: Terminal}}}
+  /conversations/{conversationId}/choices/current:
+    get: {summary: Read Choice Desk, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'200': {description: ChoiceSet}, '404': {description: Missing}}}
+  /memory:
+    get: {summary: Review preferences, responses: {'200': {description: Entries}}}
+    delete: {summary: Disable/delete memory, responses: {'204': {description: Deleted}}}
+  /credentials/openai:
+    put: {summary: Replace write-only user key, responses: {'204': {description: Encrypted}, '422': {description: Invalid}}}
+    delete: {summary: Delete key, responses: {'204': {description: Deleted}}}
+  /credentials/openai/status:
+    get: {summary: Masked config/eligibility only, responses: {'200': {description: Status}}}
+  /export:
+    get: {summary: Export owner conversation, current brief, citations and confirmed memory without credentials, responses: {'200': {description: Minimal JSON export}}}
+components:
+  parameters:
+    ConversationId: {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}

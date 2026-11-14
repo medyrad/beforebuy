@@ -130,6 +130,30 @@ scaffold و implementation فقط برای M2 را می‌دهد؛ production de
 questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchase-decision-analysis/` مستند شده‌اند.
 تایید specification با اجرای implementation یکی نیست.
 
+## تصمیم‌های Phase 7 — Shopping Copilot
+
+- direction جدید product lead یک shopping copilot شخصی، conversation-first و چنددسته‌ای با bounded research و
+  Choice Desk Concept 2 است. feature canonical تازه `002-personalized-shopping-copilot` است و feature 001 overwrite
+  نمی‌شود.
+- milestoneها A conversation، B evidence/source، C Choice Desk، D memory/OpenAI readiness و E operations/pilot gate
+  هستند. Phase 7 planning-only است؛ همه taskهای implementation باز می‌مانند.
+- stack و topology موجود حفظ می‌شود. SSE transport پیشنهادی برای server-to-browser event است؛ WebSocket/queue فقط
+  با نیاز اندازه‌گیری‌شده و تصمیم تازه مجاز است.
+- پژوهش فقط on-demand و bounded است. robots observation، terms، response واقعی، extraction، variant identity،
+  freshness و rate/size limits per domain gate جدا دارند؛ timeout یا search snippet permission/extraction نیست.
+- direct OpenAI Responses تنها runtime AI feature 002 است و fallback به AvalAI ندارد. user-owned key secret/billing
+  ownership را تعیین می‌کند اما با users/backend ایران، region eligibility فعلاً تأیید نشده و live activation fail
+  closed می‌ماند. Phase 7 live call و provider cost ندارد.
+- memory default-off است؛ فقط preference تأییدشده reusable می‌شود. candidate inference و context self/gift/household
+  جدا هستند. credential فقط backend-side، encrypted/masked/deleteable است؛ library/key operations در milestone D
+  پس از evaluation انتخاب می‌شود.
+- `COPILOT-RANK-v0.1` direction قطعی hard filter، total cost، versioned criteria، explicit missing evidence و stable
+  ties را تعریف می‌کند. LLM fact/price/arithmetic/rank authoritative نمی‌سازد.
+- retention entityهای جدید هنوز تصمیم نهایی نیست. 90 روز conversation فقط proposal در data model است و قبل از
+  implementation نیازمند privacy/backup decision است؛ policy feature 001 خودکار تعمیم نمی‌یابد.
+- T039 feature 001 و public/live gates با specification جدید complete نمی‌شوند. cutover/legacy retirement تصمیم‌های
+  جدا و reversible هستند.
+
 ## تصمیم‌های Phase 5.2 — provider ایران
 
 - context قطعی: کاربران اولیه و backend در ایران هستند؛ قیمت و بودجهٔ خرید همچنان تومان است.

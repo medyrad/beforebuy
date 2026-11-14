@@ -1,9 +1,9 @@
 ---
 name: purchase-regret-project
-description: Keep work on Purchase Regret Predictor aligned with its product decisions, Spec Kit artifacts, phase boundary, and evidence requirements. Use for any substantive task in this repository.
+description: Keep Beforebuy work aligned with its active Shopping Copilot direction, preserved legacy feature, Spec Kit artifacts, phase boundaries, and evidence requirements. Use for substantive tasks in this repository.
 ---
 
-# Purchase Regret Project
+# Beforebuy Project Context
 
 Before acting:
 
@@ -15,6 +15,11 @@ Before acting:
    planning or task system.
 5. Confirm the authorized phase and keep changes inside it. Escalate consequential unresolved product
    decisions instead of inventing them.
+
+Feature `002-personalized-shopping-copilot` is the current product direction. Feature `001-purchase-decision-analysis`
+is preserved legacy evidence and may coexist until an explicit cutover; do not rewrite its history or mark its `T039`
+complete from work on feature 002. For feature 002, keep conversation, bounded research, Choice Desk, opt-in memory,
+direct OpenAI eligibility, and source readiness as separate gates. A user-owned key does not bypass region support.
 
 When changing the project, record consequential decisions in `docs/decisions.md` and update every
 affected Spec Kit artifact. Use the relevant domain and verification skills. Report only checks that
@@ -34,8 +39,11 @@ For the React + TypeScript + Vite client:
 - Treat whole-toman inputs as text with numeric input hints. Preserve the distinction between budget
   `0` and explicit unknown, retain user input after validation errors, and show actionable Persian errors.
 - Do not reproduce the rubric or infer outcomes in the browser. The backend report is authoritative;
-  client logic may only control presentation and the documented questionnaire flow.
+  client logic may only control presentation and the documented flow. For Choice Desk, deterministic ranking and
+  evidence publication remain backend-authoritative; streamed deltas are provisional until finalized.
 - Do not persist answers or ownership data in local/session storage. Use the real same-origin guest API,
   its CSRF cookie/header contract, and abort or ignore stale requests.
 - Scope upstream frontend guidance to client-side React/Vite. Do not introduce Next.js, SSR/RSC,
   server actions, Vercel services, or deployment requirements.
+- When using the project-local `frontend-design` skill, apply `choice-desk-design.md` as the mandatory Persian/RTL,
+  accessibility, evidence, reduced-motion, and existing-stack overlay. Do not add its rejected artifact-builder stack.
