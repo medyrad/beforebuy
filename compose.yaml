@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:18.1-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-beforebuy}
+      POSTGRES_USER: ${POSTGRES_USER:-beforebuy}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-beforebuy-development}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "${POSTGRES_HOST_PORT:-55439}:5432"
+    volumes:
+      - beforebuy_pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    command: ["python", "backend/manage.py", "runserver", "0.0.0.0:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; connection = socket.create_connection(('127.0.0.1', 8000), 2); connection.close()"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    volumes:
+      - .:/app
+    ports:
+      - "${API_HOST_PORT:-58000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  beforebuy_pgdata:

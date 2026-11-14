@@ -1,0 +1,420 @@
+openapi: 3.1.0
+info:
+  title: BeforeBuy Purchase Decision API
+  version: 0.1.0-planning
+  description: >-
+    Phase 3 canonical contract. Same-origin guest API; every unsafe operation is
+    explicitly protected by Django CSRF middleware/decorators for anonymous guests.
+servers:
+  - url: /api/v1
+tags:
+  - name: Session
+  - name: Analyses
+  - name: Feedback
+paths:
+  /session:
+    get:
+      tags: [Session]
+      summary: Bootstrap an opaque guest context and CSRF cookie
+      operationId: bootstrapSession
+      responses:
+        '200':
+          description: Guest context and CSRF cookie are available; identity data is not returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [expires_at]
+                properties:
+                  expires_at: { type: string, format: date-time }
+              example: { expires_at: '2027-02-12T08:00:00Z' }
+  /analyses:
+    get:
+      tags: [Analyses]
+      summary: List active analyses owned by the current guest
+      operationId: listAnalyses
+      responses:
+        '200':
+          description: Newest first; expired/deleted/foreign records are absent.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/AnalysisSummary' }
+    post:
+      tags: [Analyses]
+      summary: Validate, evaluate and atomically persist the first displayable report
+      operationId: createAnalysis
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AnalysisInput' }
+            example:
+              product_label: Pixel 10
+              price_toman: '45000000'
+              budget_toman: '50000000'
+              answers:
+                Q-001: SERIOUS_PROBLEM
+                Q-002: SOLVE_MAJOR_LIMIT
+                Q-003: [CALLS_MESSAGES, PHOTO_VIDEO]
+                Q-004: WITHIN_2_WEEKS
+                Q-006: [ACCEPTED_TARGET_TRADEOFFS]
+                F-001: باتری خاموش می‌شود و تماس ضروری قطع می‌شود
+                F-003: NO_INFORMATION
+      responses:
+        '201':
+          description: Success or clearly labeled rule-based limited report persisted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Analysis' }
+              example:
+                id: 2e0eb18c-20dd-46c4-81bf-0ecb39ec33a2
+                input_revision: 1
+                product_label: Pixel 10
+                price_toman: 45000000
+                budget_toman: 50000000
+                created_at: '2026-11-14T08:00:00Z'
+                expires_at: '2027-02-12T08:00:00Z'
+                report:
+                  report_revision_id: c64311ce-5902-4626-bbe3-529e20056c9d
+                  rubric_id: PDA-CAT-v0.3
+                  mode: RULE_BASED_LIMITED
+                  primary_outcome: PHONE_PURCHASE_JUSTIFIED_WITHIN_BUDGET
+                  dimensions:
+                    budget: WITHIN_BUDGET
+                    justification: JUSTIFICATION_SUPPORTED
+                    target_fit: TARGET_FIT_UNVERIFIED
+                    tradeoff: NOT_REQUIRED
+                  matched_rule_ids: [BUD-01, JUS-04, FIT-03, TRD-03, OUT-08]
+                  evidence:
+                    - { id: ev-q001, type: CURRENT_DEVICE_STATE, source_id: Q-001, value: SERIOUS_PROBLEM, attribution: USER_REPORTED }
+                  unknowns: [TARGET_MODEL_CAPABILITY]
+                  actions: [VERIFY_TARGET_CAPABILITY]
+                  headline_fa: خرید یا تعویض گوشی با توجه به وضعیت فعلی قابل توجیه است و قیمت در بودجه شماست؛ مناسب‌بودن این مدل هنوز تأیید نشده است.
+                  explanation_blocks: []
+                  feedback: null
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '503':
+          description: No displayable deterministic/limited report could be produced; nothing persisted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /analyses/{analysis_id}:
+    parameters:
+      - $ref: '#/components/parameters/AnalysisId'
+    get:
+      tags: [Analyses]
+      summary: Read an active owned analysis
+      operationId: getAnalysis
+      responses:
+        '200':
+          description: Current latest state only.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Analysis' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Analyses]
+      summary: Replace the latest normalized input and publish a recomputed current report
+      operationId: updateAnalysis
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/AnalysisInput'
+                - type: object
+                  required: [expected_input_revision]
+                  properties:
+                    expected_input_revision: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: New input revision and its current report.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Analysis' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+    delete:
+      tags: [Analyses]
+      summary: Permanently remove an active owned analysis and current feedback
+      operationId: deleteAnalysis
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '204': { description: Removed from active storage; backup caveat is deployment-defined. }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /analyses/clear:
+    post:
+      tags: [Analyses]
+      summary: Delete every active analysis owned by the current guest
+      operationId: clearAnalyses
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      responses:
+        '200':
+          description: Guest epoch was atomically advanced and current analyses deleted; older initial creates cannot publish.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [deleted_count]
+                properties:
+                  deleted_count: { type: integer, minimum: 0 }
+        '403': { $ref: '#/components/responses/CsrfError' }
+  /analyses/{analysis_id}/reanalysis:
+    post:
+      tags: [Analyses]
+      summary: Retry report generation against the unchanged current input revision
+      operationId: reanalyzeAnalysis
+      parameters:
+        - $ref: '#/components/parameters/AnalysisId'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_input_revision, expected_report_revision_id]
+              properties:
+                expected_input_revision: { type: integer, minimum: 1 }
+                expected_report_revision_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Identical canonical output preserves revision/rating; visible or mode change replaces and clears rating.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Analysis' }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+  /analyses/{analysis_id}/feedback:
+    put:
+      tags: [Feedback]
+      summary: Create or replace the optional usefulness rating for the current report
+      operationId: putFeedback
+      parameters:
+        - $ref: '#/components/parameters/AnalysisId'
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [report_revision_id, rating]
+              properties:
+                report_revision_id: { type: string, format: uuid }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+            example: { report_revision_id: c64311ce-5902-4626-bbe3-529e20056c9d, rating: 4 }
+      responses:
+        '200':
+          description: Current rating.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Feedback' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+    delete:
+      tags: [Feedback]
+      summary: Remove the optional rating for the current report
+      operationId: deleteFeedback
+      parameters:
+        - $ref: '#/components/parameters/AnalysisId'
+        - $ref: '#/components/parameters/CsrfToken'
+        - name: report_revision_id
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Rating removed or already absent for this current revision. }
+        '403': { $ref: '#/components/responses/CsrfError' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/RevisionConflict' }
+components:
+  parameters:
+    AnalysisId:
+      name: analysis_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CsrfToken:
+      name: X-CSRFToken
+      in: header
+      required: true
+      schema: { type: string }
+      description: Token paired with the same-origin Django CSRF cookie.
+  responses:
+    ValidationError:
+      description: Input validation failed; no silent correction or report persistence.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: ورودی‌ها را اصلاح کنید.
+              field_errors:
+                price_toman: [مبلغ را به‌صورت عدد صحیح مثبت تومان وارد کنید؛ نمونه ۱۲٬۰۰۰٬۰۰۰]
+    CsrfError:
+      description: Missing or invalid same-origin CSRF proof.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Missing, foreign-owned, deleted or expired resources share this response.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example: { error: { code: NOT_FOUND, message: این تحلیل در دسترس نیست. } }
+    RevisionConflict:
+      description: The request targets an input or report revision that is no longer current.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+          example:
+            error:
+              code: REVISION_CONFLICT
+              message: نسخه تحلیل تغییر کرده است؛ تازه‌ترین نسخه را دریافت کنید.
+              current_input_revision: 3
+  schemas:
+    AnalysisInput:
+      type: object
+      additionalProperties: false
+      required: [product_label, price_toman, budget_toman, answers]
+      properties:
+        product_label: { type: string, minLength: 2, maxLength: 120 }
+        price_toman:
+          oneOf:
+            - { type: integer, minimum: 1 }
+            - { type: string, description: Persian/Latin whole-toman input validated by VAL-01 }
+        budget_toman:
+          oneOf:
+            - { type: integer, minimum: 0 }
+            - { type: string, description: Persian/Latin whole-toman input validated by VAL-02 }
+            - { type: 'null', description: Explicit UNKNOWN only }
+        answers:
+          type: object
+          description: Schema-versioned Q-001..Q-006 and zero to three triggered F-001..F-003 values.
+          additionalProperties: true
+    AnalysisSummary:
+      type: object
+      required: [id, product_label, primary_outcome, mode, created_at, expires_at]
+      properties:
+        id: { type: string, format: uuid }
+        product_label: { type: string }
+        primary_outcome: { $ref: '#/components/schemas/PrimaryOutcome' }
+        mode: { $ref: '#/components/schemas/ReportMode' }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+    Analysis:
+      type: object
+      required: [id, input_revision, product_label, price_toman, budget_toman, created_at, expires_at, report]
+      properties:
+        id: { type: string, format: uuid }
+        input_revision: { type: integer, minimum: 1 }
+        product_label: { type: string }
+        price_toman: { type: integer, minimum: 1 }
+        budget_toman: { type: [integer, 'null'], minimum: 0 }
+        answers: { type: object }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        report: { $ref: '#/components/schemas/Report' }
+    Report:
+      type: object
+      required: [report_revision_id, rubric_id, mode, primary_outcome, dimensions, matched_rule_ids, evidence, unknowns, actions, headline_fa, explanation_blocks, feedback]
+      properties:
+        report_revision_id: { type: string, format: uuid }
+        rubric_id: { type: string, const: PDA-CAT-v0.3 }
+        mode: { $ref: '#/components/schemas/ReportMode' }
+        primary_outcome: { $ref: '#/components/schemas/PrimaryOutcome' }
+        dimensions:
+          type: object
+          required: [budget, justification, target_fit, tradeoff]
+          properties:
+            budget: { enum: [WITHIN_BUDGET, ABOVE_BUDGET, BUDGET_UNKNOWN] }
+            justification: { enum: [JUSTIFICATION_SUPPORTED, DISCRETIONARY_CLEAR, WEAK_OR_NONE, JUSTIFICATION_UNKNOWN, CONTRADICTORY] }
+            target_fit: { enum: [TARGET_FIT_UNVERIFIED, USER_REPORTED_SUPPORT, USER_REPORTED_MISMATCH] }
+            tradeoff: { enum: [ACKNOWLEDGED, UNRESOLVED, NOT_REQUIRED] }
+        matched_rule_ids: { type: array, items: { type: string }, uniqueItems: true }
+        evidence: { type: array, items: { $ref: '#/components/schemas/Evidence' } }
+        unknowns: { type: array, items: { type: string }, uniqueItems: true }
+        actions: { type: array, items: { type: string }, uniqueItems: true }
+        headline_fa: { type: string }
+        explanation_blocks:
+          type: array
+          items:
+            type: object
+            required: [text_fa, evidence_ids, rule_ids]
+            properties:
+              text_fa: { type: string }
+              evidence_ids: { type: array, items: { type: string } }
+              rule_ids: { type: array, items: { type: string } }
+        feedback:
+          oneOf:
+            - { $ref: '#/components/schemas/Feedback' }
+            - { type: 'null' }
+    Evidence:
+      type: object
+      additionalProperties: false
+      required: [id, type, source_id, value, attribution]
+      properties:
+        id: { type: string }
+        type: { type: string }
+        source_id: { type: string, pattern: '^(PC|Q|F)-[0-9]{3}$' }
+        value: {}
+        attribution:
+          enum: [USER_REPORTED, DETERMINISTICALLY_DERIVED, VERIFIED_EXTERNAL, UNKNOWN]
+    Feedback:
+      type: object
+      required: [report_revision_id, report_mode, rating]
+      properties:
+        report_revision_id: { type: string, format: uuid }
+        report_mode: { $ref: '#/components/schemas/ReportMode' }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+    ReportMode:
+      type: string
+      enum: [AI_ASSISTED_SUCCESS, MOCK_ASSISTED, RULE_BASED_LIMITED]
+    PrimaryOutcome:
+      type: string
+      enum:
+        - BUDGET_MISMATCH
+        - INSUFFICIENT_CONTEXT
+        - RECONSIDER_OR_WAIT
+        - PHONE_PURCHASE_JUSTIFIED_BUDGET_UNKNOWN
+        - DISCRETIONARY_CHOICE_BUDGET_UNKNOWN
+        - PHONE_PURCHASE_JUSTIFIED_WITHIN_BUDGET
+        - DISCRETIONARY_CHOICE_WITHIN_BUDGET
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+            field_errors:
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: string }
+            current_input_revision: { type: integer, minimum: 1 }

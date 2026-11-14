@@ -1,0 +1,118 @@
+# ثبت تصمیم‌ها
+
+این سند چهار وضعیت را جدا نگه می‌دارد. جابه‌جایی هر مورد بین بخش‌ها باید با تصمیم صریح و به‌روزرسانی specificationهای متاثر انجام شود.
+
+## تصمیم‌های تاییدشده توسط کاربر
+
+- frontend با React.
+- backend با Django.
+- deployment به‌صورت Dockerized.
+- Spec-Driven Development با GitHub Spec Kit رسمی.
+- استفاده از مهارت مرتبط برای هر دسته کار substantive.
+- پرهیز از overengineering و هدف‌گیری deployment کم‌هزینه و قابل نگهداری.
+- Spec Kit تنها مالک workflow مربوط به SDD است.
+- دامنه Phase 0 فقط آماده‌سازی workflow و پایه‌های lean محصول است؛ application در این فاز ساخته نمی‌شود.
+
+## جهت supplied by product lead برای first slice
+
+این موارد از prompt هماهنگ‌کننده Phase 1 آمده‌اند و finding حاصل از user research نیستند:
+
+- category اولیه تلفن همراه و interface اولیه فارسی/RTL است.
+- access به‌صورت guest-first و بدون account اجباری است.
+- history در scope اولیه فقط در همان browser قابل دسترسی است؛ کاربر می‌تواند یک analysis یا تمام history
+  خود را حذف کند.
+- cross-device recovery و public report sharing در first slice وجود ندارد.
+- intended product و approximate price به‌صورت دستی و با واحد تومان وارد می‌شوند.
+- جهت اولیه questionnaire بازه ۵ تا ۸ core question و حداکثر سه conditional follow-up بود؛ اصلاح Phase 1.1
+  آن را به شش core question و یک pool واحد حداکثر سه follow-up نهایی کرد.
+- numeric score پیش از review rubric پیاده‌سازی نمی‌شود.
+- mock AI فقط برای development/test است و real AI integration پیش از live-ready بودن MVP الزامی است.
+- model name و price به‌تنهایی evidence مشخصات فنی، market value یا competitive price نیستند.
+
+## تصمیم‌های product lead در Phase 1.1
+
+این تصمیم‌ها مستقیماً از prompt اصلاح محصول آمده‌اند و finding پژوهشی نیستند:
+
+- retention pilot برابر ۹۰ روز از اولین report persistشده و non-sliding است. visit، feedback، retry و edit
+  همان analysis آن را reset نمی‌کنند؛ active-storage purge حداکثر ۲۴ ساعت پس از expiry هدف‌گذاری می‌شود.
+- categorical outcome برای first slice پذیرفته است. Purchase Fit Score عددی حذف نشده و deferred می‌ماند.
+- provider/model و request/token/cost limits به AI integration موکول می‌شوند؛ real provider، limits صریح و
+  evaluation شرط live readiness هستند.
+- usefulness feedback حداقلی و اختیاری ۱ تا ۵ به first slice بازگشته است؛ rating متعلق به report revision و
+  mode جاری است و dashboard/SDK analytics در scope نیست.
+- justification خرید/تعویض، budget fit و suitability مدل هدف باید conclusionهای مستقل باشند؛ unknown مدل
+  نباید conclusionهای supported دیگر را حذف یا از طریق wording مثبت شود.
+
+## تصمیم‌های product lead در Phase 2
+
+- rubric `PDA-CAT-v0.3` پس از حذف strong/moderate مبهم، تعریف justification total و جدول ordered outcome
+  برای technical planning پذیرفته است؛ implementation مجاز نشده است.
+- صرف noted بودن repair/wait evidence feasibility یا preference نیست و positive justification را override
+  نمی‌کند. `RECONSIDER_OR_WAIT` به evidence صریح مثل `NO_CLEAR_BENEFIT` یا target mismatch نیاز دارد.
+- همه inputهای valid دقیقاً یک primary outcome و statusهای مستقل budget/justification/target-fit/tradeoff دارند؛
+  contradiction/unknown justification قبل از positive outcome و above-budget قبل از همه headlineهاست.
+- direction فنی plan: React + TypeScript + Vite، Django + DRF، PostgreSQL، modular monolith تک-repository،
+  Docker Compose، static frontend production build، same-origin و small single-server deployment.
+
+## اصلاحات فنی مصوب Phase 3
+
+- unsafe APIهای guest anonymous با `CsrfViewMiddleware` و `csrf_protect` صریح Django محافظت می‌شوند؛ اتکا به
+  `SessionAuthentication` برای CSRF مهمان مجاز نیست.
+- lifecycle هر analysis همچنان ۹۰روزه و non-sliding است، اما persist یک analysis جدید access/session lifetime مهمان
+  را تا expiry همان analysis تمدید می‌کند. visit/edit/retry/feedback تمدیدکننده نیستند.
+- `GuestContext.generation_epoch`، initial create را با clear-history serialize می‌کند و operation token هر analysis
+  فقط تازه‌ترین edit/retry روی همان revision را مجاز به publish می‌کند؛ network داخل transaction نیست.
+- mock report mode برابر `MOCK_ASSISTED` است؛ `AI_ASSISTED_SUCCESS` فقط provider واقعی و metric آن مستقل است.
+
+## مجوز و closure رابط در Phase 4
+
+- M1 backend برای integration پذیرفته است و فقط M2 با شناسه‌های `T026`, `T027`, `T030`, `T033`, `T034`
+  مجاز شده؛ M3 live AI و M4 production/deployment باز و بدون مجوز implementation می‌مانند.
+- frontend همان React + TypeScript + Vite و API same-origin را مصرف می‌کند؛ Next.js، SSR، Vercel service،
+  localStorage persistence و business-rule engine موازی رد شده‌اند.
+- triggerهای M2 ثابت‌اند: `F-001` برای serious/contradiction به‌عنوان evidence تکمیلی، `F-002` فقط برای
+  `Q-002=UNKNOWN` با mapping صریح به پاسخ نهایی Q-002، و `F-003` برای usageهای critical. ترتیب `F-001..003`
+  و سقف کل سه است؛ unknown urgency به‌تنهایی clarification بی‌اثر ایجاد نمی‌کند.
+
+## تصمیم‌های Phase 5 — M3
+
+- گزینه‌های live کم‌هزینه به دو مورد محدود شدند: OpenAI `gpt-6-luna` و Google `gemini-3.5-flash-lite`. هر دو
+  structured output دارند؛ quality فارسی و latency هیچ‌کدام هنوز در این workspace اندازه‌گیری نشده است.
+- انتخاب مشروط: OpenAI Responses API با `gpt-6-luna`، SDK رسمی Python `3.49.0`، `store=false`، prompt
+  `PDA-EXPLAIN-P1` و schema `PDA-EXPLAIN-v1`. دلیل: هزینه list پایین‌تر، structured output، multilingual capability
+  مستند و کنترل application-state. alias snapshot جداگانه‌ای در catalog رسمی فعلی ارائه نمی‌کند؛ model ID صریح و
+  configurable است و تغییر provider/model نیازمند decision/evaluation تازه خواهد بود.
+- activation فقط وقتی مجاز است که محل backend و کاربران در region پشتیبانی‌شده باشد، `OPENAI_API_KEY` فقط در
+  environment backend تنظیم شود و budget ارزیابی صریح وجود داشته باشد. ایران در فهرست فعلی OpenAI و Gemini نیست؛
+  بنابراین timezone یا وجود key به‌تنهایی مجوز activation نیست.
+- defaultها: live mode خاموش، timeout هشت ثانیه، حداکثر دو attempt فقط برای timeout/connection/408/409/429/5xx،
+  output حداکثر ۵۱۲ token، request UTF-8 byte bound معادل upper-bound محافظه‌کار token، ۱۰ generation برای هر guest
+  در روز، budget سراسری پیش‌فرض `$1.00/day` و circuit پنج failure متوالی برای پنج دقیقه. همه configurable هستند.
+- evaluation spending cap هیچ default پولی ندارد و باید صریح تنظیم شود. reservation PostgreSQL هزینهٔ بدبینانه همه
+  attemptها را قبل call نگه می‌دارد تا concurrency یا retry ceiling را دور نزند؛ provider invoice authoritative است.
+- validation فقط schema، outcome/unknown echo، IDها و سازگاری claim/evidence/rule را تضمین می‌کند. وجود evidence ID
+  اثبات semantic support متن فارسی نیست؛ این ریسک در evaluation مستقل و review انسانی باقی می‌ماند.
+
+## پیش‌فرض‌های Phase 0 که در Phase 2 مصوب شدند
+
+React + TypeScript + Vite، Django REST Framework، PostgreSQL، monorepo modular monolith، Docker Compose،
+static frontend production build و deployment مناسب یک سرور کوچک با direction صریح Phase 2 از حالت proposed
+خارج شدند. version baseline و rationale آن‌ها در `research.md` و معماری در `plan.md` ثبت است. Phase 4 مجوز
+scaffold و implementation فقط برای M2 را می‌دهد؛ production deployment همچنان مجاز نیست.
+
+## فرض‌های اعتبارسنجی‌نشده
+
+- مخاطب اولیه فارسی‌زبانِ مردد برای خرید یا تعویض تلفن همراه است.
+- مناسب‌بودن محدودیت category به تلفن همراه باید با product usage واقعی validate شود.
+- ورود دستی مدل/قیمت و same-browser history باید از نظر usability و ارزش بازگشت validate شوند.
+- نمایش score و indicator کیفی برای کاربر مفید و قابل فهم خواهد بود.
+- history و usefulness feedback ارزش کافی برای حضور در MVP دارند.
+
+## پرسش‌های باز
+
+1. backup retention/erasure lifecycle پیش از production readiness در فاز deployment چه خواهد بود؟
+2. region واقعی backend/کاربران و budget دلاری صریح live evaluation چیست؟ تا پاسخ، adapter قابل تست است ولی live
+   evaluation و activation pending باقی می‌مانند.
+
+questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchase-decision-analysis/` مستند شده‌اند.
+تایید specification با اجرای implementation یکی نیست.
