@@ -1,7 +1,7 @@
-# عملیات backend تا M3
+# عملیات backend و بستهٔ production تا M4
 
-این سند فقط stack توسعهٔ Django/PostgreSQL را پوشش می‌دهد. production gateway، TLS، backup/restore و deployment
-در M4 هستند و این Compose production-ready نیست.
+`compose.yaml` فقط stack توسعه است. بستهٔ production در `compose.production.yaml` سه service `web → api → db`
+دارد؛ تکمیل rehearsal محلی به‌معنای مجوز انتشار عمومی یا آمادگی live AI نیست.
 
 ## راه‌اندازی
 
@@ -99,6 +99,32 @@ python backend/manage.py evaluate_live_ai \
 اگر account نیازمند خرید، subscription یا top-up بود، متوقف شوید؛ Phase 5.2 چنین اختیاری نمی‌دهد. پس از run، artifact
 فقط synthetic baseline/AI output و metadata را دارد و چهار field human review تا تکمیل reviewer برابر null می‌مانند.
 
+## بستهٔ production و startup کنترل‌شده
+
+فایل `deploy/production.env.example` را به یک مسیر خارج Git کپی کنید و path مطلق certificate، key و دو secret file
+با permission محدود را تنظیم کنید. `DJANGO_ALLOWED_HOSTS` و `DJANGO_CSRF_TRUSTED_ORIGINS` باید صریح باشند و origin
+فقط HTTPS است. `web` تنها port منتشرشده است؛ API/DB فقط روی networkهای Compose هستند. gateway مقدار
+`X-Forwarded-Proto=https` را جایگزین می‌کند و API فقط از network داخلی به آن دسترس دارد؛ همین مرز اعتماد دلیل
+`SECURE_PROXY_SSL_HEADER` است.
+
+```bash
+docker compose --project-name beforebuy-prod \
+  --env-file /etc/beforebuy/production.env -f compose.production.yaml config --quiet
+docker compose --project-name beforebuy-prod \
+  --env-file /etc/beforebuy/production.env -f compose.production.yaml build
+docker compose --project-name beforebuy-prod \
+  --env-file /etc/beforebuy/production.env -f compose.production.yaml up -d --wait db
+docker compose --project-name beforebuy-prod \
+  --env-file /etc/beforebuy/production.env -f compose.production.yaml run --rm api \
+  python backend/manage.py migrate --noinput
+docker compose --project-name beforebuy-prod \
+  --env-file /etc/beforebuy/production.env -f compose.production.yaml up -d --wait
+```
+
+migration عمداً command جداست و در CMD یا workerهای Gunicorn اجرا نمی‌شود. `DEBUG` و test control در production رد
+می‌شوند؛ secret key، hosts و origins غایب startup را متوقف می‌کنند. rehearsal با `BEFOREBUY_AI_MODE=mock` انجام می‌شود
+و UI آن را «نسخهٔ نمایشی / هوش مصنوعی زنده نیست» نشان می‌دهد. live ناقص نیز هنگام import تنظیمات production fail می‌شود.
+
 ## retention cleanup
 
 ```bash
@@ -107,12 +133,77 @@ docker compose run --rm api python backend/manage.py purge_expired_analyses
 
 این فرمان analysisهای منقضی، AI invocationهای قدیمی‌تر از ۹۰ روز، GuestContext منقضیِ بدون analysis و sessionهای منقضی Django را حذف می‌کند. دسترسی
 در query از لحظهٔ expiry بسته است؛ purge فقط حذف فیزیکی active storage است. پیش از production باید همین فرمان حداقل
-روزانه با cron یا systemd timer اجرا شود تا target حداکثر ۲۴ ساعت رعایت شود. Celery/Redis لازم نیست. lifecycle و
-حذف backup هنوز در M4 تعیین می‌شود.
+روزانه با host scheduler اجرا می‌شود تا target حداکثر ۲۴ ساعت رعایت شود. واحدهای نمونه در `deploy/systemd/` هر روز
+ساعت ۰۲:۱۵ UTC `deploy/run-maintenance.sh` را اجرا می‌کنند؛ این script ابتدا backup و سپس cleanup را اجرا می‌کند.
+
+```bash
+sudo install -m 0644 deploy/systemd/beforebuy-maintenance.service /etc/systemd/system/
+sudo install -m 0644 deploy/systemd/beforebuy-maintenance.timer /etc/systemd/system/
+sudo systemd-analyze verify /etc/systemd/system/beforebuy-maintenance.{service,timer}
+sudo systemctl daemon-reload
+sudo systemctl enable --now beforebuy-maintenance.timer
+systemctl list-timers beforebuy-maintenance.timer
+journalctl -u beforebuy-maintenance.service
+```
+
+وجود command به‌تنهایی کافی نیست؛ operator باید `list-timers` و آخرین exit موفق journal را در host مقصد ببیند.
+rehearsal محلی macOS یک launchd job موقت را دو بار اجرا کرد و آخرین exit آن صفر بود؛ job بلافاصله unload شد. activation
+systemd روی host Linux عمومی همچنان بخشی از release checklist است. Celery/Redis لازم نیست.
+
+## backup، restore و حذف
+
+pilot پیش‌فرض یک `pg_dump --format=custom` روزانه و نگهداری rolling هفت‌روزه است. `deploy/backup-postgres.sh`
+فایل‌های قدیمی‌تر از شش روز کامل را پس از backup موفق حذف می‌کند. directory و فایل‌ها باید فقط برای operator قابل
+خواندن باشند، filesystem/volume میزبان باید encrypted at rest باشد و هر نسخهٔ off-host پیش از انتقال با کلید خارج
+repository رمز شود. dump، certificate، private key و runtime log وارد Git نمی‌شوند.
+
+```bash
+export BEFOREBUY_COMPOSE_PROJECT=beforebuy-prod
+export BEFOREBUY_PRODUCTION_ENV=/etc/beforebuy/production.env
+export BEFOREBUY_BACKUP_DIR=/var/backups/beforebuy
+deploy/backup-postgres.sh
+```
+
+restore همیشه در project و volume خالی جدا انجام می‌شود؛ هرگز روی volume فعال restore نکنید:
+
+```bash
+export BEFOREBUY_COMPOSE_PROJECT=beforebuy-restore-incident
+export BEFOREBUY_PRODUCTION_ENV=/etc/beforebuy/restore.env
+export BEFOREBUY_RESTORE_DUMP=/var/backups/beforebuy/<chosen>.dump
+deploy/restore-postgres.sh
+docker compose --project-name "$BEFOREBUY_COMPOSE_PROJECT" \
+  --env-file "$BEFOREBUY_PRODUCTION_ENV" -f compose.production.yaml run --rm api \
+  python backend/manage.py purge_expired_analyses
+```
+
+پیش از بازکردن restored app: live AI را خاموش نگه دارید؛ expiry cleanup را اجرا کنید؛ `AIEvaluationAuthorization`،
+reservation و spent را با صورتحساب/ledger اصلی reconcile کنید؛ و سپس ownership/session را با دادهٔ synthetic یا
+incident checklist بررسی کنید. restore مجاز نیست allowance را reset کند یا هزینهٔ قبلی را دوباره قابل‌مصرف کند.
+
+حذف active storage فوری است، اما dumpهای retained می‌توانند داده‌ای را که بعداً حذف شده نگه دارند. این برنامه deletion
+event log ندارد؛ بنابراین recovery کوچک و fail-closed است: restore در شبکه ایزوله می‌ماند، cleanup اجرا می‌شود، همه
+درخواست‌های حذف شناخته‌شده پس از timestamp backup از ثبت عملیاتی incident دوباره اعمال می‌شوند، و اگر فهرست کامل
+قابل بازسازی نباشد restored instance برای کاربران باز نمی‌شود. پس از هفت روز backup چرخه عادی حذف می‌شود؛ erasure
+فوری نسخه‌های backup ادعا نمی‌شود.
+
+## migration و rollback
+
+پیش از migration روی database غیرخالی backup بگیرید. ابتدا fresh database و سپس schema قبلی مشخص را تمرین کنید.
+application rollback فقط به image digest قبلی که با schema جاری سازگار و قبلاً health/browser-tested است انجام می‌شود:
+
+```bash
+API_IMAGE=registry.example/beforebuy-api@sha256:<tested-compatible-digest> \
+docker compose --project-name beforebuy-prod --env-file /etc/beforebuy/production.env \
+  -f compose.production.yaml up -d --no-deps --wait api
+```
+
+اگر migration با image قبلی ناسازگار است، app rollback کافی نیست: traffic بسته می‌ماند و database از backup قبل migration
+در volume تازه restore می‌شود. migration دلخواه reversible فرض نمی‌شود و production database هیچ‌گاه با `migrate <old>`
+به‌صورت آزمایشی عقب برده نمی‌شود.
 
 ## محدودیت‌های فعلی
 
 - live adapter وجود دارد ولی evaluation واقعی و کیفیت فارسی/latency آن تا فراهم‌شدن gateها اندازه‌گیری نشده است.
 - cookie از دست‌رفته یا منقضی recovery و cross-device access ندارد.
-- `check --deploy` روی development settings هشدارهای طبیعی DEBUG/HTTP می‌دهد؛ hardening تولید در M4 است.
+- `check --deploy` باید با `config.settings.production` و secretهای runtime اجرا شود؛ TLS در gateway خاتمه می‌یابد.
 - logging پیکربندی‌شده answer، session/CSRF و raw AI payload را ثبت نمی‌کند.

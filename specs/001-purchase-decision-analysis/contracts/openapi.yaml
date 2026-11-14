@@ -8,10 +8,43 @@ info:
 servers:
   - url: /api/v1
 tags:
+  - name: Health
   - name: Session
   - name: Analyses
   - name: Feedback
 paths:
+  /health/live:
+    get:
+      tags: [Health]
+      summary: Process liveness without a database query
+      operationId: getLiveness
+      responses:
+        '200':
+          description: Django process can serve requests.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: live }
+  /health/ready:
+    get:
+      tags: [Health]
+      summary: Application readiness including database connectivity
+      operationId: getReadiness
+      responses:
+        '200':
+          description: Application and database are ready.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, const: ready }
+        '503':
+          description: Database is unavailable; no sensitive diagnostic is returned.
   /session:
     get:
       tags: [Session]

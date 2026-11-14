@@ -6,7 +6,7 @@ description: "Dependency-ordered implementation tasks for Purchase Decision Anal
 
 **Input**: `spec.md`, `plan.md`, `data-model.md`, `contracts/openapi.yaml`, `research.md`, `quickstart.md`  
 **Milestone authorization**: M1/M2 are accepted. Phase 5.2 may complete only the Iran-provider **M3 adaptation** IDs
-`T049`–`T052`; `T039` remains open until real live/human evidence and M4 remains unchecked/unimplemented.  
+`T049`–`T052`; `T039` remains open until real live/human evidence. Phase 6 separately authorizes M4 packaging and local rehearsal.  
 **TDD**: Every behavioral test task runs red before its paired implementation task; PostgreSQL is mandatory for race claims.
 
 ## Phase 1: Setup and reproducibility — M1
@@ -158,16 +158,16 @@ description: "Dependency-ordered implementation tasks for Purchase Decision Anal
 - [x] T056 **[M3]** Correct `evaluate_live_ai` to preserve the configured deployment budget, checkpoint synthetic evidence
   atomically, represent zero-call rejections, retain incomplete runs and support restart/resume without resetting allowance
 - [x] T057 **[M3]** Version evaluation policy as `PDA-AI-EVAL-v1.2`, separate structural/human/latency/spend/product-cost
-  gates, record the selected model's historical-target incompatibility, run focused/PostgreSQL/full verification and update
+  gates, record the selected model's worst-case cost risk while leaving observed average unmeasured, run focused/PostgreSQL/full verification and update
   operations plus `docs/handoff.md`; no live call
 
 ---
 
 ## Phase 8: Production packaging and operations — M4
 
-- [ ] T041 **[M4]** Add production static frontend gateway and hardened images in `deploy/web.Dockerfile`, `deploy/web.conf`, `deploy/api.Dockerfile`, and `compose.production.yaml`
-- [ ] T042 [P] **[M4]** Define backup retention/erasure, migration and rollback responsibilities in `docs/backend-operations.md`
-- [ ] T043 **[M4]** Execute and record health/readiness, migration, backup/restore and rollback rehearsals on a production-like PostgreSQL stack in `docs/handoff.md`
+- [x] T041 **[M4]** Add production static frontend gateway and hardened images in `deploy/web.Dockerfile`, `deploy/web.conf`, `deploy/api.Dockerfile`, and `compose.production.yaml`
+- [x] T042 [P] **[M4]** Define backup retention/erasure, migration and rollback responsibilities in `docs/backend-operations.md`
+- [x] T043 **[M4]** Execute and record health/readiness, migration, backup/restore and rollback rehearsals on a production-like PostgreSQL stack in `docs/handoff.md`
 
 ---
 
@@ -180,21 +180,22 @@ Foundation → T016/T017/T018/T019/T020 → T021/T022/T023/T024/T025
 US1 backend → T028→T029 and T031→T032 → T035→T036→T037
 M1 complete → M2 (T026/T027/T030/T033/T034)
 M1 complete + explicit provider decisions → M3 (T038–T040) → review corrections (T044–T048) → Iran adaptation (T049–T052) → accounting corrections (T053–T057)
-M1+M2+M3 readiness → M4 (T041–T043)
+M1+M2 implementation baseline → M4 packaging/local rehearsal (T041–T043)
+T039 live evidence + provider/human gates + M4 packaging evidence → public-release readiness review
 ```
 
 - Tests always precede their paired implementation and must fail for the missing behavior, not setup errors.
 - `[P]` means different files/no incomplete dependency; this phase uses one agent and does not imply delegation.
 - PostgreSQL concurrency tests T012 are blocking evidence for T013/T032 and cannot be replaced by SQLite.
-- During Phase 5 only M3 tasks may change to complete; M4 remains unchecked and unimplemented. A task that requires
-  live evidence remains unchecked when region، credential یا budget صریح فراهم نیست.
+- Phase 6 may complete only verified M4 packaging/rehearsal work. `T039` remains unchecked while region/provider
+  clarification، credential، budget and human-review evidence are absent; M4 completion does not close that gate.
 
 ## Parallel examples
 
 - **US1 after foundation**: T016 money, T017 scenarios, T018 invariants and T019 explanation contract touch separate
   test files and may be authored independently before their production tasks.
-- **Later milestones**: frontend component work and real-provider evaluation are independent only after M1 contracts are
-  stable; production packaging waits for all readiness decisions.
+- **Later milestones**: after the M1/M2 implementation baseline, production packaging is independent of live-provider
+  evaluation; public release still waits for both evidence streams.
 
 ## Implementation strategy
 
@@ -205,3 +206,4 @@ M1+M2+M3 readiness → M4 (T041–T043)
    100,000 toman; otherwise record zero calls/cost and leave the live-evidence task incomplete.
 5. Complete verified Phase 5.1 corrections while leaving T039 open until real live/human evidence؛ M4 requires later authorization.
 6. Phase 5.2 does not reactivate direct OpenAI, purchase credit, create an account, deploy or implement M4.
+7. Phase 6 implements T041–T043 only in an isolated local rehearsal; it neither performs a public deployment nor closes T039.

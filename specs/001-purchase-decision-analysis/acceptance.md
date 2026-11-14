@@ -151,8 +151,9 @@ last completed، remaining IDs، operation/request metadata امن و `incomplet
 می‌شود، **Then** known usage کامل جمع، unknown محافظه‌کارانه، overage visible و underflow خطاست؛ **And** recovery invoice قطعی ادعا نمی‌کند.
 
 ### `AC-AI-015` — separated evaluation gates and valid money
-**Given** تعرفهٔ `$30/M` output مدل منتخب، **When** policy v1.2 ارزیابی می‌شود، **Then** incompatibility آستانهٔ تاریخی
-`$0.0025` مستقل از total spend/structure/human/latency ثبت و overall pending است؛ **And** non-finite/negative monetary values
+**Given** تعرفهٔ `$30/M` output مدل منتخب، **When** policy v1.2 ارزیابی می‌شود، **Then** worst-case reservation،
+observed cost/generation، target تاریخی `$0.0025` و total allowance مستقل ثبت می‌شوند؛ observed average تا live evidence
+unmeasured و overall pending است؛ **And** non-finite/negative monetary values
 پیش از هر network call رد می‌شوند.
 
 ### `AC-UI-001` — concise Persian result

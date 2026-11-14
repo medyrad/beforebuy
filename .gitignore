@@ -18,6 +18,12 @@ artifacts/ai-evaluation/
 frontend/.playwright-cli/
 .playwright-cli/
 *.tsbuildinfo
+.runtime/
+backups/
+*.dump
+*.pem
+*.key
+*.crt
 
 # Local provenance snapshots with unresolved upstream redistribution rights.
 .agents/skills/react-best-practices/

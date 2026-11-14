@@ -2,8 +2,8 @@
 
 **Branch**: `001-purchase-decision-analysis` | **Date**: 2026-11-14 | **Spec**: [spec.md](./spec.md)
 
-**Input**: feature specification و rubric پیاده‌شده `PDA-CAT-v0.3`. milestoneهای M1/M2 پذیرفته شده‌اند؛ Phase 5
-فقط M3 adapter/evaluation را مجاز می‌کند و M4 deferred می‌ماند.
+**Input**: feature specification و rubric پیاده‌شده `PDA-CAT-v0.3`. milestoneهای M1/M2 پذیرفته شده‌اند؛ Phase 6
+بسته‌بندی M4 و rehearsal محلی ایزوله را مستقل از evidence ناتمام M3 مجاز می‌کند. live AI و public release همچنان gateهای جدا هستند.
 
 ## Summary
 
@@ -251,8 +251,14 @@ compose.yaml
 
 ## Release and Operations Gates
 
+M4 دو سطح readiness را جدا می‌کند: **packaging readiness** با build، تنظیمات production، migration، backup/restore،
+rollback و rehearsal محلی اثبات می‌شود؛ **live-AI/public-release readiness** همچنان به `T039`، clarification provider،
+review انسانی، credential/budget مجاز و تصمیم استقرار عمومی وابسته است. اولی می‌تواند پیش از دومی تکمیل شود و هیچ
+rehearsal محلی ادعای live یا public readiness ایجاد نمی‌کند.
+
 - secrets فقط environment/secret store؛ production debug خاموش، allowed hosts و trusted origins صریح.
-- migration forward و rollback-compatible release؛ backup قبل migration consequential.
+- migration forward و application rollback فقط به image/schema مشخص و سازگار؛ backup قبل migration consequential.
+  برای migration ناسازگار recovery از backup تمرین می‌شود و reversibility دلخواه ادعا نمی‌شود.
 - PostgreSQL volume، automated backup schedule، restore test و backup retention/deletion policy باید پیش از production
   در decision record بسته شوند. حذف فوری backup هنوز ادعا نمی‌شود.
 - structured logs فقط request ID، status، latency و error code؛ answer text، session key، CSRF، raw AI payload و rating

@@ -1,0 +1,93 @@
+services:
+  db:
+    image: postgres:18.1-alpine@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-beforebuy}
+      POSTGRES_USER: ${POSTGRES_USER:-beforebuy}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [backend]
+
+  api:
+    image: ${API_IMAGE:-beforebuy-api:m4}
+    build:
+      context: .
+      dockerfile: deploy/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_SECRET_KEY_FILE: /run/secrets/django_secret_key
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:?set DJANGO_CSRF_TRUSTED_ORIGINS}
+      DJANGO_SECURE_HSTS_SECONDS: ${DJANGO_SECURE_HSTS_SECONDS:-3600}
+      POSTGRES_DB: ${POSTGRES_DB:-beforebuy}
+      POSTGRES_USER: ${POSTGRES_USER:-beforebuy}
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      BEFOREBUY_AI_MODE: ${BEFOREBUY_AI_MODE:-mock}
+      BEFOREBUY_E2E_TEST_CONTROLS: "0"
+    secrets:
+      - django_secret_key
+      - postgres_password
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; request = urllib.request.Request('http://127.0.0.1:8000/api/v1/health/ready', headers={'Host': 'localhost', 'X-Forwarded-Proto': 'https'}); urllib.request.urlopen(request, timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    depends_on:
+      db:
+        condition: service_healthy
+    expose: ["8000"]
+    networks: [frontend, backend]
+
+  web:
+    image: ${WEB_IMAGE:-beforebuy-web:m4}
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_HTTPS_PORT:-58443}:8443"
+    volumes:
+      - type: bind
+        source: ${TLS_CERT_PATH:?set TLS_CERT_PATH}
+        target: /run/tls/tls.crt
+        read_only: true
+      - type: bind
+        source: ${TLS_KEY_PATH:?set TLS_KEY_PATH}
+        target: /run/tls/tls.key
+        read_only: true
+    healthcheck:
+      test: ["CMD", "wget", "--no-check-certificate", "--spider", "https://127.0.0.1:8443/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [frontend]
+
+volumes:
+  postgres_data:
+
+networks:
+  frontend:
+  backend:
+    internal: true
+
+secrets:
+  django_secret_key:
+    file: ${DJANGO_SECRET_KEY_FILE_PATH:?set DJANGO_SECRET_KEY_FILE_PATH}
+  postgres_password:
+    file: ${POSTGRES_PASSWORD_FILE_PATH:?set POSTGRES_PASSWORD_FILE_PATH}

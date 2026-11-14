@@ -3,7 +3,7 @@
 **Feature Branch**: `main` (feature جدید یا branch جدید ایجاد نشد)  
 **Created**: 2026-11-14  
 **Last corrected**: 2026-11-14 — Phase 5.2 Iran provider selection  
-**Status**: M1/M2 accepted; M3 corrective implementation is authorized, while live/human evidence remains pending. M4 remains deferred.  
+**Status**: M1/M2 accepted; M3 implementation exists while live/human evidence remains pending. M4 local packaging/rehearsal is authorized independently; public release remains pending.  
 **Supporting artifacts**: [Scenarios](scenarios.md) · [Questionnaire](questionnaire.md) ·
 [Decision rubric](decision-rubric.md) · [Written acceptance](acceptance.md)
 
@@ -199,8 +199,9 @@ report persistشده، شامل limited report، آغاز و ۹۰ روز بعد 
   بیفزاید. malformed response دارای usage MUST همان usage را حفظ کند؛ overage MUST visible باشد؛ settlement تکراری
   no-op و reserved-underflow MUST خطای صریح باشد. recovery reservation رهاشده MUST محافظه‌کارانه و auditable باشد.
 - **FR-049**: policy `PDA-AI-EVAL-v1.2` MUST total authorized spend، product cost target، structural، human و latency
-  را gateهای جدا نگه دارد. آستانهٔ تاریخی `$0.0025` MUST برای مدل AvalAI به‌عنوان incompatible گزارش شود، نه برای
-  pass شدن تغییر کند. تا تصویب target تازه، product-cost gate و overall pass MUST pending/null بمانند.
+  را gateهای جدا نگه دارد. آستانهٔ تاریخی `$0.0025` MUST بدون تغییر ثبت شود؛ worst-case reservation ناشی از سقف
+  `512` token MUST جای observed average را نگیرد یا به‌تنهایی impossibility میانگین را اثبات نکند. تا live evidence،
+  product-cost gate و overall pass MUST pending/null بمانند.
 - **FR-050**: همهٔ monetary configها، rate، margin و credit provider MUST finite و در دامنهٔ معتبر باشند؛ NaN،
   Infinity، negative و zero نامعتبر MUST پیش از account/model call با خطای actionable رد شوند.
 

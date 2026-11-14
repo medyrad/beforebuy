@@ -33,9 +33,10 @@ credentials, real-user input, raw provider transport, raw prompt or raw response
 - Successful-call latency threshold remains 8s. For this tiny set the reported maximum is only the sample's upper end,
   not a production p95 estimate.
 - Total experiment spend، structural validity، latency، human review و product cost target gateهای مستقل‌اند.
-- `$0.0025/generation` آستانهٔ تاریخی قبل از انتخاب provider است. فقط 512 output token با تعرفهٔ `$30/M` تا
-  `$0.01536` هزینه دارد؛ بنابراین مدل منتخب نمی‌تواند worst-case این target را برآورده کند. target به‌جای relax شدن
-  `incompatible/pending product decision` ثبت می‌شود و overall pass تا تصمیم تازه null می‌ماند.
+- `$0.0025/generation` آستانهٔ تاریخی قبل از انتخاب provider است. سقف 512 output token با تعرفهٔ `$30/M` تا
+  `$0.01536` سهم output در worst-case reservation دارد. این bound ریسک عبور از target را نشان می‌دهد، اما observed
+  average نیست و به‌تنهایی impossibility میانگین را ثابت نمی‌کند. target relax نمی‌شود؛ observed product-cost تا live
+  evidence برابر `unmeasured/pending` و overall pass برابر null می‌ماند.
 - total initial authorization برابر 100,000 تومان across restart/retry است و invoice provider را تضمین نمی‌کند.
 
 No keyword blacklist or LLM-as-judge is treated as semantic validation. Threshold changes require a new dataset version

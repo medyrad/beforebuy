@@ -152,6 +152,7 @@ limited fallback وجود `AIInvocation` را فرض می‌کرد، artifact ر
 invocationهای cascade حذف می‌کرد. ledger نیز همه retryها را به full reservation تبدیل و reserved underflow را با
 `max(0)` پنهان می‌کرد. این‌ها رفتار مشاهده‌شدهٔ source/tests این workspace هستند، نه ادعای provider.
 
-تعرفهٔ انتخاب‌شده تغییر نکرده است. محاسبهٔ مستقل: `512 × $30 / 1,000,000 = $0.01536` فقط برای output bound؛ بنابراین
-حتی با input صفر، model نمی‌تواند target تاریخی `$0.0025` را در worst case برآورده کند. Phase 5.3 provider/model را
-عوض نمی‌کند؛ tradeoff هزینه را visible و تصمیم product-cost target بعدی را pending نگه می‌دارد.
+تعرفهٔ انتخاب‌شده تغییر نکرده است. محاسبهٔ مستقل `512 × $30 / 1,000,000 = $0.01536` فقط سهم output در
+worst-case reservation است، نه observed average generation. این bound از target تاریخی `$0.0025` بزرگ‌تر است و
+ریسک عبور را نشان می‌دهد، اما به‌تنهایی ناممکن‌بودن average واقعی را ثابت نمی‌کند. Phase 5.3 provider/model یا target را
+عوض نمی‌کند؛ observed average تا live evidence اندازه‌گیری‌نشده و product-cost gate pending می‌ماند.

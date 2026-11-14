@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Beforebuy maintenance daily
+
+[Timer]
+OnCalendar=*-*-* 02:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=beforebuy-maintenance.service
+
+[Install]
+WantedBy=timers.target

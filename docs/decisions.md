@@ -159,5 +159,6 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
 - usage هر attempt جدا حساب می‌شود؛ known usage clip نمی‌شود و unknown attempt allowance محافظه‌کارانه می‌گیرد.
   reserved underflow integrity error است و recovery رهاشدگی invoice قطعی ادعا نمی‌کند.
 - policy `PDA-AI-EVAL-v1.2` spend authorization، structural، latency، human و product cost target را جدا می‌کند.
-  آستانهٔ تاریخی `$0.0025/generation` با worst-case output مدل منتخب (`$0.01536`) ناسازگار است؛ این finding ثبت
-  می‌شود و threshold برای pass شدن relax نمی‌شود. target تازه تصمیم product lead است و فعلاً pending می‌ماند.
+  output سهم worst-case reservation مدل منتخب در سقف ۵۱۲ token برابر `$0.01536` و بالاتر از target تاریخی
+  `$0.0025/generation` است؛ این ریسک، observed average نیست و به‌تنهایی ناممکن‌بودن average را ثابت نمی‌کند.
+  threshold relax نمی‌شود و observed product cost تا live evidence pending می‌ماند.

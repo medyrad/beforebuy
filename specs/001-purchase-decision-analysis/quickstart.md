@@ -1,8 +1,8 @@
-# M3 Development Quickstart
+# M3/M4 Development and Production-package Quickstart
 
 M1 backend و M2 رابط React فارسی/RTL پیاده‌اند. مسیر توسعه از Vite proxy هم‌origin به Django/PostgreSQL داخل
-Docker وصل می‌شود. adapter live پیاده است ولی پیش‌فرض خاموش و live evaluation pending است؛ production deployment
-هنوز اجرا نشده است.
+Docker وصل می‌شود. adapter live پیاده است ولی پیش‌فرض خاموش و live evaluation pending است؛ بستهٔ production محلی
+rehearse شده اما public deployment انجام نشده است.
 
 ## پیش‌نیاز و نصب قفل‌شده
 
@@ -113,3 +113,22 @@ docker compose run --rm api python backend/manage.py evaluate_live_ai \
 خروجی automatic gateهای structural، latency، spend و product-cost را جدا نگه می‌دارد؛ product-cost target
 فعلاً pending است و semantic fields تا review انسانی `null` می‌مانند.
 mock test یا summary خودکار جای live/human evidence نیست.
+
+## startup بستهٔ production محلی
+
+secretها و TLS را خارج Git بسازید و pathهای مطلق را در نسخهٔ محلی `deploy/production.env.example` قرار دهید. سپس:
+
+```bash
+docker compose --project-name beforebuy-m4 \
+  --env-file /absolute/path/production.env -f compose.production.yaml build
+docker compose --project-name beforebuy-m4 \
+  --env-file /absolute/path/production.env -f compose.production.yaml up -d --wait db
+docker compose --project-name beforebuy-m4 \
+  --env-file /absolute/path/production.env -f compose.production.yaml run --rm api \
+  python backend/manage.py migrate --noinput
+docker compose --project-name beforebuy-m4 \
+  --env-file /absolute/path/production.env -f compose.production.yaml up -d --wait
+```
+
+URL پیش‌فرض `https://localhost:58443/` است. certificate rehearsal می‌تواند self-signed باشد، اما secure cookie و CSRF
+خاموش نمی‌شوند. فقط web روی loopback منتشر است؛ migration یک step جدا و AI mode برابر mock است.
