@@ -204,6 +204,17 @@ report persistشده، شامل limited report، آغاز و ۹۰ روز بعد 
   product-cost gate و overall pass MUST pending/null بمانند.
 - **FR-050**: همهٔ monetary configها، rate، margin و credit provider MUST finite و در دامنهٔ معتبر باشند؛ NaN،
   Infinity، negative و zero نامعتبر MUST پیش از account/model call با خطای actionable رد شوند.
+- **FR-051**: volume پایدار PostgreSQL در production MUST مسیر رسمی image پین‌شده را بپوشاند. برای PostgreSQL
+  `18.1-alpine@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29`، named volume
+  MUST روی `/var/lib/postgresql` mount شود تا `PGDATA=/var/lib/postgresql/18/docker` داخل همان volume باشد؛
+  recreation container MUST رکوردهای analysis/session/feedback/accounting را بدون anonymous volume حفظ کند.
+- **FR-052**: production Compose MUST تمام تنظیمات non-secret لازم برای AvalAI را صریح به container API منتقل کند
+  و credential را فقط از file secret بخواند. حالت پیش‌فرض MUST `mock` و بدون secret قابل اجرا باشد؛ حالت `live`
+  با provider/model/eligibility/limit/rate/budget/credential ناقص MUST پیش از startup fail closed شود و test control
+  production MUST خاموش بماند.
+- **FR-053**: health probe API در production MUST از hostname صریح و عضو `ALLOWED_HOSTS` استفاده کند، نه
+  `localhost` ثابت. hostname معتبر non-localhost MUST readiness `200` بگیرد و host نامعتبر MUST همچنان توسط Django
+  رد شود؛ proxy HTTPS و CSRF trusted-origin MUST بدون wildcard یا غیرفعال‌سازی validation حفظ شوند.
 
 ### Key Entities
 
@@ -232,6 +243,12 @@ report persistشده، شامل limited report، آغاز و ۹۰ روز بعد 
 - **SC-008**: requirement، question، rule، scenario و acceptance IDها resolve و mapping همه FRها را پوشش می‌دهد.
 - **SC-009**: ۱۰۰٪ مسیرهای live مستقیم OpenAI را رد می‌کنند و evaluation AvalAI یا همهٔ retryهای هفت case را
   پیش از call زیر cap ۱۰۰٬۰۰۰ تومان رزرو می‌کند یا تعداد model call را صفر نگه می‌دارد.
+- **SC-010**: در rehearsal ایزولهٔ production، `SHOW data_directory` زیر مقصد تنها named volume است و پس از
+  حذف/recreate containerها با حفظ volume، analysis/session/feedback/accounting و ownership access همگی باقی می‌مانند.
+- **SC-011**: config واقعی container نشان می‌دهد mock بدون AvalAI secret بالا می‌آید، live ناقص با پیام actionable
+  متوقف می‌شود، و file credential مصنوعی فقط با transport stubbed بارگذاری می‌شود؛ هیچ provider call انجام نمی‌شود.
+- **SC-012**: healthcheck با hostname production مصنوعی و non-localhost موفق است؛ درخواست با host خارج از allowlist
+  رد می‌شود و secure proxy/CSRF checks همچنان پاس می‌مانند.
 
 ## Decisions, assumptions and deferrals
 

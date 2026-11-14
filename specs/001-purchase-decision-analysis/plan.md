@@ -42,6 +42,18 @@ attemptهای معلوم/نامعلوم را جدا settle می‌کند و reco
 پیش از call و پس از هر case atomically checkpoint می‌کند و rejection پیش از call را zero-attempt incomplete evidence
 می‌نویسد. هیچ queue، billing subsystem یا provider abstraction تازه اضافه نمی‌شود.
 
+### Phase 6.1 production configuration correction
+
+PostgreSQL official image پین‌شدهٔ 18.1 مقدار `PGDATA=/var/lib/postgresql/18/docker` و image `VOLUME` برابر
+`/var/lib/postgresql` دارد؛ بنابراین volume production روی همان parent رسمی mount می‌شود و وجود anonymous volume
+در runtime رد می‌شود. rehearsal در Compose project جدا، containerها را بدون حذف named volume بازسازی و بقای
+analysis/session/feedback/accounting و ownership را بررسی می‌کند.
+
+Compose همهٔ non-secretهای لازم AvalAI را صریح به API منتقل می‌کند، اما `mock` default باقی می‌ماند. credential زنده
+فقط از file secret در overlay اختصاصی live خوانده می‌شود تا mock به secret ساختگی نیاز نداشته باشد؛ production settings
+live ناقص را پیش از startup رد می‌کند. health probe نیز hostname صریح `BEFOREBUY_HEALTHCHECK_HOST` را می‌فرستد و
+production settings عضویت آن در `ALLOWED_HOSTS` را بدون wildcard الزام می‌کند.
+
 ## Constitution Check
 
 *GATE: پیش از research و دوباره پس از design بررسی شد؛ همه gateها pass هستند.*
@@ -70,7 +82,8 @@ Post-design re-check: مدل داده history کامل، provider registry، eve
 - build frontend در image stage انجام و فقط asset خروجی به `web` منتقل می‌شود؛ dev server Vite production نیست.
 - `web` همان origin را برای SPA و `/api/` ارائه می‌کند؛ cookie و CSRF cross-origin نمی‌شوند.
 - `api` migration را به‌عنوان step صریح release اجرا می‌کند، نه به‌صورت هم‌زمان در همه workerها.
-- health checkهای `db`, `api`, `web` و dependency conditionهای Compose readiness را قابل مشاهده می‌کنند.
+- health checkهای `db`, `api`, `web` و dependency conditionهای Compose readiness را قابل مشاهده می‌کنند؛ probe API
+  hostname صریح production را می‌فرستد و همان hostname باید عضو `ALLOWED_HOSTS` باشد.
 
 ### Guest ownership and CSRF
 
@@ -166,7 +179,8 @@ Post-design re-check: مدل داده history کامل، provider registry، eve
 6. **Browser journey**: happy path، invalid money، follow-up cap، history/edit/retry، AI fallback، delete/expiry. CLI
    repeatable اولویت دارد؛ MCP فقط اگر inspection تعاملی لازم باشد.
 7. **Deployment**: image/build config، Compose health، migrations، static route/API proxy، backup/restore و rollback rehearsal
-   پیش از production. هیچ‌کدام در Phase 2 اجراشده تلقی نمی‌شوند.
+   پیش از production؛ metadata/runtime PostgreSQL، absence anonymous volume، recreation persistence، container-effective
+   AI config و non-localhost host validation نیز به‌صورت رفتاری بررسی می‌شوند.
 
 ## Project Structure
 
@@ -261,6 +275,8 @@ rehearsal محلی ادعای live یا public readiness ایجاد نمی‌ک�
   برای migration ناسازگار recovery از backup تمرین می‌شود و reversibility دلخواه ادعا نمی‌شود.
 - PostgreSQL volume، automated backup schedule، restore test و backup retention/deletion policy باید پیش از production
   در decision record بسته شوند. حذف فوری backup هنوز ادعا نمی‌شود.
+- مقصد volume باید با `PGDATA` همان image digest تطبیق داده شود؛ restart evidence جای container recreation با volume
+  حفظ‌شده را نمی‌گیرد. mock بدون provider secret مجاز است، اما live فقط با overlay file-secret و config کامل بالا می‌آید.
 - structured logs فقط request ID، status، latency و error code؛ answer text، session key، CSRF، raw AI payload و rating
   در log ممنوع.
 - AI adapter واقعی فقط پس از model/provider، timeout، retry، cost ceiling و evaluation set مصوب فعال می‌شود.

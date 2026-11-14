@@ -162,3 +162,14 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
   output سهم worst-case reservation مدل منتخب در سقف ۵۱۲ token برابر `$0.01536` و بالاتر از target تاریخی
   `$0.0025/generation` است؛ این ریسک، observed average نیست و به‌تنهایی ناممکن‌بودن average را ثابت نمی‌کند.
   threshold relax نمی‌شود و observed product cost تا live evidence pending می‌ماند.
+
+## اصلاحات Phase 6.1 — production configuration
+
+- image پین‌شدهٔ PostgreSQL 18.1 مقدار `PGDATA=/var/lib/postgresql/18/docker` و image volume برابر
+  `/var/lib/postgresql` دارد؛ named volume production از `/var/lib/postgresql/data` به parent رسمی اصلاح شد. صحت فقط
+  با metadata، `SHOW data_directory`، mount inspection و container recreation با volume حفظ‌شده پذیرفته می‌شود.
+- production AI default همچنان `mock` است. همهٔ non-secretهای AvalAI صریح map می‌شوند و live credential فقط از
+  `compose.production.live.yaml` و file secret وارد می‌شود؛ direct OpenAI region flag و production test controls صفرند.
+- health probe از `BEFOREBUY_HEALTHCHECK_HOST` صریح استفاده می‌کند. این host باید بدون wildcard عضو
+  `DJANGO_ALLOWED_HOSTS` باشد؛ `Host: localhost` ثابت یا تضعیف host validation پذیرفته نیست.
+- rehearsal Phase 6.1 محلی و synthetic است؛ هیچ provider call، deployment عمومی یا تغییر gateهای T039 انجام نشد.

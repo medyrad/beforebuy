@@ -1,126 +1,128 @@
-# تحویل Phase 6 — بستهٔ production و rehearsal ایزوله M4
+# تحویل Phase 6.1 — اصلاح و اثبات production configuration
 
-**تاریخ:** ۱۴ نوامبر ۲۰۲۶  
-**baseline:** `be5f21e79a949cfe07a9c8732781c752577fda66`  
-**وضعیت:** بستهٔ production محلی rehearse شد؛ live AI و انتشار عمومی pending  
-**مرز:** بدون deployment عمومی، خرید infrastructure، provider call یا تغییر M3
+**تاریخ:** ۱۵ نوامبر ۲۰۲۶  
+**baseline بازبینی‌شده:** `bf5f6cc8ee0a6407ca851f274dee692d5c00efd6`  
+**وضعیت:** اصلاحات production configuration پیاده و در rehearsal محلی ایزوله verified شد؛ live AI و انتشار عمومی pending  
+**مرز:** بدون deployment عمومی، provider/paid call، خرید اعتبار، تغییر M3 یا تکمیل T039
 
 ## نتیجه و Spec Kit
 
-- dependency اصلاح شد: packaging readiness در T041–T043 مستقل از T039 قابل تکمیل است؛ public-release readiness به هر
-  دو جریان evidence نیاز دارد.
-- `$speckit-analyze` پس از prerequisite رسمی و checklistهای 30/30 و 25/25 اجرا شد؛ conflict بحرانی یا constitution
-  violation نداشت. gap متوسط این بود که معیارهای عملیاتی M4 بیشتر در plan/task هستند تا FR مستقل؛ scope صریح T041–T043
-  اجرا شد و convergence دوباره این موضوع را گزارش می‌کند.
-- `$speckit-implement` فقط T041–T043 را اجرا کرد. T039 باز، live call صفر و public release بسته ماند.
-- `$speckit-converge` پس از implementation اجرا شد: gap تازهٔ M4 نداشت؛ یک finding `partial/high` همان live/human
-  evidence ناتمام `T039` بود. task تازه append نشد چون T039 دقیقاً مالک همان کار است؛ نتیجه عمداً `Converged` اعلام نشد.
-- handoff Phase 5.3 بدون تغییر در `docs/archive/phase-5.3-handoff.md` آرشیو شد.
+- requirementهای corrective با `FR-051..FR-053` و `SC-010..SC-012` و taskهای `T058..T061` به feature موجود اضافه شدند.
+- `$speckit-analyze` پس از prerequisite رسمی اجرا شد: ۶۵ requirement/criterion و ۶۱ task، بدون duplicate ID،
+  placeholder، constitution conflict یا finding بحرانی/high. یک نکتهٔ low فقط نام دقیق overlay بود که به
+  `compose.production.live.yaml` حل شد.
+- `$speckit-implement` فقط `T058..T061` را با red/green اجرا کرد. هر چهار task کامل‌اند؛ `T039` باز است.
+- checklistهای Spec Kit بدون تغییر reviewer state برابر requirements `30/30` و technical-plan `25/25` باقی ماندند.
+- handoff Phase 6 در `docs/archive/phase-6-handoff.md` آرشیو شد.
 
-## بستهٔ سه‌سرویسی و امنیت
+## finding PostgreSQL و اصلاح volume
 
-`compose.production.yaml` دقیقاً `web → api → db` دارد:
+finding baseline تأیید شد. image دقیق production:
 
-- `web`: build چندمرحله‌ای Node `24.11.0-alpine3.22` از `npm ci`، asset استاتیک Vite و runtime غیرroot
-  NGINX unprivileged `1.30.6`. مسیر `/api/` same-origin proxy و سایر مسیرها SPA fallback هستند؛ Vite server وجود ندارد.
-- `api`: Python `3.12.12-slim` + uv `0.13.0` و `uv sync --frozen --no-dev`، Gunicorn `23.0.0` و user غیرroot
-  `beforebuy`. migration در worker startup نیست.
-- `db`: PostgreSQL official `18.1-alpine` با volume صریح و init رسمی؛ user آن دستکاری نشده است.
-- فقط `127.0.0.1:58443 → web:8443` منتشر شد. inspection واقعی API را فقط `8000/tcp` داخلی و DB را بدون host port
-  نشان داد. network DB داخلی است.
-- secretهای Django/PostgreSQL از file mount خوانده می‌شوند؛ certificate/key/secret/dump در `.runtime/` ignored بودند.
-  نبود pathهای لازم Compose config را fail کرد. production settings نیز secret/host/origin اجباری، DEBUG=false،
-  secure cookie، HTTPS-only trusted origin و proxy trust boundary صریح دارد.
-- `DJANGO_DEBUG=1`، `BEFOREBUY_E2E_TEST_CONTROLS=1` و live config ناقص fail-closed شدند. rehearsal فقط mock بود و UI
-  «نسخهٔ نمایشی / هوش مصنوعی زنده نیست» را نشان داد.
-- `check --deploy` پس از افزودن clickjacking middleware و HTTPS redirect فقط دو warning آگاهانه برای HSTS
-  includeSubDomains/preload دارد؛ این دو تا تعیین domain عمومی فعال نمی‌شوند تا subdomain ناشناخته قفل نشود.
+`postgres:18.1-alpine@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29`
 
-## فرمان startup و URL
-
-```bash
-docker compose --project-name beforebuy-m4 \
-  --env-file /absolute/path/production.env -f compose.production.yaml build
-docker compose --project-name beforebuy-m4 \
-  --env-file /absolute/path/production.env -f compose.production.yaml up -d --wait db
-docker compose --project-name beforebuy-m4 \
-  --env-file /absolute/path/production.env -f compose.production.yaml run --rm api \
-  python backend/manage.py migrate --noinput
-docker compose --project-name beforebuy-m4 \
-  --env-file /absolute/path/production.env -f compose.production.yaml up -d --wait
-```
-
-URL rehearsal: `https://localhost:58443/`. فایل نمونه فقط non-secret config در `deploy/production.env.example` است.
-
-## evidence اجراشده
-
-| بررسی | نتیجهٔ مشاهده‌شده |
+| بررسی | مقدار مشاهده‌شده |
 |---|---|
-| production settings + health tests | ۶/۶ پاس روی PostgreSQL |
-| image build | API و web موفق؛ frontend `vite build`، ۲۴ module و assetهای static |
-| health/readiness | db، api و web healthy؛ `/healthz` و `/api/v1/health/ready` برابر 200 |
-| HTTPS/static/direct route | root و `/?view=history` از asset buildشده؛ secure-cookie/CSRF فعال |
-| browser smoke | Playwright/Chrome: create، read، edit، feedback، direct report URL، reload/history و delete؛ ۱ پاس |
-| port isolation | فقط web loopback published؛ API/DB host port ندارند |
-| restart persistence | هر سه container restart؛ session مالک، analysis و rating دوباره خوانده شدند؛ ۱ پاس |
-| missing/forbidden config | Compose بدون TLS path fail؛ secret غایب، DEBUG/test switch و live ناقص fail |
-| provider activity | `BEFOREBUY_AI_MODE=mock`؛ live invocation/call/token/cost همگی صفر |
-| regression | backend `121 passed`؛ frontend `8 passed`؛ typecheck/lint/build پاس؛ runtime `npm audit --omit=dev` صفر vulnerability |
+| image RepoDigest | `postgres@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29` |
+| image `PGDATA` | `/var/lib/postgresql/18/docker` |
+| image `VOLUME` | `/var/lib/postgresql` |
+| runtime `SHOW data_directory` | `/var/lib/postgresql/18/docker` |
+| named-volume destination پس از اصلاح | `/var/lib/postgresql` |
+| mount DB | فقط `volume beforebuy-m61_postgres_data /var/lib/postgresql`؛ secret bind جدا؛ anonymous volume صفر |
 
-دو finding در rehearsal با evidence اصلاح شدند: health probe ابتدا Host غیرمجاز `127.0.0.1` می‌فرستاد و به headerهای
-trusted اصلاح شد؛ NGINX ابتدا `root` صریح نداشت و fallback loop می‌ساخت، سپس direct route پاس شد. نخستین browser command
-به Node ناسازگار Hermes خورد؛ با Node قفل‌شدهٔ موجود `20.19.0` و بدون تغییر dependency اجرا شد.
+mount قبلی production روی `/var/lib/postgresql/data`، `PGDATA` واقعی را نمی‌پوشاند. `compose.production.yaml` به
+layout رسمی PostgreSQL 18 اصلاح شد. مستند رسمی image نیز تغییر 18+ به version-specific `PGDATA` و parent volume را
+تأیید می‌کند: <https://github.com/docker-library/docs/blob/master/postgres/content.md#pgdata>.
 
-## backup، restore، expiry و accounting
+برای حفاظت داده، پیش از تغییر config همهٔ volume/containerهای موجود inspect شدند. project production قبلی وجود نداشت.
+container توسعهٔ موجود همان اشکال را نشان داد: named volume قدیمی روی `/var/lib/postgresql/data` و anonymous parent
+volume روی `/var/lib/postgresql`؛ `SHOW data_directory` نیز مسیر 18 را داد. از database توسعه dump ایمنی custom-format
+گرفته شد و هیچ volume توسعه حذف، reinitialize یا remount نشد. تغییر توسعه به‌علت نیاز به migration داده، خارج scope
+production Phase 6.1 ماند و در operations به‌عنوان gap جدا ثبت شد.
 
-- `deploy/backup-postgres.sh` یک dump custom-format با umask 077 ساخت و retention هفت‌روزه را اعمال کرد. maintenance
-  بعدی نیز backup تازه و cleanup موفق ساخت.
-- dump واقعی در project دوم `beforebuy-m4-restore` و volume خالی restore شد. پیش از بازکردن web/API،
-  `purge_expired_analyses` اجرا شد: حذف‌ها صفر بودند.
-- restored data شامل یک analysis synthetic، GuestContext/session مالک و feedback=5 بود. همان storage state مرورگر روی
-  `https://localhost:58444` analysis و rating را خواند؛ browser check پاس شد.
-- authorization مصنوعی `authorized=100000`، `reserved=7000` و `spent=23000` تومان بدون reset restore شد. live mode
-  پس از restore همچنان mock ماند؛ re-spend مجاز نشد.
-- پس از backup، analysis در source حذف شد؛ نسخهٔ restored همچنان آن را داشت. این عمداً ثابت کرد backup درخواست حذف
-  بعدی را بازسازی نمی‌کند. procedure fail-closed در operations می‌گوید restore ایزوله، cleanup، reapply درخواست‌های
-  حذف شناخته‌شده و در نبود فهرست کامل «عدم بازگشایی»؛ event sourcing اضافه نشده است.
-- backupهای retained ممکن است دادهٔ حذف‌شده داشته باشند؛ erasure فوری backup ادعا نمی‌شود. storage باید restricted و
-  encrypted at rest و نسخهٔ off-host پیش از انتقال رمز شود.
+## آزمون recreation و persistence
 
-## migration، rollback و schedule
+rehearsal با project مستقل `beforebuy-m61`، HTTPS port `58445` و named volume
+`beforebuy-m61_postgres_data` انجام شد. داده‌ها کاملاً synthetic بودند:
 
-- fresh database از صفر تا migration `0004` کامل شد.
-- project سوم روی schema `0003` ساخته شد؛ backup قبل migration گرفته و سپس `0004` + dependencyها اعمال شد. چهار migration
-  analysis همگی `[X]` شدند.
-- application rollback مکانیکی به image ID سازگار و تست‌شده
-  `sha256:ccd6e29bf211395c8e2b4812865cef0bb1a9a4a3e982a19fe7268bdc8d4cf57c` انجام و readiness 200 شد. این evidence
-  rollback به image/schema مشخص است؛ rollback arbitrary migration ادعا نمی‌شود. migration ناسازگار باید با restore
-  backup قبل migration در volume تازه recovery شود.
-- maintenance payload واقعی backup+cleanup را موفق اجرا کرد. validation timer در container Debian به‌علت pull شبکه
-  کامل نشد؛ به‌جای ادعای pass، host scheduler macOS با launchd job موقت واقعی اجرا شد: دو run، آخرین exit=0 و cleanup
-  log موفق؛ job سپس unload شد. unit/timer production systemd ثبت است و activation/`list-timers` روی host Linux مقصد
-  همچنان release checklist است.
+- یک analysis و current report در mode mock؛
+- session مالک browser و feedback برابر ۵؛
+- `AIEvaluationAuthorization`: authorized=`100000`، reserved=`7000`، spent=`23000` تومان؛
+- `AILiveBudgetWindow`: reserved=`111` و spent=`222` microusd؛
+- یک `AIInvocation` با provider=`synthetic` و attempt صفر.
 
-## policy هزینهٔ اصلاح‌شده
+`docker compose down` بدون `--volumes` هر سه container و network را حذف کرد. همان named volume با labelهای
+`project=beforebuy-m61` و `volume=postgres_data` باقی ماند و stack از production config دوباره ساخته شد. پس از recreate:
 
-`512 × $30/M = $0.01536` فقط سهم output در worst-case reservation است، نه observed average. این bound ریسک عبور از
-target تاریخی `$0.0025/generation` را نشان می‌دهد، اما به‌تنهایی ناممکن‌بودن average را ثابت نمی‌کند. target تغییر
-نکرد؛ observed cost/generation تا live evidence برابر unmeasured، product-cost gate و overall pass برابر null و total
-evaluation allowance مستقل ۱۰۰٬۰۰۰ تومان باقی ماند.
+- `data_directory` همان `/var/lib/postgresql/18/docker` و mount همان named volume بود؛
+- countها analysis=`1`، session=`2`، feedback=`1` و invocation=`1` باقی ماندند؛
+- accounting دقیقاً `100000/7000/23000` و `111/222` باقی ماند؛
+- Playwright با storage state مالک، analysis و rating ۵ را دوباره خواند: `1 passed`؛
+- health پس از recreate برابر `200` بود.
+
+بنابراین evidence به restart وابسته نیست و persistence به anonymous volume متکی نیست.
+
+پس از جمع‌آوری evidence، container/networkهای rehearsal بدون `--volumes` متوقف و حذف شدند. volume اصلی synthetic
+و volume خالی live-config check عمداً حذف نشدند؛ certificate، dump، cookie، storage state و secretهای runtime از
+workspace خارج و به‌صورت recoverable به Trash محلی منتقل شدند و هیچ‌کدام وارد Git نمی‌شوند.
+
+## production AI configuration
+
+`compose.production.yaml` اکنون همهٔ non-secretهای factory را صریح map می‌کند: mode، provider، model، AvalAI
+eligibility، timeout، attempts، input/output limits، guest quota، deployment budget، USD→toman rate، margin و circuit
+threshold/cooldown. `BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED` و `BEFOREBUY_E2E_TEST_CONTROLS` در production صفرند.
+
+- base production default برابر mock است و بدون AvalAI secret healthy شد؛ settings واقعی container:
+  provider=`avalai`، model=`gpt-5.6-luna`، eligible=false، key_present=false، budget/rate=`0` و test_controls=false.
+- اجرای live بدون overlay/config کامل با exit=`1` و پیام actionable برای eligibility، file credential، budget و rate رد شد.
+- `compose.production.live.yaml` فقط در live، file secret را به `/run/secrets/avalai_api_key` mount می‌کند.
+- credential کاملاً synthetic با overlay و factory transport stub بارگذاری شد: `loaded_from_file=true`،
+  `stub_selected=true`، provider calls=`0` و test controls=false.
+- test rendering واقعی با `docker compose --env-file ... config --format json` ثابت کرد marker موجود فقط در host
+  env-file وارد container نمی‌شود، اما متغیرهای صریح map‌شده مقدار درست می‌گیرند.
+
+هیچ AvalAI/OpenAI call، token، usage یا هزینه‌ای در این Phase وجود نداشت.
+
+## health host، proxy و CSRF
+
+healthcheck دیگر `Host: localhost` ثابت نمی‌فرستد و از `BEFOREBUY_HEALTHCHECK_HOST` استفاده می‌کند. production settings
+خالی‌بودن، نبودن در `DJANGO_ALLOWED_HOSTS` و wildcard را fail closed رد می‌کند.
+
+در runtime با host مصنوعی `rehearsal.beforebuy.test`:
+
+- readiness با Host allowlisted برابر `200`؛
+- Host نامعتبر برابر `400`؛
+- `X-Forwarded-Proto=https` و secure redirect/proxy setting حفظ شد؛
+- cookieهای CSRF و session دارای `Secure` و `SameSite=Lax` بودند و session نیز `HttpOnly` بود؛
+- POST same-origin بدون CSRF token برابر `403`؛ flow معتبر CSRF در regressionهای backend پاس شد.
+
+هیچ wildcard host، خاموش‌کردن validation یا تغییر gateway trust boundary انجام نشد.
+
+## verification اجراشده
+
+| فرمان/بررسی | نتیجه |
+|---|---|
+| focused production settings/Host tests | ۱۰/۱۰ پاس روی PostgreSQL |
+| rendered Compose behavior tests | ۳/۳ پاس |
+| backend canonical suite از `backend/` با dev venv | ۱۲۵ پاس، ۱ skip؛ ۱۲۸ test discovered |
+| Django system check | issue صفر |
+| `makemigrations --check --dry-run` | `No changes detected` |
+| Playwright seed قبل recreation | ۱ پاس |
+| Playwright owner read بعد recreation | ۱ پاس |
+| production image build و سه service `up --wait` | موفق و هر سه healthy |
+| provider activity | صفر call و صفر هزینه |
+
+دو اجرای نامعتبر evidence محسوب نشدند: اجرای host اولیه با port/password نادرست پیش از اتصال test DB متوقف شد؛ اجرای
+suite در image production به‌علت نبود dev-only `PyYAML` شش import error داشت. dependency توسعه به image production
+اضافه نشد و suite canonical با venv توسعه اجرا و پاس شد. `manage.py test` از repo root نیز به‌علت collision `tests/e2e`
+صفر test کشف می‌کند؛ working directory معتبر `backend/` است.
 
 ## gateهای باقی‌مانده
 
-- T039: live AvalAI evidence هفت case و review انسانی کامل.
+- `T039`: live AvalAI evidence هفت case و review انسانی کامل؛ همچنان unchecked.
 - clarification مکتوب provider دربارهٔ eligibility/upstream/data retention و credit بدون خرید.
-- هیچ credential/credit محلی مجاز، provider call یا artifact انسانی در این Phase وجود نداشت.
-- target-host systemd activation، certificate/secret واقعی، monitoring و تصمیم صریح public deployment.
-- public deployment و ادعای full-product readiness مجاز یا انجام‌شده نیست.
+- target-host certificate/secret واقعی، systemd activation، monitoring و تصمیم صریح public deployment.
+- migration امن volume توسعهٔ موجود از anonymous PostgreSQL 18 parent به named volume؛ production اصلاح شده است.
+- هیچ full-product convergence یا public/live readiness ادعا نمی‌شود.
 
-## وضعیت taskها
-
-- T041: کامل و verified.
-- T042: کامل و verified.
-- T043: کامل برای rehearsal محلی ایزوله؛ target-host scheduler/public rollout یک release gate جدا و pending است.
-- T039: باز.
-
-**Production package locally rehearsed; live AI and public release pending**
+**Production configuration gaps corrected and locally verified; live AI and public release pending**

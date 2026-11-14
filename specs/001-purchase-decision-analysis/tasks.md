@@ -169,6 +169,18 @@ description: "Dependency-ordered implementation tasks for Purchase Decision Anal
 - [x] T042 [P] **[M4]** Define backup retention/erasure, migration and rollback responsibilities in `docs/backend-operations.md`
 - [x] T043 **[M4]** Execute and record health/readiness, migration, backup/restore and rollback rehearsals on a production-like PostgreSQL stack in `docs/handoff.md`
 
+### Phase 8.1: Production configuration corrections — Phase 6.1
+
+- [x] T058 **[M4]** Add failing production-configuration tests for the PostgreSQL 18 volume destination, complete
+  AvalAI non-secret/file-secret wiring, mock/live failure behavior and an allowlisted non-localhost healthcheck host.
+- [x] T059 **[M4]** Correct `compose.production.yaml`, production settings and the live file-secret overlay with the
+  minimal implementation required by `FR-051..FR-053`; keep mock default, direct OpenAI disabled and test controls off.
+- [x] T060 **[M4]** Rehearse a separate synthetic production project: verify exact image metadata, runtime
+  `data_directory`, named mounts/no anonymous volume, create analysis/session/feedback/accounting, remove/recreate
+  containers while preserving the volume, and re-check ownership plus accounting.
+- [x] T061 **[M4]** Run focused and affected regressions, record mock/live configuration and non-localhost Host/CSRF/proxy
+  evidence, update operations/handoff, and preserve `T039` plus public/live release gates as incomplete.
+
 ---
 
 ## Dependencies and execution order
@@ -180,7 +192,7 @@ Foundation → T016/T017/T018/T019/T020 → T021/T022/T023/T024/T025
 US1 backend → T028→T029 and T031→T032 → T035→T036→T037
 M1 complete → M2 (T026/T027/T030/T033/T034)
 M1 complete + explicit provider decisions → M3 (T038–T040) → review corrections (T044–T048) → Iran adaptation (T049–T052) → accounting corrections (T053–T057)
-M1+M2 implementation baseline → M4 packaging/local rehearsal (T041–T043)
+M1+M2 implementation baseline → M4 packaging/local rehearsal (T041–T043) → configuration corrections (T058–T061)
 T039 live evidence + provider/human gates + M4 packaging evidence → public-release readiness review
 ```
 

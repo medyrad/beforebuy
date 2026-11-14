@@ -102,10 +102,19 @@ python backend/manage.py evaluate_live_ai \
 ## بستهٔ production و startup کنترل‌شده
 
 فایل `deploy/production.env.example` را به یک مسیر خارج Git کپی کنید و path مطلق certificate، key و دو secret file
-با permission محدود را تنظیم کنید. `DJANGO_ALLOWED_HOSTS` و `DJANGO_CSRF_TRUSTED_ORIGINS` باید صریح باشند و origin
+با permission محدود را تنظیم کنید. `DJANGO_ALLOWED_HOSTS`، `DJANGO_CSRF_TRUSTED_ORIGINS` و
+`BEFOREBUY_HEALTHCHECK_HOST` باید صریح باشند؛ health host باید دقیقاً عضو allowlist و بدون wildcard باشد و origin
 فقط HTTPS است. `web` تنها port منتشرشده است؛ API/DB فقط روی networkهای Compose هستند. gateway مقدار
 `X-Forwarded-Proto=https` را جایگزین می‌کند و API فقط از network داخلی به آن دسترس دارد؛ همین مرز اعتماد دلیل
 `SECURE_PROXY_SSL_HEADER` است.
+
+PostgreSQL production روی digest دقیق
+`postgres@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29` است. metadata همین image
+`PGDATA=/var/lib/postgresql/18/docker` و `VOLUME=/var/lib/postgresql` دارد؛ بنابراین named volume باید روی
+`/var/lib/postgresql` mount شود، نه `/var/lib/postgresql/data`. پس از هر تغییر image major، هر سه مقدار image
+metadata، `SHOW data_directory` و `docker inspect <db> --format '{{json .Mounts}}'` را دوباره تطبیق دهید. restart
+مدرک کافی نیست؛ containerها باید با `down` بدون `--volumes` حذف و از همان named volume بازسازی شوند. هیچ volume
+فعال را برای این بررسی delete یا reinitialize نکنید.
 
 ```bash
 docker compose --project-name beforebuy-prod \
@@ -124,6 +133,27 @@ docker compose --project-name beforebuy-prod \
 migration عمداً command جداست و در CMD یا workerهای Gunicorn اجرا نمی‌شود. `DEBUG` و test control در production رد
 می‌شوند؛ secret key، hosts و origins غایب startup را متوقف می‌کنند. rehearsal با `BEFOREBUY_AI_MODE=mock` انجام می‌شود
 و UI آن را «نسخهٔ نمایشی / هوش مصنوعی زنده نیست» نشان می‌دهد. live ناقص نیز هنگام import تنظیمات production fail می‌شود.
+
+`--env-file` فقط برای interpolation خود Compose است و همهٔ کلیدهای آن خودکار وارد container نمی‌شوند. متغیرهای
+non-secret AvalAI در `compose.production.yaml` صریح map شده‌اند: mode، provider، model، eligibility، timeout، attempt،
+input/output limits، guest quota، deployment budget، USD→toman rate، margin و circuit controls. direct-OpenAI region
+flag در Compose همیشه صفر و test controls همیشه خاموش‌اند. mock default به AvalAI secret نیاز ندارد.
+
+برای live، پس از بسته‌شدن gateهای provider/credential/credit و بدون قرار دادن key در env یا Git، overlay را اضافه کنید:
+
+```bash
+docker compose --project-name beforebuy-prod \
+  --env-file /etc/beforebuy/production.env \
+  -f compose.production.yaml -f compose.production.live.yaml config --quiet
+docker compose --project-name beforebuy-prod \
+  --env-file /etc/beforebuy/production.env \
+  -f compose.production.yaml -f compose.production.live.yaml up -d --wait
+```
+
+در فایل خارج Git مقدار `AVALAI_API_KEY_FILE_PATH=/absolute/restricted/path` را تنظیم کنید. overlay آن را فقط به
+`/run/secrets/avalai_api_key` mount و `AVALAI_API_KEY_FILE` را به همان path اشاره می‌دهد. production settings هم
+provider/model/eligibility/credential، تمام limitها، rate/margin، budget و circuit values را fail closed بررسی می‌کند.
+وجود این wiring مجوز فعال‌سازی live یا provider call نیست.
 
 ## retention cleanup
 
@@ -207,3 +237,7 @@ docker compose --project-name beforebuy-prod --env-file /etc/beforebuy/productio
 - cookie از دست‌رفته یا منقضی recovery و cross-device access ندارد.
 - `check --deploy` باید با `config.settings.production` و secretهای runtime اجرا شود؛ TLS در gateway خاتمه می‌یابد.
 - logging پیکربندی‌شده answer، session/CSRF و raw AI payload را ثبت نمی‌کند.
+- `compose.yaml` توسعه در baseline موجود برای PostgreSQL 18 هنوز mount قدیمی `/var/lib/postgresql/data` دارد و
+  container فعلی توسعه `PGDATA` را روی anonymous parent volume نگه می‌دارد. Phase 6.1 برای جلوگیری از جابه‌جایی
+  خودسرانهٔ دادهٔ توسعه فقط production را اصلاح کرد؛ پیش از اصلاح جداگانهٔ development باید dump/restore یا migration
+  رسمی volume برنامه‌ریزی و همان داده verify شود.

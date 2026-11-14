@@ -1,0 +1,10 @@
+services:
+  api:
+    environment:
+      AVALAI_API_KEY_FILE: /run/secrets/avalai_api_key
+    secrets:
+      - avalai_api_key
+
+secrets:
+  avalai_api_key:
+    file: ${AVALAI_API_KEY_FILE_PATH:?set AVALAI_API_KEY_FILE_PATH}

@@ -4,9 +4,9 @@
 
 ## وضعیت فعلی
 
-**Phase 5 — M3 adapter** پیاده‌سازی شده و live evaluation هنوز pending است. Django/DRF API، engine قطعی،
-persistence، رابط React فارسی/RTL، history، browser journey و adapter محدود OpenAI موجودند. mode پیش‌فرض همچنان
-mock است؛ اجرای واقعی تا تأیید region، credential backend و budget صریح انجام نشده و production deployment در M4 است.
+**Phase 6.1 — production configuration corrections** محلی پیاده و rehearse شده است. Django/DRF API، engine قطعی،
+persistence، رابط React فارسی/RTL، history، browser journey، adapter محدود AvalAI و بستهٔ production سه‌سرویسی موجودند.
+mode پیش‌فرض همچنان mock است؛ live evaluation، target-host release gates و deployment عمومی pending هستند.
 
 ## راهنمای اسناد
 
@@ -19,6 +19,7 @@ mock است؛ اجرای واقعی تا تأیید region، credential backend 
 - [آرشیو تحویل Phase 1.1](docs/archive/phase-1.1-handoff.md)
 - [آرشیو تحویل Phase 2](docs/archive/phase-2-handoff.md)
 - [آرشیو تحویل Phase 3](docs/archive/phase-3-handoff.md)
+- [آرشیو تحویل Phase 6](docs/archive/phase-6-handoff.md)
 - [عملیات backend](docs/backend-operations.md)
 - [قانون اساسی Spec Kit](.specify/memory/constitution.md)
 - [Specification تحلیل تصمیم خرید](specs/001-purchase-decision-analysis/spec.md)
