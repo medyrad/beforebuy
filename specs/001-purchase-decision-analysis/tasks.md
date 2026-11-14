@@ -145,6 +145,22 @@ description: "Dependency-ordered implementation tasks for Purchase Decision Anal
   execute a live run only if all eligibility/credential/credit gates are already satisfied, and update `docs/handoff.md`؛
   leave `T039` open until live evidence and human review both exist
 
+### Phase 7.3: Evaluation and accounting corrections — Phase 5.3
+
+- [x] T053 **[M3]** Correct `FR-045..FR-050`, `AC-AI-011..015`, evaluation policy v1.2 and data contracts for
+  independent persistent evaluation/deployment budgets, pre-call rejection, partial evidence, per-attempt settlement and
+  separated gates; preserve `T039` and M4 as pending
+- [x] T054 [P] **[M3]** Add failing focused tests for budget restart/midnight/concurrency, budget/quota/circuit pre-call
+  rejection, atomic partial artifacts, retry known/unknown/malformed/duplicate/underflow/recovery accounting and invalid
+  monetary values in `backend/tests/ai/`
+- [x] T055 **[M3]** Add the minimal PostgreSQL models/migration and ledger changes for persistent evaluation authorization,
+  durable sanitized invocation ownership, independent atomic reservation, per-attempt settlement and explicit recovery
+- [x] T056 **[M3]** Correct `evaluate_live_ai` to preserve the configured deployment budget, checkpoint synthetic evidence
+  atomically, represent zero-call rejections, retain incomplete runs and support restart/resume without resetting allowance
+- [x] T057 **[M3]** Version evaluation policy as `PDA-AI-EVAL-v1.2`, separate structural/human/latency/spend/product-cost
+  gates, record the selected model's historical-target incompatibility, run focused/PostgreSQL/full verification and update
+  operations plus `docs/handoff.md`; no live call
+
 ---
 
 ## Phase 8: Production packaging and operations — M4
@@ -163,7 +179,7 @@ T005 → T006→T007, T008→T009, T010→T011, T012→T013, T014→T015
 Foundation → T016/T017/T018/T019/T020 → T021/T022/T023/T024/T025
 US1 backend → T028→T029 and T031→T032 → T035→T036→T037
 M1 complete → M2 (T026/T027/T030/T033/T034)
-M1 complete + explicit provider decisions → M3 (T038–T040) → review corrections (T044–T048) → Iran adaptation (T049–T052)
+M1 complete + explicit provider decisions → M3 (T038–T040) → review corrections (T044–T048) → Iran adaptation (T049–T052) → accounting corrections (T053–T057)
 M1+M2+M3 readiness → M4 (T041–T043)
 ```
 

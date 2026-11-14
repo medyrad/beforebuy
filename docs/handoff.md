@@ -1,4 +1,69 @@
-# تحویل Phase 5.2 — انتخاب provider مناسب ایران
+# تحویل Phase 5.3 — اصلاح evaluation و accounting
+
+**تاریخ:** ۱۴ نوامبر ۲۰۲۶  
+**وضعیت:** اصلاحات verified؛ live evaluation و review انسانی pending  
+**مرز:** فقط M3؛ بدون live call، خرید/شارژ، deployment یا M4
+
+## نتیجه
+
+- هر پنج finding تأیید و اصلاح شد: اختلاط scope بودجه، crash در pre-call rejection، از دست رفتن partial evidence،
+  حسابداری مبهم retry/underflow و threshold ناسازگار.
+- Spec Kit با `FR-045..050`، `AC-AI-011..015` و `T053..057` به‌روز شد؛ `$speckit-analyze` تعارض بحرانی یا
+  constitution violation پیدا نکرد. `T039` و `T041..043` همچنان بازند.
+- provider/model تغییر نکرد: AvalAI Responses API، `gpt-5.6-luna` و tariff `$5/M` input، `$0.5/M` cached input،
+  `$30/M` output. direct OpenAI همچنان غیرفعال است.
+
+## اصلاحات فنی
+
+- migration `0004` مدل `AIEvaluationAuthorization` را برای allowance پایدار اولیه اضافه کرد و `AIInvocation` را با
+  ownership غیر-cascade، run/case IDs، snapshot نرخ و known/unknown usage تکمیل کرد.
+- deployment daily budget و total evaluation authorization هم‌زمان و مستقل lock/reserve می‌شوند؛ rollover روزانه
+  allowance evaluation را reset نمی‌کند و concurrency از cap عبور نمی‌کند.
+- settlement usage معلوم همه attemptها را جمع، unknown را per-attempt محافظه‌کارانه و overage را visible نگه می‌دارد؛
+  duplicate no-op است و underflow به‌جای `max(0)` خطا می‌دهد. malformed/incomplete response با billable usage آن را حفظ می‌کند.
+- command پیش از call و پس از هر case artifact را atomically checkpoint می‌کند. budget/quota/circuit rejection صفر-call
+  و incomplete است. `--resume-artifact` reservation رهاشده را محافظه‌کارانه reconcile و evidence قبلی را نگه می‌دارد.
+- NaN/Infinity/negative/zero نامعتبر برای cap/rate/margin/credit fail closed است.
+
+## policy هزینه
+
+- `PDA-AI-EVAL-v1.2` structural، latency، human، total spend و product cost را جدا می‌کند.
+- target تاریخی `$0.0025/generation` با مدل منتخب سازگار نیست: فقط output bound برابر
+  `512 × $30/M = $0.01536` است. threshold برای پاس شدن relax نشد؛ product-cost target تازه pending تصمیم product lead
+  است و `product_cost_target_pass=null`/`overall_pass=null` باقی می‌ماند.
+- allowance اولیه ۱۰۰٬۰۰۰ تومان شامل retryهاست و estimate محلی تضمین invoice provider نیست.
+
+## evidence و وضعیت live
+
+- فقط stub provider و dataset synthetic موجود استفاده شد؛ هیچ payload واقعی یا raw transport ذخیره نشد.
+- live model call: **۰**؛ retry live: **۰**؛ token live: **۰**؛ هزینهٔ live: **۰ تومان**.
+- artifact انسانی live ساخته نشد. در run آینده چهار field انسانی هر case تا review برابر null می‌مانند.
+- credential/eligibility/upstream clarification همچنان فراهم نشده؛ هیچ key در Git/chat نیست و هیچ خریدی انجام نشد.
+
+## verification Phase 5.3
+
+- red phase: نبود checkpoint API یک error معنادار ایجاد کرد.
+- focused accounting/checkpoint/concurrency: ۱۰ تست PostgreSQL پاس.
+- command rejection/recoveryهای budget/quota/circuit/interruption: ۸ تست پاس و model-call count صفر در rejectionها.
+- AI suite: ۴۷ تست پاس.
+- backend regression: ۱۱۲ تست پاس.
+- Django check: issue صفر؛ migration drift: `No changes detected`؛ compile و diff whitespace: پاس.
+
+## ادامهٔ مجاز
+
+پس از clarification و credential/credit ازقبل‌موجود، متغیرهای محلی Phase 5.2 را همراه deployment daily budget تنظیم
+کنید و command را اجرا کنید. اگر قطع شد، allowance را reset نکنید:
+
+```bash
+python backend/manage.py evaluate_live_ai --resume-artifact artifacts/ai-evaluation/<run-id>.json
+python backend/manage.py assess_ai_review artifacts/ai-evaluation/<run-id>.json
+```
+
+`T039` فقط پس از live evidence واقعی هر هفت case و review انسانی کامل بسته می‌شود.
+
+---
+
+## تحویل تاریخی Phase 5.2 — انتخاب provider مناسب ایران
 
 **تاریخ:** ۱۴ نوامبر ۲۰۲۶  
 **وضعیت:** adaptation مستقل کامل؛ live evaluation و review انسانی pending  

@@ -187,6 +187,22 @@ report persistشده، شامل limited report، آغاز و ۹۰ روز بعد 
 - **FR-044**: کل evaluation اولیه، شامل همه retryها، MUST پیش از provider call در سقف `100,000` تومان رزرو شود.
   credential، balance واجد شرایط، rate تازه، cap محلی `<=100,000` و clarification eligibility همگی gate هستند؛
   estimate اپلیکیشن تضمین invoice نیست و `T039` تا live evidence واقعی و human review کامل باز می‌ماند.
+- **FR-045**: deployment daily budget و evaluation authorization کل `100,000` تومان MUST دو scope مستقل و
+  persistent باشند. evaluation allowance MUST across restart، processهای هم‌زمان و UTC-midnight مصرف‌شده و
+  reservationهای outstanding را حفظ کند؛ rollover روزانه فقط برای deployment window است.
+- **FR-046**: rejection پیش از provider call (budget، guest quota یا circuit) MUST zero attempt/call و یک reason
+  ساختاریافته ثبت کند، بدون usage/response ساختگی؛ evaluation runner MUST آن را case success یا live evidence تلقی نکند.
+- **FR-047**: runner MUST پیش از call و پس از هر case یک artifact synthetic-only را atomically checkpoint کند.
+  interruption/failure MUST evidence تکمیل‌شده، last completed، remaining cases و status incomplete را حفظ کند؛
+  cleanup guest MUST metadata عملیاتی لازم را cascade-delete نکند.
+- **FR-048**: settlement MUST هزینهٔ usage معلوم هر attempt را جمع کند و برای attempt نامعلوم allowance محافظه‌کارانه
+  بیفزاید. malformed response دارای usage MUST همان usage را حفظ کند؛ overage MUST visible باشد؛ settlement تکراری
+  no-op و reserved-underflow MUST خطای صریح باشد. recovery reservation رهاشده MUST محافظه‌کارانه و auditable باشد.
+- **FR-049**: policy `PDA-AI-EVAL-v1.2` MUST total authorized spend، product cost target، structural، human و latency
+  را gateهای جدا نگه دارد. آستانهٔ تاریخی `$0.0025` MUST برای مدل AvalAI به‌عنوان incompatible گزارش شود، نه برای
+  pass شدن تغییر کند. تا تصویب target تازه، product-cost gate و overall pass MUST pending/null بمانند.
+- **FR-050**: همهٔ monetary configها، rate، margin و credit provider MUST finite و در دامنهٔ معتبر باشند؛ NaN،
+  Infinity، negative و zero نامعتبر MUST پیش از account/model call با خطای actionable رد شوند.
 
 ### Key Entities
 

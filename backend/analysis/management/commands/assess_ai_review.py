@@ -24,6 +24,8 @@ class Command(BaseCommand):
         results = []
         try:
             for case in artifact["cases"]:
+                if case.get("status", "completed") != "completed":
+                    continue
                 recorded = case["result"]
                 human = case["human_review"]
                 if human["semantic_support"] is not None and not isinstance(human["semantic_support"], bool):
@@ -51,11 +53,15 @@ class Command(BaseCommand):
                 ))
         except (KeyError, TypeError) as exc:
             raise CommandError("review artifact case fields are invalid") from exc
-        assessment = assess_results(results)
+        budget_evidence = artifact.get("budget_evidence") or {}
+        assessment = assess_results(results, total_spend_pass=budget_evidence.get("within_authorization"))
         self.stdout.write(json.dumps({
             "dataset": artifact["dataset"], "run_id": artifact["run_id"], "model": artifact["model"],
             "prompt_version": artifact["prompt_version"], "schema_version": artifact["schema_version"],
             "structural_pass": assessment.structural_pass, "operational_pass": assessment.operational_pass,
+            "latency_pass": assessment.latency_pass,
+            "product_cost_target_pass": assessment.product_cost_target_pass,
+            "total_spend_pass": assessment.total_spend_pass,
             "human_review_complete": assessment.human_review_complete, "human_pass": assessment.human_pass,
             "overall_pass": assessment.overall_pass, "case_count": assessment.case_count,
         }, sort_keys=True))

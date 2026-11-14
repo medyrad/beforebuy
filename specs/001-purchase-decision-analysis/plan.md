@@ -33,6 +33,15 @@ schema-versioned و بدون نیاز query رابطه‌ای
 **Scale/Scope**: یک category (تلفن)، یک questionnaire، چهار dimension، ده rule outcome، history آخرین state،
 یک rating جاری؛ ظرفیت اولیه تک‌سرور و workload کم/نامشخص، بدون ادعای benchmark production
 
+### Phase 5.3 accounting correction
+
+PostgreSQL دو scope را جدا نگه می‌دارد: `AILiveBudgetWindow` روزانه برای deployment و یک
+`AIEvaluationAuthorization` ثابت برای allowance اولیهٔ ۱۰۰٬۰۰۰ تومان. reserve هر دو row را در transaction کوتاه
+lock می‌کند؛ network بیرون transaction می‌ماند. `AIInvocation` metadata sanitized را پس از حذف guest نگه می‌دارد،
+attemptهای معلوم/نامعلوم را جدا settle می‌کند و recovery صریح برای reservation رهاشده دارد. runner artifact را
+پیش از call و پس از هر case atomically checkpoint می‌کند و rejection پیش از call را zero-attempt incomplete evidence
+می‌نویسد. هیچ queue، billing subsystem یا provider abstraction تازه اضافه نمی‌شود.
+
 ## Constitution Check
 
 *GATE: پیش از research و دوباره پس از design بررسی شد؛ همه gateها pass هستند.*

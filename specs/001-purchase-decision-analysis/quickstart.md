@@ -102,5 +102,14 @@ docker compose run --rm api python backend/manage.py evaluate_live_ai --artifact
 docker compose run --rm api python backend/manage.py assess_ai_review artifacts/ai-evaluation/<run-id>.json
 ```
 
-خروجی automatic فقط structural/operational evidence است و semantic fields تا review انسانی `null` می‌مانند.
+اگر run پس از checkpoint قطع شد، allowance را reset نکنید و همان artifact را resume کنید:
+
+```bash
+BEFOREBUY_LIVE_EVAL_BUDGET_TOMAN=100000 \
+docker compose run --rm api python backend/manage.py evaluate_live_ai \
+  --resume-artifact artifacts/ai-evaluation/<run-id>.json
+```
+
+خروجی automatic gateهای structural، latency، spend و product-cost را جدا نگه می‌دارد؛ product-cost target
+فعلاً pending است و semantic fields تا review انسانی `null` می‌مانند.
 mock test یا summary خودکار جای live/human evidence نیست.

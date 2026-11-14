@@ -1,8 +1,7 @@
 # M3 live-explanation evaluation
 
-**Version:** `PDA-AI-EVAL-v1.1`  
-**Status:** harness corrected; live run and human review remain pending until supported region, local credential and an
-explicit owner-approved budget exist.
+**Version:** `PDA-AI-EVAL-v1.2`  
+**Status:** accounting correction specified; live run and human review remain pending.
 
 ## Independent synthetic dataset
 
@@ -33,8 +32,11 @@ credentials, real-user input, raw provider transport, raw prompt or raw response
 - Readability median >= 4/5 with no case < 3; actionability median >= 4/5; added usefulness median >= 3/5.
 - Successful-call latency threshold remains 8s. For this tiny set the reported maximum is only the sample's upper end,
   not a production p95 estimate.
-- Average application estimate <= $0.0025/generation and total never above the explicit run cap. The application cap is
-  not a guaranteed provider invoice cap.
+- Total experiment spend، structural validity، latency، human review و product cost target gateهای مستقل‌اند.
+- `$0.0025/generation` آستانهٔ تاریخی قبل از انتخاب provider است. فقط 512 output token با تعرفهٔ `$30/M` تا
+  `$0.01536` هزینه دارد؛ بنابراین مدل منتخب نمی‌تواند worst-case این target را برآورده کند. target به‌جای relax شدن
+  `incompatible/pending product decision` ثبت می‌شود و overall pass تا تصمیم تازه null می‌ماند.
+- total initial authorization برابر 100,000 تومان across restart/retry است و invoice provider را تضمین نمی‌کند.
 
 No keyword blacklist or LLM-as-judge is treated as semantic validation. Threshold changes require a new dataset version
 and rationale.
@@ -47,10 +49,14 @@ UTF-8 bytes are a conservative local token upper bound, not tokenizer-exact. Off
 request framing consume tokens and recommends the input-token endpoint for exact counts; this project does not add a
 separate paid preflight call. Cached-input discounts are ignored.
 
-Observed single-attempt usage is settled at its full reported token cost without clipping to reservation. Retried or
-unknown usage settles at the complete reservation because the final response does not expose all prior-attempt usage.
-Settlement is idempotent. An observed overage remains visible as `estimated_cost - reserved_cost`, increases the shared
-spent total honestly and blocks later reservations when the daily budget is exhausted. Provider invoice remains final.
+هر attempt یک usage معلوم یا unknown allowance دارد. known usage جمع و هرگز clip نمی‌شود؛ unknown attempt به اندازهٔ
+per-attempt reservation محافظه‌کارانه settle می‌شود. malformed output با usage معلوم نیز usage را حفظ می‌کند.
+settlement idempotent است، observed overage visible می‌ماند و reserved underflow خطای integrity است. reservation
+رهاشده با recovery صریح و محافظه‌کارانه settle می‌شود؛ این estimate invoice قطعی نیست.
+
+deployment `AILiveBudgetWindow` در UTC روزانه rollover دارد. authorization اولیهٔ evaluation یک ledger پایدار مستقل
+در تومان است و midnight/process restart آن را reset نمی‌کند. reserve هر دو scope در یک transaction کوتاه انجام می‌شود.
+artifact قبل از call و پس از هر case با replace اتمیک checkpoint و در interruption با `status=incomplete` حفظ می‌شود.
 
 Selected-provider pricing verified 2026-11-14 from AvalAI's model contract: `gpt-5.6-luna`, $5/M input,
 $0.5/M cached input and $30/M output. Cached discounts are not assumed in reservation. The current IRT-per-UNIT rate

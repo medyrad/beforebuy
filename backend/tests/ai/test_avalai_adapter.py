@@ -7,11 +7,13 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
 
 from analysis.ai.avalai_adapter import (
+    AvalAIAccountClient,
     AvalAIExplanationGenerator,
     AvalAIResponsesTransport,
     ProviderResult,
     ProviderUsage,
 )
+from analysis.ai.openai_adapter import ProviderPermanentError
 from analysis.ai.avalai_pricing import (
     conservative_microusd_cap,
     estimate_cost_toman,
@@ -48,6 +50,20 @@ class _FakeResponses:
 class _FakeClient:
     def __init__(self):
         self.responses = _FakeResponses()
+
+
+class _FakeCreditResponse:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode()
 
 
 class AvalAIAdapterContractTests(TestCase):
@@ -101,6 +117,18 @@ class AvalAIAdapterContractTests(TestCase):
             869_565,
         )
 
+    @patch("analysis.ai.avalai_adapter.urlopen")
+    def test_account_credit_rejects_non_finite_credit_or_exchange_rate(self, urlopen):
+        client = AvalAIAccountClient("local-test-key")
+        for payload in (
+            {"remaining_irt": "NaN", "exchange_rate": "100000"},
+            {"remaining_irt": "1000", "exchange_rate": "Infinity"},
+        ):
+            with self.subTest(payload=payload):
+                urlopen.return_value = _FakeCreditResponse(payload)
+                with self.assertRaisesMessage(ProviderPermanentError, "avalai_credit_response_invalid"):
+                    client.fetch_credit()
+
     def test_invocation_records_avalai_not_direct_openai_and_no_payload(self):
         result = ProviderResult(
             json.dumps(valid_payload()), ProviderUsage(100, 20),
@@ -145,3 +173,18 @@ class AvalAIAdapterContractTests(TestCase):
         configured_explanation_generator(RequestFactory().get("/"), self.guest)
         from_api_key.assert_called_once()
         self.assertEqual(from_api_key.call_args.kwargs["model"], "gpt-5.6-luna")
+
+    @override_settings(
+        BEFOREBUY_AI_MODE="live",
+        BEFOREBUY_AI_PROVIDER="avalai",
+        BEFOREBUY_AVALAI_ELIGIBILITY_CONFIRMED=True,
+        AVALAI_API_KEY="avalai-local-key",
+        BEFOREBUY_AI_USD_TO_TOMAN_RATE="NaN",
+        BEFOREBUY_AI_DAILY_BUDGET_TOMAN="1000",
+    )
+    @patch("analysis.ai.factory.AvalAIExplanationGenerator.from_api_key")
+    def test_factory_rejects_non_finite_money_before_adapter_creation(self, from_api_key):
+        selected = configured_explanation_generator(RequestFactory().get("/"), self.guest)
+        self.assertIsInstance(selected, UnavailableLiveExplanationGenerator)
+        self.assertIn("finite", selected.reason)
+        from_api_key.assert_not_called()

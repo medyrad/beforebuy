@@ -41,11 +41,15 @@ race testها به PostgreSQL واقعی متصل‌اند و از `threading.Ev
 - `AILiveBudgetWindow` با row lock، worst-case همه attemptها را پیش از call رزرو می‌کند. deployment budget تومان
   و نرخ IRT-per-UNIT بدون default مثبت‌اند و در نبود تنظیم صریح fail closed می‌شوند؛ per-guest برابر ۱۰ generation/day
   است و پنج failure متوالی circuit را پنج دقیقه باز می‌کند.
-  provider call بیرون transaction است. settlement idempotent است، usage مشاهده‌شده clip نمی‌شود و retry/usage نامعلوم
-  reservation کامل را charge می‌کند. invoice provider مرجع نهایی است و application cap تضمین invoice نیست.
-- `AIInvocation` فقط provider/model/version، latency، token usage، attempt count، status/error class، request ID و estimate هزینه
-  را نگه می‌دارد. answer، label، session secret، prompt/response یا exception text ذخیره نمی‌شود و metadata متصل به
-  guest پس از ۹۰ روز در cleanup حذف می‌شود.
+  provider call بیرون transaction است. settlement idempotent است؛ usage معلوم هر attempt کامل جمع می‌شود و هر
+  attempt نامعلوم فقط allowance محافظه‌کارانهٔ خودش را می‌گیرد. overage clip نمی‌شود و reserved underflow خطای
+  integrity است. invoice provider مرجع نهایی است و application cap تضمین invoice نیست.
+- `AIEvaluationAuthorization` allowance اولیهٔ ۱۰۰٬۰۰۰ تومان را مستقل از deployment window نگه می‌دارد. spent و
+  outstanding reservation در restart، process هم‌زمان و UTC-midnight reset نمی‌شوند؛ midnight فقط window روزانه را
+  عوض می‌کند. هر reserve هر دو scope را atomically بررسی می‌کند.
+- `AIInvocation` فقط metadata عملیاتی sanitized شامل run/case/operation، provider/model/version، usage معلوم/نامعلوم،
+  request ID و snapshot نرخ را نگه می‌دارد. حذف guest آن را فوراً cascade نمی‌کند تا evidence/reconciliation باقی بماند؛
+  cleanup ۹۰روزه همچنان آن را حذف می‌کند. answer، label، secret، raw prompt/response و exception text ذخیره نمی‌شود.
 - evaluation cap هیچ default ندارد و با `BEFOREBUY_LIVE_EVAL_BUDGET_TOMAN` فقط برای command صریح و حداکثر
   ۱۰۰٬۰۰۰ تومان تنظیم می‌شود. command قبل از model call نرخ/credit را از User API AvalAI می‌گیرد، margin ۱۵٪ و
   همه retryها را رزرو می‌کند. estimate تضمین invoice نیست.
@@ -79,6 +83,18 @@ export BEFOREBUY_AI_DAILY_BUDGET_TOMAN='<approved-production-cap>'
 export BEFOREBUY_LIVE_EVAL_BUDGET_TOMAN=100000
 python backend/manage.py evaluate_live_ai --artifact-dir artifacts/ai-evaluation
 ```
+
+command پیش از call و بعد از هر case artifact را با replace اتمیک checkpoint می‌کند. rejection بودجه/guest/circuit
+به‌صورت `status=rejected`، attempts/model-call صفر و reason ساختاریافته ثبت می‌شود و run موفق نیست. برای resume:
+
+```bash
+python backend/manage.py evaluate_live_ai \
+  --resume-artifact artifacts/ai-evaluation/<run-id>.json
+```
+
+اگر checkpoint دارای invocation رزروشدهٔ ناتمام باشد، resume آن reservation را محافظه‌کارانه recover/settle،
+`recovered_failed` و سپس case را با operation تازه اجرا می‌کند. این recovery تخمین ایمن است؛ مبلغ provider/invoice
+نامعلوم را مبلغ قطعی معرفی نمی‌کند. پیش از reconcile دستی rowهای `reserved` را حذف یا counterها را ویرایش نکنید.
 
 اگر account نیازمند خرید، subscription یا top-up بود، متوقف شوید؛ Phase 5.2 چنین اختیاری نمی‌دهد. پس از run، artifact
 فقط synthetic baseline/AI output و metadata را دارد و چهار field human review تا تکمیل reviewer برابر null می‌مانند.

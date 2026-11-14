@@ -55,7 +55,7 @@ performance عمومی نیست. dependency برنامه‌ای نصب نشد.
 | Need | Selected tool/skill | Alternatives | Evidence | Version | Install phase | Verification | Reason for deferral |
 |---|---|---|---|---|---|---|---|
 | Complete request estimate | project-owned `analysis.ai.pricing` | local tokenizer؛ paid input-token preflight | official token-counting docs say schema/framing count and local tokenizers are not exact. UTF-8 byte upper-bound + 15%/256-token margin, output bound and all attempts use the current official standard price. | `gpt-6-luna` price checked 2026-11-14 | Phase 5.1 | focused pricing/ledger tests؛ observed usage is not clipped؛ settlement idempotent | exact token-count endpoint deferred because it adds a network/billable preflight and does not guarantee invoice cap |
-| Human semantic review | synthetic JSON artifact + project command | keyword blacklist؛ LLM judge | valid IDs cannot prove Persian entailment. Artifact has case/run/model/prompt/schema, deterministic baseline, rendered explanation and null review fields. | `PDA-AI-EVAL-v1.1` | Phase 5.1 | harness tests; live artifact not generated because gates remain unset | real live output and completed human ratings remain `T039` |
+| Human semantic review | atomic synthetic JSON checkpoint + project assess/resume commands | keyword blacklist؛ LLM judge | valid IDs cannot prove Persian entailment. v1.2 separates structural/latency/spend/product-cost/human gates and preserves partial evidence without raw transport. | `PDA-AI-EVAL-v1.2` | Phase 5.3 | checkpoint/recovery/rejection tests; live artifact not generated because gates remain unset | real live output and completed human ratings remain `T039` |
 
 ## Phase 5.2 Iran-provider inventory
 

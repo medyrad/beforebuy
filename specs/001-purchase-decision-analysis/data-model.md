@@ -13,6 +13,7 @@ Analysis     1 ─────────────────────�
 Analysis     1 ────────────────────────── 0..1 UsefulnessFeedback
 GuestContext 1 ─────────────────────────── * AIInvocation
 AILiveBudgetWindow 1 ───────── reserves/settles ───── * AIInvocation
+AIEvaluationAuthorization 1 ─── reserves/settles ───── * AIInvocation
 ```
 
 `Evidence` table جدا ندارد: evidence فقط همراه current report خوانده/جایگزین می‌شود و requirement جست‌وجوی مستقل
@@ -82,7 +83,7 @@ persist نمی‌شود.
 | Field | Type / constraint | Purpose |
 |---|---|---|
 | `id` | UUID primary key | شناسهٔ داخلی invocation |
-| `guest_context_id` | FK cascade | اجرای limit روزانه بدون session identifier در log |
+| `guest_context_id` | nullable FK SET_NULL | اجرای limit روزانه؛ حذف guest evidence عملیاتی sanitized را حذف نمی‌کند |
 | `operation_id` | UUID unique | idempotent reservation برای یک generation operation |
 | `provider` / `model` | bounded varchar | breakdown نسخهٔ provider/model |
 | `prompt_version` / `schema_version` | bounded varchar | reproducibility بدون raw payload |
@@ -95,6 +96,10 @@ persist نمی‌شود.
 | `estimated_cost_microusd` | non-negative bigint | settlement محافظه‌کارانه |
 | `provider_request_id` | nullable bounded string | AvalAI request ID برای ردیابی هزینه؛ payload نیست |
 | `provider_estimated_cost_toman` | nullable decimal | estimate گزارش‌شده provider؛ invoice قطعی نیست |
+| `evaluation_authorization_id` / `evaluation_reserved_toman` | nullable FK/decimal | scope مستقل evaluation و reservation operation |
+| `evaluation_run_id` / `evaluation_case_id` | nullable bounded identifiers | trace synthetic run/case بدون payload |
+| `known_cost_microusd` / `unknown_cost_microusd` | non-negative bigint | usage معلوم و allowance نامعلوم attemptها |
+| `usage_complete` | boolean | آیا تمام attemptها usage معلوم داشتند |
 | `created_at` / `completed_at` | timestamptz | window و audit عملیاتی |
 
 ## AILiveBudgetWindow
@@ -118,6 +123,13 @@ reservation charge می‌شود. settlement تکراری no-op است، usage �
 نام fieldهای `*_microusd` واحد تعرفهٔ مدل AI را نگه می‌دارند و با پول خرید (`price_toman`/`budget_toman`) مخلوط
 نمی‌شوند. برای AvalAI، preflight با نرخ تازهٔ `IRT-per-UNIT` و margin ۱۵٪ cap تومان را به سقف محافظه‌کارانهٔ
 micro-USD تبدیل می‌کند. `provider_estimated_cost_toman` فقط evidence provider است؛ transaction lookup/invoice مرجع نهایی است.
+
+## AIEvaluationAuthorization
+
+یک row نسخه‌دار برای allowance اولیه (`PDA-AI-EVAL-INITIAL-2026`) با `authorized_toman=100000`،
+`reserved_toman`، `spent_estimate_toman` و timestamp نگه داشته می‌شود. `select_for_update` مانع reset یا overspend
+بین processها است. midnight فقط deployment window را عوض می‌کند. recovery reservation رهاشده را با unknown allowance
+settle می‌کند و هر ناسازگاری reserved را به‌جای clamp کردن خطا می‌دهد.
 
 ## UsefulnessFeedback
 

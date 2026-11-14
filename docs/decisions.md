@@ -149,3 +149,15 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
   upstream برای کاربران ایران را مستند نکرده است. همچنین مصرف signup grant برای همین model بدون base top-up باید از
   `/credit` یا پاسخ provider تأیید شود. تا آن زمان production activation و live evaluation eligible تلقی نمی‌شوند.
 - T039 فقط پس از artifact live هفت case و review انسانی کامل می‌شود؛ test stub یا output ساختاری به‌تنهایی کافی نیست.
+
+## اصلاحات Phase 5.3 — accounting و evaluation
+
+- cap روزانهٔ deployment و authorization کل evaluation دو تصمیم مستقل‌اند؛ command حق جایگزین‌کردن اولی با دومی را ندارد.
+- allowance اولیهٔ ۱۰۰٬۰۰۰ تومان یک authorization پایدار است، نه budget روزانه/هر process. spent و outstanding reservation
+  در PostgreSQL across restart، concurrency و midnight حفظ می‌شوند.
+- rejection پیش از provider call evidence یک call نیست: attempt/token/cost صفر و reason ساختاریافته دارد و run را ناقص نگه می‌دارد.
+- usage هر attempt جدا حساب می‌شود؛ known usage clip نمی‌شود و unknown attempt allowance محافظه‌کارانه می‌گیرد.
+  reserved underflow integrity error است و recovery رهاشدگی invoice قطعی ادعا نمی‌کند.
+- policy `PDA-AI-EVAL-v1.2` spend authorization، structural، latency، human و product cost target را جدا می‌کند.
+  آستانهٔ تاریخی `$0.0025/generation` با worst-case output مدل منتخب (`$0.01536`) ناسازگار است؛ این finding ثبت
+  می‌شود و threshold برای pass شدن relax نمی‌شود. target تازه تصمیم product lead است و فعلاً pending می‌ماند.

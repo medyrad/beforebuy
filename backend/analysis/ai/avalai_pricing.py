@@ -29,7 +29,8 @@ def observed_avalai_usage_cost_microusd(*, input_tokens: int, output_tokens: int
 
 def estimate_cost_toman(microusd: int, *, toman_per_usd: Decimal,
                         margin_ratio: Decimal = DEFAULT_EXCHANGE_MARGIN_RATIO) -> Decimal:
-    if microusd < 0 or toman_per_usd <= 0 or margin_ratio < 0:
+    if (microusd < 0 or not toman_per_usd.is_finite() or not margin_ratio.is_finite()
+            or toman_per_usd <= 0 or margin_ratio < 0):
         raise ValueError("cost conversion values must be non-negative and rate must be positive")
     return (
         Decimal(microusd) / Decimal("1000000") * toman_per_usd * (Decimal("1") + margin_ratio)
@@ -38,7 +39,8 @@ def estimate_cost_toman(microusd: int, *, toman_per_usd: Decimal,
 
 def conservative_microusd_cap(cap_toman: Decimal, *, toman_per_usd: Decimal,
                               margin_ratio: Decimal = DEFAULT_EXCHANGE_MARGIN_RATIO) -> int:
-    if cap_toman <= 0 or toman_per_usd <= 0 or margin_ratio < 0:
+    if (not cap_toman.is_finite() or not toman_per_usd.is_finite() or not margin_ratio.is_finite()
+            or cap_toman <= 0 or toman_per_usd <= 0 or margin_ratio < 0):
         raise ValueError("cap and rate must be positive and margin non-negative")
     value = cap_toman * Decimal("1000000") / (toman_per_usd * (Decimal("1") + margin_ratio))
     return int(value.to_integral_value(rounding=ROUND_FLOOR))

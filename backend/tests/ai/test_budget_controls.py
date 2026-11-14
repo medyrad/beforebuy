@@ -81,7 +81,14 @@ class LiveBudgetControlTests(TestCase):
         self.generator(transport).generate(explanation_request())
         invocation = AIInvocation.objects.get()
         self.assertEqual(invocation.attempt_count, 2)
-        self.assertEqual(invocation.estimated_cost_microusd, invocation.reserved_cost_microusd)
+        self.assertFalse(invocation.usage_complete)
+        self.assertGreater(invocation.known_cost_microusd, 0)
+        self.assertGreater(invocation.unknown_cost_microusd, 0)
+        self.assertEqual(
+            invocation.estimated_cost_microusd,
+            invocation.known_cost_microusd + invocation.unknown_cost_microusd,
+        )
+        self.assertLess(invocation.estimated_cost_microusd, invocation.reserved_cost_microusd)
 
     @override_settings(BEFOREBUY_AI_PER_GUEST_DAILY_LIMIT=1)
     def test_per_guest_limit_rejects_without_provider_call(self):

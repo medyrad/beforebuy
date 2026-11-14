@@ -33,9 +33,10 @@ def _cost_toman(response) -> Decimal | None:
     if not isinstance(value, dict) or value.get("irt") is None:
         return None
     try:
-        return Decimal(str(value["irt"]))
+        parsed = Decimal(str(value["irt"]))
     except InvalidOperation:
         return None
+    return parsed if parsed.is_finite() and parsed >= 0 else None
 
 
 class AvalAIResponsesTransport:
@@ -78,7 +79,12 @@ class AvalAIResponsesTransport:
         )
         output_text = getattr(response, "output_text", "")
         if not output_text:
-            raise ProviderPermanentError("empty_or_incomplete_response")
+            raise ProviderPermanentError(
+                "empty_or_incomplete_response",
+                usage=parsed_usage,
+                request_id=raw.headers.get("avalai-request-id"),
+                provider_estimated_cost_toman=_cost_toman(response),
+            )
         return ProviderResult(
             output_text=output_text,
             usage=parsed_usage,
@@ -109,7 +115,8 @@ class AvalAIAccountClient:
             exchange_rate = Decimal(str(payload["exchange_rate"]))
         except (HTTPError, URLError, TimeoutError, KeyError, ValueError, InvalidOperation) as exc:
             raise ProviderPermanentError("avalai_credit_check_failed") from exc
-        if remaining < 0 or exchange_rate <= 0:
+        if (not remaining.is_finite() or not exchange_rate.is_finite()
+                or remaining < 0 or exchange_rate <= 0):
             raise ProviderPermanentError("avalai_credit_response_invalid")
         return AvalAICredit(remaining_toman=remaining, toman_per_usd=exchange_rate)
 

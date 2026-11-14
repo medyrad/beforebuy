@@ -133,6 +133,28 @@ contradictory است یا attribution آن user-reported نیست، **Then** val
 **Then** کل requestها و retryها پیش از call در cap صریح حداکثر ۱۰۰٬۰۰۰ تومان جا می‌گیرند یا هیچ call مدل انجام
 نمی‌شود؛ گزارش هزینه estimate را از invoice قطعی جدا می‌کند.
 
+### `AC-AI-011` — independent persistent budget scopes
+**Given** deployment day changes or evaluation process restarts/concurrently resumes, **When** a case reserves cost,
+**Then** deployment daily window and the single initial 100,000-toman authorization are both checked atomically؛ **And**
+evaluation spent + outstanding reservation never resets at midnight or process start.
+
+### `AC-AI-012` — pre-call rejection is evidence, not a call
+**Given** deployment budget، guest quota یا circuit پیش از invocation مانع است، **When** runner case را اجرا می‌کند،
+**Then** attempt/call/usage برابر صفر، skip reason ساختاریافته و run status ناقص است؛ **And** lookup نبود invocation crash نمی‌کند.
+
+### `AC-AI-013` — atomic partial checkpoint
+**Given** چند case تکمیل شده و process در case بعد قطع می‌شود، **When** artifact خوانده می‌شود، **Then** caseهای تکمیل‌شده،
+last completed، remaining IDs، operation/request metadata امن و `incomplete` باقی است؛ **And** raw transport/secret وجود ندارد.
+
+### `AC-AI-014` — per-attempt honest settlement and recovery
+**Given** retry با usage معلوم/نامعلوم، malformed response، duplicate settlement یا reservation رهاشده، **When** settle/recover
+می‌شود، **Then** known usage کامل جمع، unknown محافظه‌کارانه، overage visible و underflow خطاست؛ **And** recovery invoice قطعی ادعا نمی‌کند.
+
+### `AC-AI-015` — separated evaluation gates and valid money
+**Given** تعرفهٔ `$30/M` output مدل منتخب، **When** policy v1.2 ارزیابی می‌شود، **Then** incompatibility آستانهٔ تاریخی
+`$0.0025` مستقل از total spend/structure/human/latency ثبت و overall pending است؛ **And** non-finite/negative monetary values
+پیش از هر network call رد می‌شوند.
+
 ### `AC-UI-001` — concise Persian result
 **Given** report روی viewport desktop یا mobile نمایش داده می‌شود، **When** کاربر summary، reasons، mode و feedback را
 می‌خواند، **Then** متن طبیعی و scoped است، ابهام مدل برجسته است، چهار dimension در mobile یک card با چهار row است،

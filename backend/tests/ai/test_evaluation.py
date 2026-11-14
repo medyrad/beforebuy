@@ -38,6 +38,9 @@ class EvaluationHarnessTests(SimpleTestCase):
         ]
         assessment = assess_results(results)
         self.assertTrue(assessment.structural_pass)
+        self.assertTrue(assessment.latency_pass)
+        self.assertIsNone(assessment.product_cost_target_pass)
+        self.assertIsNone(assessment.total_spend_pass)
         self.assertIsNone(assessment.overall_pass)
         self.assertFalse(assessment.human_review_complete)
         results[0] = EvaluationResult(**{**results[0].__dict__, "outcome_preserved": False})

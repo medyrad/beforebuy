@@ -92,9 +92,27 @@ class AILiveBudgetWindow(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 
+class AIEvaluationAuthorization(models.Model):
+    id = models.CharField(primary_key=True, max_length=64)
+    authorized_toman = models.DecimalField(max_digits=18, decimal_places=6)
+    reserved_toman = models.DecimalField(max_digits=18, decimal_places=6, default=0)
+    spent_estimate_toman = models.DecimalField(max_digits=18, decimal_places=6, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(authorized_toman__gt=0), name="ai_eval_authorized_positive"),
+            models.CheckConstraint(condition=models.Q(reserved_toman__gte=0), name="ai_eval_reserved_nonnegative"),
+            models.CheckConstraint(condition=models.Q(spent_estimate_toman__gte=0), name="ai_eval_spent_nonnegative"),
+        ]
+
+
 class AIInvocation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    guest_context = models.ForeignKey(GuestContext, on_delete=models.CASCADE, related_name="ai_invocations")
+    guest_context = models.ForeignKey(
+        GuestContext, null=True, on_delete=models.SET_NULL, related_name="ai_invocations"
+    )
     operation_id = models.UUIDField(unique=True, editable=False)
     provider = models.CharField(max_length=32)
     model = models.CharField(max_length=64)
@@ -110,6 +128,17 @@ class AIInvocation(models.Model):
     estimated_cost_microusd = models.PositiveBigIntegerField(default=0)
     provider_request_id = models.CharField(max_length=128, null=True)
     provider_estimated_cost_toman = models.DecimalField(max_digits=18, decimal_places=6, null=True)
+    evaluation_authorization = models.ForeignKey(
+        AIEvaluationAuthorization, null=True, on_delete=models.PROTECT, related_name="invocations"
+    )
+    evaluation_reserved_toman = models.DecimalField(max_digits=18, decimal_places=6, default=0)
+    evaluation_run_id = models.CharField(max_length=64, null=True)
+    evaluation_case_id = models.CharField(max_length=32, null=True)
+    exchange_rate_toman_per_usd = models.DecimalField(max_digits=18, decimal_places=6, null=True)
+    exchange_margin_ratio = models.DecimalField(max_digits=8, decimal_places=6, null=True)
+    known_cost_microusd = models.PositiveBigIntegerField(default=0)
+    unknown_cost_microusd = models.PositiveBigIntegerField(default=0)
+    usage_complete = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True)
 

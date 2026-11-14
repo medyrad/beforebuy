@@ -144,3 +144,14 @@ rate همان روز باید از `GET /user/v1/credit` خوانده شود و 
 <https://avalai.ir/privacy-policy/>، <https://avalai.ir/>. منابع رسمی Liara:
 <https://liara.ir/pricing/> و
 <https://liara.ir/products/ai/xAI%3A%20Grok%203%20Mini%20Beta/>.
+
+## Phase 5.3 — findings measured in this workspace
+
+بازبینی source نشان داد `evaluate_live_ai` cap evaluation را به `daily_budget_microusd` generator می‌داد، سپس پس از
+limited fallback وجود `AIInvocation` را فرض می‌کرد، artifact را فقط پس از پایان همه caseها می‌نوشت و guest را با
+invocationهای cascade حذف می‌کرد. ledger نیز همه retryها را به full reservation تبدیل و reserved underflow را با
+`max(0)` پنهان می‌کرد. این‌ها رفتار مشاهده‌شدهٔ source/tests این workspace هستند، نه ادعای provider.
+
+تعرفهٔ انتخاب‌شده تغییر نکرده است. محاسبهٔ مستقل: `512 × $30 / 1,000,000 = $0.01536` فقط برای output bound؛ بنابراین
+حتی با input صفر، model نمی‌تواند target تاریخی `$0.0025` را در worst case برآورده کند. Phase 5.3 provider/model را
+عوض نمی‌کند؛ tradeoff هزینه را visible و تصمیم product-cost target بعدی را pending نگه می‌دارد.
