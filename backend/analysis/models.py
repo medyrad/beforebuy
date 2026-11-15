@@ -262,6 +262,11 @@ class StreamOperation(models.Model):
             ("FAILED", "Failed"), ("CANCELLED", "Cancelled"), ("INTERRUPTED", "Interrupted"),
         ],
     )
+    operation_kind = models.CharField(
+        max_length=16,
+        default="CONVERSATION",
+        choices=[("CONVERSATION", "Conversation"), ("RESEARCH", "Research")],
+    )
     idempotency_key = models.CharField(max_length=128)
     request_hash = models.CharField(max_length=64)
     operation_token = models.UUIDField(default=uuid.uuid4, editable=False)
@@ -320,3 +325,214 @@ class UploadedImage(models.Model):
             models.CheckConstraint(condition=models.Q(width__gt=0), name="copilot_upload_width_positive"),
             models.CheckConstraint(condition=models.Q(height__gt=0), name="copilot_upload_height_positive"),
         ]
+
+
+RESEARCH_ACTIVE_STATUSES = ["PENDING", "RUNNING"]
+
+
+class SourcePolicy(models.Model):
+    hostname = models.CharField(max_length=253, unique=True)
+    allowed_ports = models.JSONField(default=list)
+    allowed_path_prefixes = models.JSONField(default=list)
+    redirect_hostnames = models.JSONField(default=list)
+    source_role = models.CharField(
+        max_length=24,
+        choices=[
+            ("MANUFACTURER", "Manufacturer"),
+            ("MERCHANT", "Merchant"),
+            ("EXPERT", "Expert"),
+            ("CUSTOMER_REVIEW", "Customer review"),
+        ],
+    )
+    readiness = models.CharField(
+        max_length=32,
+        choices=[
+            ("DISABLED", "Disabled"),
+            ("SYNTHETIC_FIXTURE", "Synthetic fixture"),
+            ("CAPTURED_REAL_FIXTURE", "Captured real fixture"),
+            ("LIVE_PROBE", "Live probe"),
+            ("REPEATABLE_LIVE_EXTRACTION", "Repeatable live extraction"),
+            ("ENABLED", "Enabled"),
+        ],
+    )
+    live_enabled = models.BooleanField(default=False)
+    robots_url = models.URLField(max_length=500, null=True)
+    robots_observed_at = models.DateTimeField(null=True)
+    terms_url = models.URLField(max_length=500, null=True)
+    terms_observed_at = models.DateTimeField(null=True)
+    access_notes = models.TextField(default="")
+    retention_notes = models.TextField(default="")
+    display_constraints = models.TextField(default="")
+    freshness_seconds = models.PositiveIntegerField(default=86400)
+    min_interval_ms = models.PositiveIntegerField(default=1000)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        self.hostname = self.hostname.rstrip(".").lower()
+        if not self.allowed_ports:
+            self.allowed_ports = [443]
+        super().save(*args, **kwargs)
+
+
+class ResearchJob(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="research_jobs")
+    operation = models.OneToOneField(StreamOperation, on_delete=models.CASCADE, related_name="research_job")
+    brief_revision = models.PositiveIntegerField()
+    generation_epoch = models.PositiveBigIntegerField()
+    request_hash = models.CharField(max_length=64)
+    mode = models.CharField(max_length=16, choices=[("FIXTURE", "Fixture"), ("LIVE", "Live")])
+    source_ids = models.JSONField(default=list)
+    limits = models.JSONField(default=dict)
+    status = models.CharField(
+        max_length=32,
+        default="PENDING",
+        choices=[
+            ("PENDING", "Pending"),
+            ("RUNNING", "Running"),
+            ("SUCCESS", "Success"),
+            ("PARTIAL_SUCCESS", "Partial success"),
+            ("NO_SUPPORTED_SOURCES", "No supported sources"),
+            ("BLOCKED_SOURCE", "Blocked source"),
+            ("EXTRACTION_FAILED", "Extraction failed"),
+            ("TIMED_OUT", "Timed out"),
+            ("CANCELLED", "Cancelled"),
+            ("INTERRUPTED", "Interrupted"),
+            ("FAILED", "Failed"),
+        ],
+    )
+    stage = models.CharField(max_length=32, default="QUEUED")
+    completed_units = models.PositiveIntegerField(default=0)
+    total_units = models.PositiveIntegerField(default=0)
+    request_count = models.PositiveIntegerField(default=0)
+    decoded_bytes = models.PositiveBigIntegerField(default=0)
+    coverage = models.JSONField(default=dict)
+    terminal_code = models.CharField(max_length=64, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(null=True)
+    completed_at = models.DateTimeField(null=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["conversation", "-created_at"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conversation"],
+                condition=models.Q(status__in=RESEARCH_ACTIVE_STATUSES),
+                name="copilot_one_active_research_per_conversation",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(completed_units__lte=models.F("total_units")),
+                name="copilot_research_progress_within_total",
+            ),
+        ]
+
+
+class SourceSnapshot(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    research_job = models.ForeignKey(ResearchJob, on_delete=models.CASCADE, related_name="snapshots")
+    source_policy = models.ForeignKey(SourcePolicy, on_delete=models.PROTECT, related_name="snapshots")
+    canonical_url = models.URLField(max_length=1000, null=True)
+    fixture_label = models.CharField(max_length=120, null=True)
+    source_role = models.CharField(max_length=24)
+    retrieval_time = models.DateTimeField()
+    status = models.CharField(max_length=32)
+    http_status = models.PositiveSmallIntegerField(null=True)
+    content_type = models.CharField(max_length=120, null=True)
+    response_bytes = models.PositiveIntegerField(default=0)
+    fingerprint = models.CharField(max_length=64)
+    extractor_version = models.CharField(max_length=64, null=True)
+    failure_code = models.CharField(max_length=64, null=True)
+    raw_content = models.BinaryField(null=True)
+    raw_expires_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=(models.Q(canonical_url__isnull=False) | models.Q(fixture_label__isnull=False)),
+                name="copilot_snapshot_source_or_fixture",
+            ),
+        ]
+
+
+class Product(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    brand = models.CharField(max_length=120)
+    model_name = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
+class Variant(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="variants")
+    canonical_identifier = models.CharField(max_length=160, null=True)
+    identifiers = models.JSONField(default=dict)
+    attributes = models.JSONField(default=dict)
+    region = models.CharField(max_length=80, null=True)
+    bundle = models.BooleanField(default=False)
+    condition = models.CharField(
+        max_length=16,
+        default="NEW",
+        choices=[("NEW", "New"), ("USED", "Used"), ("REFURBISHED", "Refurbished"), ("UNKNOWN", "Unknown")],
+    )
+
+
+class Offer(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    snapshot = models.ForeignKey(SourceSnapshot, on_delete=models.CASCADE, related_name="offers")
+    variant = models.ForeignKey(Variant, on_delete=models.PROTECT, related_name="offers")
+    item_price_minor = models.BigIntegerField(null=True)
+    currency = models.CharField(max_length=12, null=True)
+    shipping_minor = models.BigIntegerField(null=True)
+    total_payable_minor = models.BigIntegerField(null=True)
+    seller = models.CharField(max_length=200, null=True)
+    warranty = models.CharField(max_length=200, null=True)
+    registration = models.CharField(max_length=200, null=True)
+    availability = models.CharField(
+        max_length=24,
+        choices=[
+            ("IN_STOCK", "In stock"),
+            ("OUT_OF_STOCK", "Out of stock"),
+            ("PREORDER", "Preorder"),
+            ("UNKNOWN", "Unknown"),
+        ],
+        default="UNKNOWN",
+    )
+    observed_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(item_price_minor__isnull=True) | models.Q(item_price_minor__gte=0),
+                name="copilot_offer_item_price_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(shipping_minor__isnull=True) | models.Q(shipping_minor__gte=0),
+                name="copilot_offer_shipping_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(total_payable_minor__isnull=True) | models.Q(total_payable_minor__gte=0),
+                name="copilot_offer_total_nonnegative",
+            ),
+        ]
+
+
+class EvidenceClaim(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    snapshot = models.ForeignKey(SourceSnapshot, on_delete=models.CASCADE, related_name="claims")
+    variant = models.ForeignKey(Variant, null=True, on_delete=models.PROTECT, related_name="claims")
+    field = models.CharField(max_length=120)
+    normalized_value = models.JSONField(null=True)
+    source_location = models.CharField(max_length=500, null=True)
+    supporting_excerpt = models.CharField(max_length=500, null=True)
+    evidence_status = models.CharField(
+        max_length=16,
+        choices=[
+            ("SUPPORTED", "Supported"),
+            ("UNKNOWN", "Unknown"),
+            ("CONFLICTING", "Conflicting"),
+            ("STALE", "Stale"),
+        ],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)

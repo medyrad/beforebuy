@@ -8,6 +8,7 @@ DEBUG = False
 ALLOWED_HOSTS = [x for x in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",") if x]
 CSRF_TRUSTED_ORIGINS = [x for x in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(",") if x]
 BEFOREBUY_E2E_TEST_CONTROLS = os.environ.get("BEFOREBUY_E2E_TEST_CONTROLS", "0") == "1"
+BEFOREBUY_RESEARCH_MODE = os.environ.get("BEFOREBUY_RESEARCH_MODE", "OFFLINE")
 BEFOREBUY_AI_MODE = os.environ.get("BEFOREBUY_AI_MODE", "mock")
 # Retained only as a fail-closed legacy direct-OpenAI flag. It is never used to select the Iran live adapter.
 BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED = os.environ.get("BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED", "0") == "1"

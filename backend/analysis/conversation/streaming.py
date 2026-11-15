@@ -222,6 +222,10 @@ def finalize_operation(operation_id, lease_owner, text):
     return True
 
 
+def publish_owned_event(operation_id, lease_owner, event_type, payload):
+    return _publish(operation_id, event_type, payload, lease_owner=lease_owner)
+
+
 @transaction.atomic
 def cancel_operation(operation_id):
     now = timezone.now()

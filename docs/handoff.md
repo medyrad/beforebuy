@@ -1,110 +1,130 @@
-# تحویل Phase 8.1 — اصلاحات bounded streaming در Milestone A
+# تحویل Phase 9 — Milestone B: پژوهش محدود و evidence
 
 **تاریخ:** ۱۵ نوامبر ۲۰۲۶  
-**baseline بازبینی‌شده:** `9658dc93d5df058589b5dd143dab37ebcd160938`  
+**baseline بازبینی‌شده:** `09e8dff14c42e87c3cdf21a317bcc28f0a455b9e`  
 **branch:** `002-personalized-shopping-copilot`  
-**وضعیت:** اصلاحات streaming در Milestone A verify شده؛ فقط fixture، بدون AI زنده یا پژوهش بازار  
-**taskهای اصلاحی کامل:** `T051`, `T052`, `T053`, `T054`  
-**taskهای بعدی:** `T013–T048`, `T050` باز؛ Milestone B شروع نشده و feature 001 `T039` همچنان pending است
+**وضعیت:** زیرساخت evidence و fixture research verify شد؛ live allowlist خالی و پوشش source کامل نیست  
+**taskهای کامل:** `T014–T017`, `T020–T023`  
+**taskهای partial و باز:** `T013`, `T018`, `T019`  
+**taskهای خارج scope:** Milestoneهای C–E باز؛ هر دو feature-specific `T039` بدون تغییر و pending
 
 ## دامنه و نتیجه
 
-Phase 8.1 فقط مرز final publication، lifecycle/replay در SSE و admission/failure executor را اصلاح کرد. هیچ crawl،
-source expansion، ranking، Choice Desk جدید، memory، credential، provider call، AI زنده، deployment عمومی یا migration
-داده‌ای اجرا نشد. حذف نامرتبط `test.txt` حفظ و از stage این phase کنار گذاشته می‌شود. handoff قبلی بدون حذف محتوا در
-`docs/archive/phase-8-handoff.md` آرشیو شد.
+Phase 9 entityهای پژوهش، migration غیرمخرب، safe-fetch، extraction/identity قطعی، cache/cleanup، coordinator و API
+حداقلی start/status/cancel را روی lifecycle موجود `StreamOperation`/`StreamEvent` افزود. default برنامه `OFFLINE` است؛
+`FIXTURE` فقط با label صریح فعال می‌شود و `LIVE` با نبود source مجاز `NO_SUPPORTED_SOURCES` می‌دهد و outbound صفر دارد.
+هیچ ranking/Choice Desk Milestone C، memory، credential، provider/model call، پرداخت، public deployment یا route cutover
+انجام نشد. حذف نامرتبط `test.txt` حفظ و از commit کنار گذاشته می‌شود. handoff قبلی در
+`docs/archive/phase-8.1-handoff.md` آرشیو شد.
 
-## یافته‌های بازبینی
+## Spec Kit و task truth
 
-همهٔ findingهای consequential تأیید شدند:
+- prerequisite رسمی feature `002-personalized-shopping-copilot` و checklist `requirements.md` برابر 16/16 بود؛
+  `.specify/extensions.yml` وجود نداشت.
+- `$speckit-analyze` پیش از implementation سه gap High در حدود دقیق B، retention و قرارداد API و یک gap Medium در
+  گستردگی T023 یافت. اصلاحات مجاز در `FR-044–FR-049`، plan، data model، OpenAPI و تفکیک statusها ثبت شد. rerun پس از
+  اصلاح Critical/High یا placeholder نیافت؛ incomplete source coverage به‌عنوان blocker واقعی task حذف یا ضعیف نشد.
+- `$speckit-implement` فقط `T013–T023` را اجرا کرد. `T014–T017` و `T020–T023` complete شدند. `T013` به‌علت نبود
+  permission/retention/display روشن برای enablement، و `T018/T019` به‌علت نبود sports source/fixture مجاز باز و partial
+  ماندند. Milestoneهای C–E و feature 001/002 `T039` unchecked هستند.
 
-- FINAL message پیش از دو final event commit می‌شد و می‌توانست روی operation ناموفق/لغوشده باقی بماند.
-- publication lease owner/expiry و expiry conversation را در هر مرز دوباره اعتبارسنجی نمی‌کرد و lease تمدید نمی‌شد.
-- reconciler از snapshot قدیمی تصمیم می‌گرفت و امکان interrupt کردن claim/renew تازه وجود داشت.
-- SSE عمر نامحدود، admission صریح و reconciliation در stream باز نداشت.
-- replay فقط retained row اول را می‌دید؛ all-purged و future sequence می‌توانستند 200 خالی و UI منتظر بسازند.
-- executor submit failure slot را پس نمی‌داد و operation را `PENDING` رها می‌کرد؛ stale pending نیز quota را نگه می‌داشت.
-- client روی `EventSource.onerror` اتصال را می‌بست و REST authoritative reconciliation/reconnect نداشت.
+## feasibility منبع و probe زنده
 
-هیچ findingی به‌عنوان false positive رد نشد. نیاز به migration جدید نیز رد شد: `next_sequence` موجود همان authoritative
-highest-sequence boundary لازم را فراهم می‌کند.
+هفت GET عمومی کم‌حجم، read-only و بدون retry اجرا شد؛ proxy محیطی استفاده نشد، redirect حداکثر ۲، decoded cap برابر
+۲ MiB و timeout برابر ۲۰ ثانیه بود. فایل خام probe فقط در `/tmp` بود و وارد Git نشد. provider/model call و هزینه صفر.
 
-## Spec Kit
+| Source | درخواست Phase 9 | مشاهده و extraction | readiness / enablement |
+|---|---:|---|---|
+| Philips `www.philips.com` | ۲ | robots: 200/254 B؛ صفحه EP5934: 200 HTML/33,782 B/0 redirect/0.330s؛ JSON-LD name, brand, SKU, MPN=`EP5934/10R1` | `CAPTURED_REAL_FIXTURE` + `LIVE_PROBE`؛ disabled تا روشن‌شدن permission/retention/display |
+| Technolife `www.technolife.com` | ۳ | robots: 200/589 B؛ terms: 200/134,718 B؛ A56: 200 HTML/147,320 B/0 redirect/0.485s؛ identity `99474` و متن دقیق `ناموجود`؛ price/shipping/total absent | `CAPTURED_REAL_FIXTURE` + `LIVE_PROBE`؛ disabled تا clarification کتبی |
+| Torob `torob.com` | ۲ | robots: 200/110 B؛ terms: 200/11,234 B؛ product request و offer extraction انجام نشد | `LIVE_PROBE` policy-only؛ disabled |
+| Apple | ۰ | terms automated page scraping/robot را منع می‌کند | disabled |
+| Adidas / Decathlon | ۰ | terms برای automated access به permission/consent کتبی نیاز دارد | disabled؛ sports blocker |
+| Nike / Digikala | ۰ | Phase 7 permission/timeout unresolved؛ retry تکراری انجام نشد | disabled/unassessed؛ timeout عدم دسترسی دائمی نیست |
 
-- سه requirement محدود `FR-041–FR-043` و چهار task اصلاحی `T051–T054` اضافه شدند؛ taskهای تاریخی renumber نشدند.
-- `$speckit-analyze` پس از prerequisite رسمی و checklist `16/16`، در scope اصلاحی تعارض Critical/High، placeholder یا
-  requirement بدون task پیدا نکرد.
-- `$speckit-implement` فقط `T051–T054` را اجرا کرد. Milestoneهای بعدی و `T043` کامل علامت نخورده‌اند.
+بنابراین enabled live source دقیقاً صفر است. Philips manufacturer claim است و اندازه‌گیری مستقل performance نیست.
+Technolife fixture فقط availability تاریخی out-of-stock دارد و price/current stock یا cheapest-in-Iran را پشتیبانی
+نمی‌کند. fixtureهای حداقلی checksummed هستند: Philips
+`4962e609585514bf48ad6026c7309feeb4e2c680003f86bcf364eae0f700d424` و Technolife
+`87f2d00a9abf19b4ddb84da8a9ce41ab03ed348398ebc3e0e15840d1c529921c`.
 
-## finalization و lock order
+## safe fetch، limits و dependency
 
-lock order همهٔ مسیرهای اصلاح‌شده `Conversation → StreamOperation` است. lookup اولیهٔ `conversation_id` lock نیست؛ سپس
-conversation و operation در transaction کوتاه lock می‌شوند. message acceptance همچنان ابتدا GuestContext و بعد
-Conversation را می‌گیرد و هیچ مسیر معکوس Conversation→GuestContext وجود ندارد. generation یا انتظار SSE lock نگه نمی‌دارد.
+- transport از Python stdlib 3.12 (`http.client`, `ssl`, `socket`, `ipaddress`) استفاده می‌کند؛ dependency و lockfile
+  تازه‌ای اضافه نشد. skill محلی validated در `.agents/skills/bounded-product-research/` مرز DNS/pinning/source truth را
+  ثبت می‌کند.
+- scheme فقط HTTP(S)، port/hostname/path/redirect exact policy، embedded credential ممنوع، و همهٔ DNS answerها باید
+  public/global باشند. connection واقعی به IP تأییدشده pin می‌شود، ولی TLS SNI/certificate verification و Host اصلی
+  حفظ می‌شوند. redirect دوباره validate می‌شود؛ proxy env، cookie و credential وارد fetch نمی‌شوند.
+- limits مصوب و persisted: ۳ domain/job، ۵ page/domain، ۲ redirect/request، ۲۰ HTTP request/job، ۲ MiB decoded/page،
+  ۲۰s/request، ۶۰s/job، pace حداقل ۱s/domain، outbound concurrency دو/process و یک active job/guest. retry خودکار وجود
+  ندارد؛ در نتیجه Retry-After دنبال نمی‌شود و loop نامحدود ممکن نیست. semaphore per-process deployment-global نیست.
+- research executor و admission از conversation executor جداست تا fetch کار status/cancel را exhaust نکند. network
+  در transaction اجرا نمی‌شود. lease ۳۰s قبل از هر work unit renew و publication بعد از I/O دوباره owner، expiry،
+  brief revision، cancel و conversation expiry را زیر lock order `Conversation → StreamOperation → ResearchJob`
+  می‌سنجد. restart network work را خودکار تکرار نمی‌کند.
 
-`finalize_operation` در یک transaction موارد زیر را دوباره می‌سنجد: وجود/expiry conversation، `RUNNING` بودن، revision،
-cancel، lease owner و تازه‌بودن lease. سپس FINAL Message، `assistant.message.final`، `operation.completed`، pointer نهایی،
-`next_sequence` و state `COMPLETED` را با هم commit می‌کند. failure تزریقی در ساخت event دوم همه را rollback می‌کند.
-mutationی که lock/commit را اول بگیرد برنده است: cancel/edit/delete زودتر مانع final می‌شود؛ completion زودتر باعث 409
-برای cancel بعدی است. worker با owner عوض‌شده یا lease منقضی هیچ event، حتی failure event، منتشر نمی‌کند.
+## داده، provenance، cache و lifecycle
 
-brief edit با revision mismatch به `INTERRUPTED/STALE_BRIEF` می‌رسد؛ explicit cancel به‌صورت فوری و اتمیک event
-`operation.cancelled` و state `CANCELLED` می‌سازد. delete با lock conversation cascade می‌کند. event پس از expiry
-conversation ساخته نمی‌شود.
+Migration `0006_copilot_milestone_b` مدل‌های `SourcePolicy`, `ResearchJob`, `SourceSnapshot`, `EvidenceClaim`, `Product`,
+`Variant`, `Offer` و `operation_kind` را بدون دست‌زدن به rowهای feature 001 افزود. هر snapshot retrieval time، source
+role، MIME/status/bytes، fingerprint، extractor version و failure را دارد؛ claim به field/value/location و status
+متصل است. Offer item/shipping/total/seller/condition/availability/observed time را جدا نگه می‌دارد؛ shipping نامعلوم
+یعنی total نامعلوم.
 
-## stale operation، SSE و replay
+raw cache حداکثر ۲۴ ساعت و non-sliding است. cache hit timestamp و expiry اصلی را حفظ می‌کند و فقط داخل همان conversation
+reuse می‌شود. conversation delete/expiry snapshot/claim/offer را cascade می‌کند؛ cleanup raw منقضی را null و فقط
+Product/Variant کاملاً orphan را حذف می‌کند، بنابراین identity هنوز referenced حذف نمی‌شود. backup erasure فوری وعده
+داده نمی‌شود و تابع lifecycle backup است.
 
-- claim lease سی‌ثانیه‌ای می‌سازد؛ هر publication معتبر lease را تمدید می‌کند. reconciler فقط پس از re-read زیر lock
-  دربارهٔ pending قدیمی، lease منقضی، cancel، revision یا expiry تصمیم می‌گیرد.
-- هر SSE حداکثر 45 ثانیه، heartbeat حداکثر 15 ثانیه و poll برابر 80ms دارد. دو subscriber در هر application process
-  admitted می‌شوند و slot در terminal، timeout، disconnect یا response close دقیقاً یک بار آزاد می‌شود.
-- Gunicorn دو worker × چهار gthread دارد، ولی این به‌تنهایی policy نیست؛ semaphore دو subscriber در هر process دو
-  request thread را برای status/cancel آزاد نگه می‌دارد. subscriber سوم `429 STREAM_CAPACITY_REACHED` می‌گیرد.
-- `next_sequence - 1` highest issued است. no-history معتبر است؛ latest terminal فوراً می‌بندد؛ future sequence با
-  `409 INVALID_REPLAY_SEQUENCE` و partial/all-purged history با `409 REPLAY_GAP` پاسخ می‌گیرد. هر دو 409 REST URL دارند.
-- purge race پس از شروع response، control event غیرپایدار `stream.replay_gap` می‌دهد. client EventSource را می‌بندد و
-  operation را از REST poll می‌کند؛ خطای عادی stream ابتدا REST را می‌خواند و برای state فعال native reconnect را باز
-  می‌گذارد. هیچ مسیر reconciliation generator را دوباره اجرا نمی‌کند.
+## API و smoke واقعی Compose
 
-## executor admission و failure
+OpenAPI برای start/status/cancel، typed job/snapshot/claim/coverage/error و `operation_kind` تکمیل شد. start به brief
+تأییدشده، expected revision، CSRF و idempotency key نیاز دارد. GET/status/replay work را آغاز نمی‌کند. active limit
+guest-wide است؛ foreign owner 404 می‌گیرد؛ cancel terminal است؛ progress فقط completed unit را می‌شمارد. outcomeهای
+`SUCCESS`, `PARTIAL_SUCCESS`, `NO_SUPPORTED_SOURCES`, blocked/extraction/timeout/cancel/interrupted/failed جدا هستند.
 
-reservation پیش از acceptance گرفته می‌شود؛ outer transaction callback submit را فقط پس از commit اجرا می‌کند.
-rollback/replay reservation را برمی‌گرداند، submit failure operation را با event صریح `FAILED/SUBMISSION_FAILED`
-terminal می‌کند و slot را دقیقاً یک بار آزاد می‌کند، و worker در همهٔ exit pathها slot خود را آزاد می‌کند. queued cancel
-فوراً terminal می‌شود؛ worker دیرتر claim نمی‌کند. quota فقط PENDING تازه یا RUNNING با lease تازه را می‌شمارد، بنابراین
-stale pending مانع پذیرش کار تازه نمی‌شود؛ خود stale operation هنگام status/SSE authoritative reconcile می‌شود.
+Compose با `BEFOREBUY_RESEARCH_MODE=FIXTURE docker compose up --build -d` بازسازی شد؛ migration 0006 اعمال و هر سه
+service healthy شدند. smoke از NGINX روی `127.0.0.1:58080` مسیر session → conversation → brief edit/confirm → research
+را اجرا کرد: `SUCCESS`, `completed=2`, `total=2`، دو snapshot، چهار claim دارای variant identity،
+`fixture_labeled=true` و `canonical_url=null` برای هر دو.
+سپس API با env unset force-recreate شد؛ env واقعی `OFFLINE`، service healthy و start از NGINX برابر
+`HTTP 409 RESEARCH_OFFLINE` بود. volume reset یا public deploy انجام نشد.
 
-## verification اجراشده
+## verification
 
-- RED متمرکز پیش از implementation: 17 test کشف شد؛ 3 failure و 2 import/error دقیقاً برای all-expired replay، future
-  sequence، admission API، submit failure و helperهای lease/finalization ثبت شد.
-- regression متمرکز PostgreSQL پس از اصلاح: 30 test، passed 30، failed/error/skipped صفر. barrierهای
-  threading در خود final-publication boundary و mutationهای واقعی brief/cancel/delete API استفاده شدند؛ sleep-only نیستند.
-- backend canonical نهایی: `Found 179 test(s)`، `Ran 179 tests in 51.034s`، `OK`؛ passed 179، failed/error/skipped صفر.
-- migration drift: `makemigrations --check --dry-run` → `No changes detected`. compileall و `git diff --check` موفق.
-- frontend: 4 file و 15 test، passed 15؛ typecheck، ESLint و build موفق. bundle اصلی JS `265.01 kB` و gzip `82.00 kB`.
-- browser از image رسمی Playwright 1.65.1 و stack بازسازی‌شدهٔ NGINX/API: 3/3 passed در 11.8s؛ desktop/mobile،
-  accessibility و legacy route. اجرای اول با hostname روش test (`host.docker.internal`) طبق انتظار Django با
-  `DisallowedHost` رد شد؛ بدون تضعیف host validation، اجرای صحیح `--network host` روی `127.0.0.1` کامل موفق شد.
-- NGINX cancel smoke واقعی: started event مشاهده شد؛ cancel response و REST هر دو `CANCELLED`، terminal event دقیقاً یک،
-  reconnect از latest برابر zero-byte clean close.
-- NGINX disconnect/reconnect smoke واقعی: stream اول یک `operation.started` داشت؛ reconnect از همان ID started را تکرار
-  نکرد، `operation.completed` را گرفت و REST `COMPLETED` بود. generator دوباره اجرا نشد.
-- provider/research call صفر و هزینه صفر؛ development/backup volume حذف یا reset نشد.
+- TDD RED اولیه: شش import error برای مدل/moduleهای مفقود؛ سپس failures هدفمند برای PostgreSQL lock، executor double،
+  deadline، Technolife fallback و raw-cache cleanup ثبت و علت‌ها اصلاح شدند.
+- focused نهایی research/migration/cleanup: ۳۹ test، passed ۳۹، failed/error/skipped صفر در 5.675s؛ findingهای
+  orphan identity، variant API attribution و pacing deadline در همین مجموعه پوشش داده شدند.
+- canonical backend نهایی از root: `./scripts/test-backend.sh --verbosity 1` → ۲۱۴ discovered/run، ۲۱۴ passed،
+  skipped ۰، failed/error صفر در 41.196s.
+- `manage.py check` بدون issue؛ `makemigrations --check --dry-run` → `No changes detected`؛ compileall، skill validator،
+  JSON manifest، OpenAPI YAML و `git diff --check` موفق. `check --deploy` با settings تولید در container توسعه به‌درستی
+  روی `DJANGO_DEBUG=1` fail-closed شد و به‌عنوان pass شمرده نشد.
+- browser smoke از image رسمی Playwright 1.65.1 digest
+  `sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579` و NGINX واقعی: ۳/۳ passed در 26.3s؛
+  desktop/accessibility، mobile/keyboard و legacy route. اجرای host Node قبل از discovery به علت dyld/Hermes نامعتبر بود؛
+  اجرای container معیار نهایی است.
+- live public source probe: ۷ request، سه domain، zero retry. runtime live research call: صفر؛ provider/model call: صفر؛
+  paid activity: صفر.
 
-## محدودیت‌ها و gateهای باقی‌مانده
+## gateها و ادامهٔ مجاز بعدی
 
-1. executor process-local و غیردوام‌دار است؛ restart کار را resume نمی‌کند و فقط `INTERRUPTED` + retry صریح دارد.
-2. admission per-process است، نه global. بدون Redis/queue جدید، توزیع subscriber میان processها تضمین دقیق global ندارد.
-3. SSE thread را تا 45 ثانیه اشغال می‌کند؛ policy دو subscriber ظرفیت cancel/status را حفظ می‌کند ولی جای durable async
-   infrastructure نیست.
-4. `T043` برای production graceful shutdown/rehearsal کامل، و تمام Milestoneهای B–E باز هستند.
-5. AI زنده، source permission، target-host verification، public release و feature 001 `T039` gateهای مستقل و بازند.
+1. Philips/Technolife/Torob باید permission، retention، display/attribution و rate contract را روشن کنند؛ بدون آن
+   `T013` و live allowlist باز است.
+2. sports source مجاز و direct extraction لازم است تا `T018/T019` کامل شوند. Iranian current offer، shipping و total
+   نیز هنوز evidence ندارد.
+3. process-local semaphore global cap نیست؛ چند worker حداکثر مستقل دارند. durable queue/Redis بدون evidence نیاز اضافه
+   نمی‌شود.
+4. Milestone C ranking/Choice Desk، D memory/credential/OpenAI و E pilot/deployment gateها مجوز جدا می‌خواهند.
+5. feature 001 `T039` تا live provider evidence + human review و feature 002 `T039` تا direct OpenAI eligibility/authorization
+   هر دو pending هستند. هیچ market comparison یا best-price recommendation پیاده نشده است.
 
-## Git و working tree
+## Git
 
-فقط code/test/spec/contract/operations/handoff مرتبط Phase 8.1 stage می‌شود. `.env`، secret، database، dump، log، cache،
-`node_modules`، Playwright runtime artifacts و حذف نامرتبط `test.txt` وارد commit نمی‌شوند. branch جاری به remote موجود
-push می‌شود؛ merge، force-push یا remote جدید مجاز نیست.
+فقط code/test/migration/skill/spec/contracts/docs/Compose مرتبط Phase 9 stage می‌شود. `.env`، credential، database، dump،
+log، cache، browser artifact و حذف نامرتبط `test.txt` وارد commit نمی‌شوند. branch جاری به origin موجود push می‌شود؛
+merge، force-push و remote جدید انجام نمی‌شود.
 
-**Milestone A streaming corrections verified — fixture-only.**
+**Milestone B partially complete — source/check blockers listed.**

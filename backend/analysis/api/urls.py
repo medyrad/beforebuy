@@ -8,6 +8,7 @@ from .conversations import (
 )
 from .operations import OperationCancelView, OperationDetailView, OperationEventView
 from .uploads import UploadCreateView, UploadDetailView
+from .research import ResearchCancelView, ResearchDetailView, ResearchStartView
 
 urlpatterns = [
     path("health/live", live, name="health-live"),
@@ -23,6 +24,9 @@ urlpatterns = [
     path("conversations/<uuid:conversation_id>/messages", MessageSubmitView.as_view(), name="conversation-message"),
     path("conversations/<uuid:conversation_id>/brief", BriefView.as_view(), name="conversation-brief"),
     path("conversations/<uuid:conversation_id>/brief/confirm", BriefConfirmView.as_view(), name="conversation-brief-confirm"),
+    path("conversations/<uuid:conversation_id>/research", ResearchStartView.as_view(), name="research-start"),
+    path("research-jobs/<uuid:job_id>", ResearchDetailView.as_view(), name="research-detail"),
+    path("research-jobs/<uuid:job_id>/cancel", ResearchCancelView.as_view(), name="research-cancel"),
     path("operations/<uuid:operation_id>", OperationDetailView.as_view(), name="operation-detail"),
     path("operations/<uuid:operation_id>/events", OperationEventView.as_view(), name="operation-events"),
     path("operations/<uuid:operation_id>/cancel", OperationCancelView.as_view(), name="operation-cancel"),

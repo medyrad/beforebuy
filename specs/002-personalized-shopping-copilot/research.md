@@ -29,6 +29,21 @@ Vercel snapshots inactive ماندند. current-turn catalog پیش از install
 
 manufacturer specs، merchant offers و review/editorial claims types جدا دارند. robots observation permission حقوقی جامع نیست؛ terms و response واقعی هر domain لازم است. measurement محدود در [source-feasibility.md](source-feasibility.md) آمده است.
 
+## Milestone B transport and extraction
+
+Python 3.12 stdlib `http.client`/`ssl`/`socket` انتخاب شد؛ runtime dependency تازه‌ای اضافه نشد. transport خود پروژه
+hostname را resolve می‌کند، همهٔ addressها را public می‌سنجد و actual socket را به IP تأییدشده pin می‌کند، درحالی‌که
+TLS SNI/certificate و Host برای hostname اصلی باقی می‌مانند. proxy environment، cookie و credential مصرف نمی‌شوند؛
+هر redirect دوباره exact host/path/port policy را می‌گذراند. این design در workspace با connector stub و address
+assertion آزموده شد؛ performance claim عمومی ندارد.
+
+JSON-LD Product منبع اول extractor است. fallback فقط source-specific و صریح است (در captured Technolife fixture تنها
+marker availability)، و schema missing/ambiguous failure می‌دهد. نام مشابه identity نیست؛ identifier، region، capacity،
+bundle، warranty و condition conflict merge را متوقف می‌کنند. sports extraction به‌دلیل source permission gap آماده نیست.
+
+skill محلی `bounded-product-research` برای invariantهای source policy، pinned transport، provenance و lifecycle ساخته و
+با validator رسمی skill-creator در project environment validate شد؛ crawler/agent framework یا workflow موازی نیست.
+
 ## Credential encryption
 
 DB فقط envelope ciphertext/key version نگه می‌دارد و master key بیرون DB/image/Git است. decrypt فقط برای call مجاز و plaintext کوتاه‌عمر است. library/KMS پس از dependency/operations evaluation در milestone D انتخاب می‌شود؛ custom cryptography ممنوع است.

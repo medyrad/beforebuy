@@ -1,0 +1,23 @@
+{
+  "schema_version": "BEFOREBUY-RESEARCH-FIXTURE-v1",
+  "captured_at": "2026-11-15T00:00:00+03:30",
+  "notice": "Minimal captured structured-data excerpts for deterministic extraction tests; not current market data and not proof of enabled integration.",
+  "fixtures": [
+    {
+      "file": "philips-ep5934-minimal.html",
+      "sha256": "4962e609585514bf48ad6026c7309feeb4e2c680003f86bcf364eae0f700d424",
+      "source_url": "https://www.philips.com/c-p/EP5934_10R1/series-5000-fully-automatic-espresso-machines/overview",
+      "identity": "Philips EP5934/10R1",
+      "readiness": "CAPTURED_REAL_FIXTURE"
+    },
+    {
+      "file": "technolife-a56-minimal.html",
+      "sha256": "87f2d00a9abf19b4ddb84da8a9ce41ab03ed348398ebc3e0e15840d1c529921c",
+      "source_url": "https://www.technolife.com/product-99474/گوشی-موبايل-سامسونگ-galaxy-a56-5g-ظرفیت-256-گیگابایت-رم-8-گیگابایت",
+      "identity": "Samsung Galaxy A56 5G 256GB/8GB; merchant SKU/MPN 99474",
+      "readiness": "CAPTURED_REAL_FIXTURE"
+    }
+  ],
+  "sports_fixture": null,
+  "sports_blocker": "Apple/Nike, adidas and Decathlon terms or path policy do not establish permitted automated extraction; no approved captured sports fixture."
+}

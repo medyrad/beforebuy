@@ -22,6 +22,7 @@ services:
     env_file: .env
     environment:
       POSTGRES_HOST: db
+      BEFOREBUY_RESEARCH_MODE: ${BEFOREBUY_RESEARCH_MODE:-OFFLINE}
     command: ["gunicorn", "--chdir", "backend", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--worker-class", "gthread", "--threads", "4", "--timeout", "45", "--graceful-timeout", "10", "--access-logfile", "-"]
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; connection = socket.create_connection(('127.0.0.1', 8000), 2); connection.close()"]

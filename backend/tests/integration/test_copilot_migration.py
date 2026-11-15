@@ -8,7 +8,7 @@ from django.utils import timezone
 
 class CopilotMigrationTests(TransactionTestCase):
     migrate_from = [("analysis", "0004_evaluation_accounting")]
-    migrate_to = [("analysis", "0005_copilot_milestone_a")]
+    migrate_to = [("analysis", "0006_copilot_milestone_b")]
 
     def test_upgrade_preserves_feature_001_rows(self):
         executor = MigrationExecutor(connection)
@@ -31,5 +31,9 @@ class CopilotMigrationTests(TransactionTestCase):
         new_apps = executor.loader.project_state(self.migrate_to).apps
         NewAnalysis = new_apps.get_model("analysis", "Analysis")
         Conversation = new_apps.get_model("analysis", "Conversation")
+        ResearchJob = new_apps.get_model("analysis", "ResearchJob")
+        SourcePolicy = new_apps.get_model("analysis", "SourcePolicy")
         self.assertEqual(NewAnalysis.objects.get(id=analysis.id).product_label, "legacy synthetic migration row")
         self.assertEqual(Conversation.objects.count(), 0)
+        self.assertEqual(ResearchJob.objects.count(), 0)
+        self.assertEqual(SourcePolicy.objects.count(), 0)

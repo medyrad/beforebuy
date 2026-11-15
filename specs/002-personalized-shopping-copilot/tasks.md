@@ -5,7 +5,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 # Tasks: دستیار شخصی خرید
 
 **Input**: artifacts in `/specs/002-personalized-shopping-copilot/`  
-**Authorization**: Phase 8.1 authorizes only corrective tasks `T051–T054` in addition to completed Milestone A work؛ all later milestone tasks remain pending.  
+**Authorization**: Phase 9 authorizes only Milestone B tasks `T013–T023` in addition to completed Milestone A work؛ Milestones C–E remain pending.  
 **TDD**: behavioral tests MUST fail for the intended missing behavior before paired implementation.
 
 ## Milestone A — Conversation foundation
@@ -32,17 +32,17 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 ## Milestone B — Evidence foundation
 
-- [ ] T013 [B] Complete domain terms/robots review and approve an initial allowlist in `specs/002-personalized-shopping-copilot/source-feasibility.md`; unavailable domains stay disabled
-- [ ] T014 [P] [US2] Write failing SourcePolicy/ResearchJob/Snapshot/Product/Variant/Offer/Claim constraints and migration tests in `backend/tests/integration/test_research_models.py`
-- [ ] T015 [US2] Implement relational evidence entities and non-destructive migrations in `backend/analysis/models.py` and `backend/analysis/migrations/`
-- [ ] T016 [P] [US2] Write failing URL/SSRF/redirect/private-address/DNS-rebinding/content-type/size/time/concurrency tests in `backend/tests/unit/test_safe_fetch.py`
-- [ ] T017 [US2] Implement bounded allowlist fetch transport in `backend/analysis/research/fetch.py`; no browser/CAPTCHA/auth bypass
-- [ ] T018 [P] [US2] Capture copyright-safe minimal fixtures for one approved source in each ready category and checksums in `backend/tests/fixtures/research/`; do not claim sports ready until direct extraction succeeds
-- [ ] T019 [P] [US2] Write failing extractor/field-provenance/freshness tests for electronics, appliance and approved sports fixture in `backend/tests/unit/test_extractors.py`
-- [ ] T020 [US2] Implement deterministic per-source extractors and schema validation in `backend/analysis/research/extractors/`
-- [ ] T021 [P] [US2] Write failing variant reconciliation tests for region, identifier, bundle, warranty and ambiguity in `backend/tests/unit/test_variant_identity.py`
-- [ ] T022 [US2] Implement identity/conflict handling and timed offer observations in `backend/analysis/research/identity.py`
-- [ ] T023 [US2] Write failing bounded-job progress/cancel/cache/dedupe/failure integration tests in `backend/tests/integration/test_research_jobs.py`, then implement coordinator in `backend/analysis/research/jobs.py`
+- [ ] T013 [B] Complete domain terms/robots review and approve an initial allowlist in `specs/002-personalized-shopping-copilot/source-feasibility.md`; unavailable domains stay disabled — **Partial:** reviewed register complete، but no source has sufficient permission/retention/display evidence for live enablement
+- [X] T014 [P] [US2] Write failing SourcePolicy/ResearchJob/Snapshot/Product/Variant/Offer/Claim constraints and migration tests in `backend/tests/integration/test_research_models.py`
+- [X] T015 [US2] Implement relational evidence entities and non-destructive migrations in `backend/analysis/models.py` and `backend/analysis/migrations/`
+- [X] T016 [P] [US2] Write failing URL/SSRF/redirect/private-address/DNS-rebinding/content-type/size/time/concurrency tests in `backend/tests/unit/test_safe_fetch.py`
+- [X] T017 [US2] Implement bounded allowlist fetch transport in `backend/analysis/research/fetch.py`; no browser/CAPTCHA/auth bypass
+- [ ] T018 [P] [US2] Capture copyright-safe minimal fixtures for one approved source in each ready category and checksums in `backend/tests/fixtures/research/`; do not claim sports ready until direct extraction succeeds — **Partial:** appliance/electronics captured and checksummed؛ approved sports source unavailable
+- [ ] T019 [P] [US2] Write failing extractor/field-provenance/freshness tests for electronics, appliance and approved sports fixture in `backend/tests/unit/test_extractors.py` — **Partial:** appliance/electronics and cache freshness covered؛ approved sports fixture unavailable
+- [X] T020 [US2] Implement deterministic per-source extractors and schema validation in `backend/analysis/research/extractors/`
+- [X] T021 [P] [US2] Write failing variant reconciliation tests for region, identifier, bundle, warranty and ambiguity in `backend/tests/unit/test_variant_identity.py`
+- [X] T022 [US2] Implement identity/conflict handling and timed offer observations in `backend/analysis/research/identity.py`
+- [X] T023 [US2] Write failing owner/CSRF start-status-cancel، bounded progress، cache/dedupe، lease renewal، stale publication، partial failure and cleanup integration tests in `backend/tests/integration/test_research_jobs.py` and API tests، then implement coordinator and typed minimal API in `backend/analysis/research/jobs.py` and `backend/analysis/api/research.py` by reusing StreamOperation/Event
 
 **Checkpoint B**: only approved fixture domains yield citations; access failures remain explicit.
 

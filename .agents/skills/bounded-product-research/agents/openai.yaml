@@ -1,0 +1,4 @@
+interface:
+  display_name: "Bounded Product Research"
+  short_description: "Safe bounded product-source retrieval and evidence extraction"
+  default_prompt: "Apply the project bounded research, source-policy, fetch, provenance, and lifecycle constraints."

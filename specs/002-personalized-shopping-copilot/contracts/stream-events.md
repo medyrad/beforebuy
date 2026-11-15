@@ -7,13 +7,13 @@ SSE over same-origin guest session at `/api/v1/operations/{operation_id}/events`
 |---|---|
 | `operation.started` | fixture kind/bounds؛ authoritative operation state |
 | `assistant.text.delta` | provisional plain-text chunk، max 1024 UTF-8 bytes |
-| `research.progress` | real stage/completed/total/domain status |
+| `research.progress` | real stage/completed/total؛ فقط work کامل‌شده، mode و job ID مشخص |
 | `evidence.published` | validated evidence/snapshot IDs |
 | `choice.updated` | canonical ChoiceSet pointer |
 | `assistant.message.final` | final validated message pointer |
 | `operation.cancelled` | terminal; explicit/user/delete reason |
 | `operation.failed` | terminal safe code including `INTERRUPTED` |
-| `operation.completed` | terminal; final message ID/revision |
+| `operation.completed` | terminal; conversation final-message pointer یا research job outcome/coverage |
 
 Ordering per operation. `next_sequence - 1` is the authoritative highest issued sequence. Client deduplicates ID، rejects
 lower/equal sequence and reconciles gaps through authorized `GET /api/v1/operations/{id}`. `Last-Event-ID` must belong
@@ -28,3 +28,8 @@ send `: heartbeat` at most every 15 seconds; heartbeat is connectivity only and 
 lease are re-read authoritatively during an open stream. Disconnect/close releases subscriber capacity exactly once.
 Two subscribers read the same stored events and never duplicate execution. No chain-of-thought، credential، executable
 HTML، raw provider/source payload or private exception is allowed.
+
+Research eventها همان operation ledger را reuse می‌کنند. start فقط از `POST .../research` است؛ GET/status/SSE work را
+شروع یا تکرار نمی‌کند. research worker با lease سی‌ثانیه‌ای و request حداکثر بیست‌ثانیه‌ای قبل و بعد I/O renew/recheck
+می‌کند. completion، coverage و operation state در یک transaction با lock order `Conversation → StreamOperation → ResearchJob`
+منتشر می‌شوند؛ source failure موفقیت source دیگر را پاک نمی‌کند.

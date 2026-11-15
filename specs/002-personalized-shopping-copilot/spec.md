@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Milestone A implementation authorized; later milestones remain planned
+**Status**: Milestone B implementation authorized for T013–T023; later milestones remain planned
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و کلید OpenAI متعلق به کاربر.
 
@@ -149,6 +149,12 @@
 - **FR-041**: final publication MUST در یک transaction و با lock order ثابت `Conversation → StreamOperation`، اعتبار expiry/revision/cancel/lease-owner را دوباره بررسی کند و FINAL message، `assistant.message.final`، `operation.completed` و state `COMPLETED` را با هم commit یا همگی rollback کند؛ mutationی که زودتر commit شود برنده است و worker دیررس MUST NOT publish کند.
 - **FR-042**: SSE MUST عمر connection حداکثر 45 ثانیه، heartbeat حداکثر هر 15 ثانیه، admission صریح حداکثر دو subscriber هم‌زمان در هر process و cleanup idempotent داشته باشد؛ expiry یا operation stale باید از state تازه و زیر lock reconcile و terminal/close شود و reconnect MUST generation را تکرار نکند.
 - **FR-043**: replay MUST با `next_sequence` authoritative میان no-history، partial/all-purged history، latest و future sequence تمایز بگذارد؛ foreign/malformed ID با `INVALID_REPLAY_ID`، future با `INVALID_REPLAY_SEQUENCE` و هر gap لازم با `REPLAY_GAP` و REST reconciliation URL پاسخ داده شود. purge پس از شروع stream MUST control event غیرپایدار `stream.replay_gap` بدهد و client از REST بدون regeneration reconcile کند.
+- **FR-044**: هر research job MUST فقط با trigger صریح اجرا شود و limits اولیهٔ مصوب آن حداکثر 3 domain، 5 content page در هر domain، 2 redirect در هر request، 2 MiB decoded در هر page، 20 ثانیه در هر request، 60 ثانیه wall time، 20 HTTP request کل و pacing حداقل 1 ثانیه per-domain باشد؛ retry، redirect و policy request همگی در budget حساب شوند. concurrency outbound حداکثر 2 در هر application process و active research job حداکثر 1 در هر guest است؛ process-local limit به‌عنوان deployment-global معرفی نشود.
+- **FR-045**: readiness هر source MUST میان `SYNTHETIC_FIXTURE`, `CAPTURED_REAL_FIXTURE`, `LIVE_PROBE`, `REPEATABLE_LIVE_EXTRACTION` و `ENABLED` تفکیک شود. default application mode آفلاین است و live failure MUST NOT به fixture fallback کند؛ fixture price/availability دادهٔ جاری بازار نیست.
+- **FR-046**: raw response cache MUST حداکثر 24 ساعت از retrieval و بدون sliding read expiry بماند؛ cache hit timestamp اصلی را حفظ کند. evidence خصوصی حداکثر تا lifecycle conversation مالک retained است؛ freshness per source مستقل از cache retention است و deletion/expiry فوراً publication را باطل و cleanup evidence خصوصی orphan و raw expired را purge می‌کند.
+- **FR-047**: research MUST از operation/event موجود با lock order و publication guard مصوب استفاده کند. lease سی‌ثانیه‌ای فقط پیش از expiry توسط owner فعلی renew می‌شود و هر fetch حداکثر 20 ثانیه است؛ قبل و بعد I/O renew/recheck انجام می‌شود. network/انتظار pacing خارج transaction است و worker restart network work را خودکار تکرار نمی‌کند.
+- **FR-048**: source allowlist MUST exact hostname، port، path prefix و redirect destination داشته باشد. اتصال واقعی فقط به IP public resolve‌شده و validate‌شده pin شود، درحالی‌که TLS SNI/certificate و Host برای hostname اصلی حفظ می‌شوند؛ proxy محیط، cookie، credential یا private user data در fetch مجاز نیست.
+- **FR-049**: API پژوهش MUST request/response/error typed برای start/status/cancel ارائه کند؛ GET/replay/read research را آغاز نکند، submission یکسان active را deduplicate کند، progress فقط completed work باشد و partial success، no supported source، blocked policy، extraction failure، timeout، cancellation و stale ownership را جدا گزارش کند.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -181,7 +187,7 @@
 - در milestone اولیه sourceهای manufacturer و merchant با policy صریح بر aggregator/reviewهای نامطمئن اولویت دارند.
 - SSE برای downstream server-to-browser کافی فرض شده و فقط با evidence implementation تغییر می‌کند.
 - eligibility مستقیم OpenAI برای users/backend ایران در تاریخ planning تأیید نشده و release blocker است.
-- retention مصوب Milestone A برای conversation/message/current brief برابر 90 روز پس از eligible action و برای upload/event برابر 24 ساعت است؛ retention research/memory/credential فقط در milestone مربوط تصمیم‌گیری می‌شود.
+- retention مصوب Milestone A برای conversation/message/current brief برابر 90 روز پس از eligible action و برای upload/event برابر 24 ساعت است؛ در Milestone B raw research حداکثر 24 ساعت و evidence خصوصی حداکثر تا expiry conversation است. retention memory/credential فقط در milestone مربوط تصمیم‌گیری می‌شود.
 
 ## Out of Scope
 
@@ -190,4 +196,4 @@
 - self-hosted model/GPU، provider abstraction چندگانه یا fallback به AvalAI.
 - account اجباری، social/public conversation sharing و cross-device recovery در این feature.
 - تشخیص روان‌شناختی، پیش‌بینی علمی regret و استخراج ویژگی حساس.
-- implementation در Phase 7؛ این سند فقط specification و planning را مجاز می‌کند.
+- ranking/Choice Desk کامل، memory، credential، live AI و public deployment در Phase 9 مجاز نیستند.

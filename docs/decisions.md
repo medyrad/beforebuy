@@ -168,6 +168,26 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
 - M1/A فقط shell گفت‌وگو، brief قابل‌ویرایش، upload محافظت‌شده، streaming واقعی fixture و Desk readiness خالی را
   پیاده می‌کند. product/price/review/ranking/citation و merchant offer ساختگی ممنوع و Milestone C زودهنگام نیست.
 
+## تصمیم‌های Phase 9 — Milestone B evidence foundation
+
+- research فقط با trigger صریح و brief تأییدشده شروع می‌شود؛ default runtime برابر `OFFLINE` است. `FIXTURE` فقط
+  evidence مصنوعی و label‌شده می‌سازد و شکست `LIVE` هرگز به fixture fallback نمی‌کند.
+- حدود اولیهٔ مصوب: ۳ domain/job، ۵ content page/domain، ۲ redirect/request، ۲۰ HTTP request/job، ۲ MiB decoded/page،
+  ۲۰ ثانیه/request، ۶۰ ثانیه/job، concurrency خروجی ۲/process، یک job فعال/guest و pace حداقل ۱ ثانیه/domain است.
+  semaphore process-local deployment-global نیست؛ source policy سخت‌گیرانه‌تر اولویت دارد و retry نامحدود وجود ندارد.
+- transport فقط HTTP(S) و port/path/host allowlist را می‌پذیرد؛ همهٔ DNS answerها باید public باشند و connection
+  واقعی به IP تأییدشده pin می‌شود، در حالی که TLS hostname verification و Host اصلی حفظ می‌شوند. proxy محیطی، cookie،
+  credential، browser/CAPTCHA bypass و private endpoint مجاز نیست.
+- raw response حداکثر ۲۴ ساعت و بدون sliding expiry نگه‌داری می‌شود. evidence نرمال‌شده بیشتر از conversation مالک
+  عمر نمی‌کند. retrieval timestamp روی cache hit تغییر نمی‌کند؛ freshness offer از retention cache جداست.
+- probe موفق، extraction موفق و permission/enablement سه gate مستقل‌اند. در ۲۰۲۶-۱۱-۱۵ Philips و Technolife
+  extraction حداقلی موفق داشتند ولی permission/retention/display برای این integration روشن نبود؛ Torob فقط policy
+  probe شد و Apple/adidas/Decathlon برای automated retrieval مناسب نبودند. بنابراین allowlist live فعلاً خالی و همهٔ
+  sourceها disabled هستند. sports fixture و Iranian current offer باز می‌مانند؛ cheapest/current-market ادعا نمی‌شود.
+- evidence entityهای `SourcePolicy`, `ResearchJob`, `SourceSnapshot`, `EvidenceClaim`, `Product`, `Variant`, `Offer`
+  با migration غیرمخرب افزوده شدند و research lifecycle از `StreamOperation`/`StreamEvent`، lease و lock order موجود
+  استفاده می‌کند. Milestone C ranking، memory، credential، provider call، public deployment و هر دو T039 خارج scope‌اند.
+
 ## تصمیم‌های Phase 5.2 — provider ایران
 
 - context قطعی: کاربران اولیه و backend در ایران هستند؛ قیمت و بودجهٔ خرید همچنان تومان است.

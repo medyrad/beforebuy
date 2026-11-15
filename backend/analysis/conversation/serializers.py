@@ -34,6 +34,7 @@ def serialize_operation(operation: StreamOperation):
         "id": str(operation.id),
         "conversation_id": str(operation.conversation_id),
         "status": operation.status,
+        "operation_kind": operation.operation_kind,
         "expected_brief_revision": operation.expected_brief_revision,
         "final_message_id": str(operation.final_message_id) if operation.final_message_id else None,
         "terminal_code": operation.terminal_code,

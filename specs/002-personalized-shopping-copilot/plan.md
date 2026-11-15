@@ -4,12 +4,12 @@
 
 ## Summary
 
-Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A اکنون conversation/brief، upload محافظت‌شده و streaming واقعی fixture را روی SSE با state authoritative در PostgreSQL پیاده می‌کند؛ پژوهش، ranking، memory و provider همچنان milestoneهای بعدی‌اند.
+Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A conversation/brief، upload محافظت‌شده و streaming واقعی fixture را پیاده کرده است؛ Milestone B فقط policy/fetch/extract/identity/job evidence را اضافه می‌کند و ranking، memory و provider همچنان milestoneهای بعدی‌اند.
 
 ## Technical Context
 
 **Language/Version**: Python `3.12.x`، TypeScript `5.9.x`  
-**Primary Dependencies**: Django `5.2.16`, DRF `3.17.1`, React `19.3.1`, Vite `8.3.8`; Pillow `13.0.0` فقط برای decode/re-encode امن upload  
+**Primary Dependencies**: Django `5.2.16`, DRF `3.17.1`, React `19.3.1`, Vite `8.3.8`; Pillow `13.0.0` فقط برای decode/re-encode امن upload؛ safe fetch از Python 3.12 stdlib با socket pinning استفاده می‌کند و dependency runtime تازه ندارد  
 **Storage**: PostgreSQL 18؛ object/file storage جدید تا سنجش upload volume اضافه نمی‌شود  
 **Testing**: backend suite، Vitest، Playwright، fixture HTTP transport و contract tests  
 **Target Platform**: یک Linux server کوچک با Docker Compose و same-origin HTTPS  
@@ -67,6 +67,9 @@ NGINX web ── /api/ ──> Django/DRF
   آزاد می‌گذارد؛ thread count به‌تنهایی admission control محسوب نمی‌شود. overflow با `429 STREAM_CAPACITY_REACHED` رد
   می‌شود و release در close/disconnect idempotent است. این bound در proxy smoke آزموده می‌شود.
 - source response untrusted است؛ fetch/extract از prompt boundary جداست.
+- research executor و admission از fixture conversation executor جداست، اما PostgreSQL operation/event همان source of truth می‌ماند. outbound semaphore دو request در هر process است، نه global؛ یک active research job per guest با row/constraint logic enforce می‌شود.
+- safe fetch ابتدا exact policy/path را می‌سنجد، DNS را resolve و همهٔ addressها را public validate می‌کند و connection را به یک IP تأییدشده pin می‌کند؛ TLS SNI/certificate و Host hostname اصلی‌اند و proxy environment مصرف نمی‌شود. redirect از ابتدا دوباره validate می‌شود.
+- budget اولیه: 3 domain، 5 content page/domain، 2 redirect/request، 20 total HTTP request، 2 MiB decoded/page، 20s/request، 60s/job، pacing یک ثانیه/domain. raw cache 24h non-sliding و freshness مستقل است.
 - OpenAI built-in web search در MVP منبع بازار authoritative نیست.
 - model از catalog allowlisted پس از revalidation capability/price برای ID دقیق انتخاب می‌شود.
 
@@ -125,7 +128,7 @@ tests/e2e/copilot-milestone-a.spec.ts
 
 1. هر source فقط پس از policy review و extraction fixture وارد allowlist می‌شود.
 2. OpenAI برای ایران تا پشتیبانی رسمی/قابل اتکا fail closed است؛ user key bypass نیست. Milestone A هیچ provider call ندارد.
-3. retention فعال Milestone A مصوب است؛ retention مربوط به memory/credential/research، backup-erasure operations، encryption-key operations و target host پیش از pilot بسته می‌شوند.
+3. retention Milestone A و raw/evidence Milestone B مصوب است؛ retention مربوط به memory/credential، backup-erasure operations، encryption-key operations و target host پیش از pilot بسته می‌شوند.
 4. هیچ milestone این feature، `T039` feature 001 را کامل نمی‌کند.
 
 ## Complexity Tracking
