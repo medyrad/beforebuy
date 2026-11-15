@@ -371,6 +371,28 @@ orphan صفر و همهٔ ۱۵۴ session به owner موجود decode شدند. 
 - logging پیکربندی‌شده answer، session/CSRF و raw AI payload را ثبت نمی‌کند.
 - انتشار عمومی همچنان نیازمند certificate/secret واقعی target host، activation زمان‌بندی‌شده cleanup، monitoring و
   تصمیم صریح release است؛ migration توسعه هیچ‌یک از این gateها یا `T039` را تغییر نمی‌دهد.
+
+## Phase 11.1 — contextual assistant operations
+
+`StreamOperation.context_manifest` only stores IDs, revisions, hashes and expiry anchors; user/profile/source prose and
+credentials remain ephemeral. The worker pins the latest accepted turn, brief/generation, CopilotSettings revision,
+current ChoiceSet/snapshots, eligible uploads and included confirmed-memory revisions. Every delta/final publication
+reassembles the context and terminalizes stale work as `CONTEXT_STALE`. Migration `0015` is additive.
+
+Context limits are `COPILOT_CONTEXT_HISTORY_BYTES=6000`, `COPILOT_CONTEXT_CRITICAL_BYTES=32768` and
+`COPILOT_CONTEXT_TOTAL_BYTES=49152`. Optional history is truncated deterministically. If critical context cannot fit,
+the local limited generator returns before any provider transport. Do not raise these limits without revisiting request
+cost, image bounds, SSE payload size and disclosure.
+
+`POST /api/v1/copilot/models/refresh` is the only model-list action. It first enforces region eligibility and a validated
+credential, then uses the installed SDK `client.models.list()` and intersects IDs with the documentation catalog.
+Settings/credential GET/PUT never discover models. In the confirmed Iran deployment the endpoint returns
+`REGION_BLOCKED` before credential decryption or transport; do not use a base URL or UI flag to bypass this.
+
+Development mock output is labelled synthetic and uses the production context assembler, typed plan validator, event
+ledger and publication boundary. `PROVISIONAL_CONTEXT` deltas contain only a safe lead; `VALIDATED_BLOCK` deltas are
+server-rendered from current deterministic values. Raw Responses JSON is never emitted. Live AI and research remain
+disabled; no restart, migration or fixture demonstration authorizes a provider/source call.
 # Phase 11 local settings and memory
 
 Default remains `COPILOT_AI_MODE=mock` and `BEFOREBUY_RESEARCH_MODE=OFFLINE`. No real API key is required to explore

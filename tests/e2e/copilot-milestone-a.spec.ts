@@ -31,7 +31,7 @@ test('real proxy fixture stream, brief edit, accessibility and desktop visual', 
   const message = 'نیاز من ثبت شود؛ نام مدل Example X <script>alert(1)</script> است.'
   await page.getByRole('textbox', { name: 'پیام شما' }).fill(message)
   await page.getByRole('button', { name: 'ارسال پیام' }).click()
-  await expect(page.getByText(/fixture توسعه است/)).toBeVisible()
+  await expect(page.getByText(/شاهد کافی و معتبر در مقایسهٔ فعلی ندارم/)).toBeVisible()
   await expect(page.getByText(message)).toBeVisible()
   await expect(page.getByText('بدون AI زنده')).toBeVisible()
   await page.getByText('پژوهش منابع و پیشنهادهای فروش', { exact: true }).click()

@@ -25,7 +25,7 @@ class CopilotConfigurationTests(TestCase):
             adapter = configured_copilot_generator(op.id)
             self.assertIsInstance(adapter, OpenAICopilotGenerator)
             self.assertTrue(adapter.still_current())
-            self.assertEqual(adapter.input_text, 'بودجه نامعلوم')
+            self.assertEqual(adapter.context['current_message'], 'بودجه نامعلوم')
             credential.delete()
             self.assertFalse(adapter.still_current())
             transport.assert_not_called()
@@ -46,7 +46,8 @@ class CopilotWorkerTranslationTests(TransactionTestCase):
         from analysis.conversation.streaming import _execute, reserve_execution_slot
         guest = GuestContext.objects.create(access_expires_at=timezone.now()+timedelta(days=1))
         convo = Conversation.objects.create_for_guest(guest)
-        events = [{'type': 'response.output_text.delta', 'delta': '{"question_key":"budget_toman"}'},
+        events = [{'type': 'response.output_text.delta', 'delta': '{"answer_type":"CLARIFICATION",'
+                   '"lead_key":"NEEDS_CONTEXT","clarification_key":"budget_toman","blocks":[]}'},
                   {'type': 'response.completed', 'response': {'status': 'completed',
                    'usage': {'input_tokens': 40, 'output_tokens': 10}}}]
         with tempfile.TemporaryDirectory() as directory:

@@ -324,6 +324,8 @@ class StreamOperation(models.Model):
     lease_expires_at = models.DateTimeField(null=True)
     cancel_requested_at = models.DateTimeField(null=True)
     terminal_code = models.CharField(max_length=64, null=True)
+    context_manifest = models.JSONField(default=dict)
+    context_fingerprint = models.CharField(max_length=64, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     started_at = models.DateTimeField(null=True)

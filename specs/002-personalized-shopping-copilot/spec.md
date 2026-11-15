@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Phase 11 Milestone D T032–T041 authorized for implementation and stubbed verification only; live AI and public sources remain disabled
+**Status**: Phase 11.1 contextual-assistant closure T071–T077 authorized for implementation and stubbed verification only; live AI and public sources remain disabled
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و کلید OpenAI متعلق به کاربر.
 
@@ -72,6 +72,9 @@
 1. **Given** پاسخ در حال تولید است، **When** delta می‌رسد، **Then** به‌عنوان provisional نمایش داده می‌شود و فقط event نهایی validated به message قطعی تبدیل می‌شود.
 2. **Given** اتصال قطع می‌شود، **When** کاربر برمی‌گردد، **Then** state از API خوانده می‌شود و event تکراری پیام را دو بار نمی‌سازد.
 3. **Given** screen reader فعال است، **When** deltaهای سریع می‌رسند، **Then** اعلان‌ها throttled و قابل توقف‌اند و focus ربوده نمی‌شود.
+4. **Given** budget قبلاً در brief ثبت شده، **When** کاربر دربارهٔ مقایسه سؤال می‌کند، **Then** دستیار budget را دوباره نمی‌پرسد و پاسخ از ChoiceSet جاری استفاده می‌کند.
+5. **Given** کاربر می‌پرسد «چرا گزینه دوم؟»، **When** ChoiceSet جاری و evidence معتبر وجود دارد، **Then** tradeoff همان candidate با attribution و uncertainty توضیح داده می‌شود؛ ranking تغییر نمی‌کند.
+6. **Given** evidence فنی کافی نیست، **When** پاسخ ساخته می‌شود، **Then** unknown و راه بررسی صریح نمایش داده می‌شوند و product claim یا alternative ساخته نمی‌شود.
 
 ---
 
@@ -105,6 +108,14 @@
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
+- **FR-069**: Provider context MUST be assembled from the bounded recent conversation, current brief/confirmation/contradictions, current valid ChoiceSet and only its relevant provenance/freshness/unknown/cost fields, current message/eligible images and consented relevant confirmed memory. Temporary conversations MUST exclude memory; current explicit criteria override saved preferences. Raw source text and quoted instructions are untrusted data and MUST NOT control system instructions or ranking.
+- **FR-070**: Context assembly MUST use deterministic byte/item budgets. Critical hard constraints, contradictions and uncertainty MUST NOT be silently truncated; if they or the minimum current comparison cannot fit, generation MUST return an explicit limited response without a provider call. Optional history truncation MUST be oldest-first and visibly represented in the provider payload.
+- **FR-071**: Each generation MUST pin a non-secret context manifest and fingerprint covering the current turn, brief/generation revision, model-settings revision, current ChoiceSet/evidence snapshots, eligible uploads and included memory revisions. Final publication MUST reject deletion, expiry, edits, credential/model changes, a newer accepted turn, stale evidence or memory changes. The manifest MUST NOT duplicate message/profile/source prose.
+- **FR-072**: The assistant answer contract MUST support comparison question, evidence-backed mismatch, candidate tradeoff, at most three supported alternatives, one consequential clarification, and explicit unknown/next-check guidance. Generated blocks MUST reference current candidate/criterion/evidence identities and pass value, attribution, freshness and variant checks before factual rendering. Unsupported blocks are omitted or replaced by an explicit limited explanation. Deterministic arithmetic, outcome, rank, product facts and source evidence remain authoritative.
+- **FR-073**: Streaming MUST expose meaningful context-aware provisional text without raw JSON, hidden reasoning or unvalidated product claims. Validated blocks MAY stream after validation and only the final persisted message is authoritative. Provider output MUST NOT receive artificial typing delays; cancellation/replay/reconnect remain exactly-once. Free-form semantic validation limits MUST be disclosed.
+- **FR-074**: Account model discovery MUST have a direct OpenAI SDK `models.list()` transport seam tested only with stubbed HTTP. Returned IDs MUST be intersected with the documentation capability/pricing catalog; IDs alone never establish capability. Settings/key reads and writes MUST make zero provider calls. A future explicit refresh MUST report blocked/error/unavailable-selection states and remain region/credential gated.
+- **FR-075**: Development demonstration MUST use the real context assembler, worker, event ledger, publication boundary and UI with deterministic scripted responses labelled synthetic. It MUST cover practical supported alternative, enjoyment tradeoff and insufficient-evidence guidance without a production-accessible bypass or live provider/source call.
 
 - **FR-065**: Assistant settings and «شناخت من» MUST be discoverable on desktop/mobile. Credential writes never validate or list models over the network; stored/unvalidated, failed, blocked and validated states are separate. Documentation catalog is explicitly account-unverified; disappearing models fail closed without substitution.
 - **FR-066**: Development-only provisional retention MUST be configurable: candidates 7 days from creation, confirmed preferences 90 days from confirmation, credentials 30 days from save/replace; reads/edits do not renew these anchors. Source conversation deletion/expiry deletes derived memories. Disable stops reuse/proposals without deleting; clear/delete removes active records, not historical backups. Owner access expiry remains an upper bound. Public activation requires product review.

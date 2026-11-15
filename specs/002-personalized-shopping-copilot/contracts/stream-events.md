@@ -5,7 +5,7 @@ SSE over same-origin guest session at `/api/v1/operations/{operation_id}/events`
 
 | Event | Payload/finality |
 |---|---|
-| `operation.started` | `DEVELOPMENT_FIXTURE` or `OPENAI_RESPONSE` kind؛ authoritative operation state; provider kind is stub-tested only and region-blocked at runtime |
+| `operation.started` | `DEVELOPMENT_CONTEXT_FIXTURE`، `RULE_BASED_LIMITED` or `OPENAI_RESPONSE` kind؛ authoritative operation state; provider kind is stub-tested only and region-blocked at runtime |
 | `assistant.text.delta` | provisional plain-text chunk، max 1024 UTF-8 bytes |
 | `research.progress` | real stage/completed/total؛ فقط work کامل‌شده، mode و job ID مشخص |
 | `evidence.published` | source ID، snapshot ID و status همان evidence unit اتمیک؛ پیش از commit دیده نمی‌شود |
@@ -29,10 +29,17 @@ lease are re-read authoritatively during an open stream. Disconnect/close releas
 Two subscribers read the same stored events and never duplicate execution. No chain-of-thought، credential، executable
 HTML، raw provider/source payload or private exception is allowed.
 
-Phase 11 translates Responses deltas into bounded provisional clarification progress; raw structured JSON and model
-claims are not displayed. Only schema-valid clarification keys become deterministic Persian final text. Expired or
-replaced credential revisions cannot publish. Provider failures use `GENERATION_FAILED`, fixtures `FIXTURE_FAILED`;
-no raw SDK exception is sent. SDK request identifiers and usage remain private accounting metadata, not SSE payloads.
+Phase 11.1 never forwards Responses JSON deltas. Before provider completion it may emit one bounded context-aware safe
+lead such as «مقایسهٔ فعلی و شواهد ثبت‌شده را بررسی می‌کنم»; it contains no generated product fact. After the complete
+answer plan passes candidate/value/attribution/freshness/variant validation, deterministic Persian block text may emit
+as `assistant.text.delta`. `payload.phase` is `PROVISIONAL_CONTEXT` or `VALIDATED_BLOCK`; both remain provisional until
+`assistant.message.final`. Unsupported blocks are omitted or become an explicit limited explanation. OpenAI output has
+no artificial delay. Development scripted output uses kind `DEVELOPMENT_CONTEXT_FIXTURE` and remains visibly synthetic.
+
+Expired/replaced credentials, model/settings revision drift, newer turns, brief/generation edits, ChoiceSet/evidence
+expiry/deletion, upload deletion and included-memory changes cannot publish. Provider failures use `GENERATION_FAILED`,
+fixtures `FIXTURE_FAILED`; no raw SDK exception is sent. SDK request identifiers and usage remain private accounting
+metadata, not SSE payloads.
 
 Research eventها همان operation ledger را reuse می‌کنند. start فقط از `POST .../research` است؛ GET/status/SSE work را
 شروع یا تکرار نمی‌کند. research worker با lease سی‌ثانیه‌ای و request حداکثر بیست‌ثانیه‌ای قبل و بعد I/O renew/recheck

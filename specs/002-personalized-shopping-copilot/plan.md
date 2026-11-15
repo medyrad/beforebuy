@@ -16,6 +16,25 @@ require successful SafeFetcher preflight; T066 remains pending until extraction/
 
 ## Technical Context
 
+Phase 11.1 authorizes T071–T077 only. Add a pure bounded context assembler under the existing AI seam. It emits a
+provider payload plus a non-secret manifest/fingerprint; StreamOperation pins only identifiers, revisions, hashes and
+expiry/freshness anchors, never duplicated prose. Assembly keeps critical brief constraints/contradictions/unknowns
+whole, truncates optional history deterministically oldest-first with an explicit marker, and fails to a limited local
+answer before any transport call when required context cannot fit. Current explicit brief criteria take precedence;
+temporary conversations and disabled consent exclude memory.
+
+The Responses schema becomes a small answer-plan contract: answer type, controlled lead key and at most three typed
+blocks referencing current candidate, criterion and evidence IDs. Validation checks candidate identity, deterministic
+group/outcome/check values, attribution, source freshness and cost fields before a Persian renderer emits factual text.
+No free-form model prose is treated as evidence. A safe context-aware lead may stream provisionally; validated rendered
+blocks follow validation and the final stored message remains authoritative. OpenAI operations receive no artificial
+typing delay. The mock path uses the same assembler/renderer with deterministic scripted plans for labelled local demos.
+
+The installed OpenAI SDK 3.49.0 `client.models.list()` is wrapped behind a narrow transport seam. Explicit refresh is
+region/credential gated and intersects returned IDs with the documentation catalog; settings/key GET/PUT never call it.
+Live eligibility remains unconditionally blocked for the confirmed Iran deployment. No provider/source calls, new
+service, vector database, agent framework or production test bypass are introduced.
+
 Phase 11 supersedes the historical Phase 10 scope below only for T032–T041. Add guest-scoped CopilotSettings,
 PreferenceMemory and envelope-encrypted UserCredential; reuse AIInvocation/LiveBudgetLedger for reservation and
 settlement. Credential master keyring is a runtime file secret; offline starts without it. Documentation-based
@@ -112,6 +131,7 @@ NGINX web ── /api/ ──> Django/DRF
 | B.2 — Real offer pilot | exact URL، Torob/direct merchant adapters، normalized offers و minimal in-app panel | stubbed adapter/regression tests + bounded five-product live observation + NGINX browser evidence |
 | C — Choice Desk | ranking deterministic، total cost، comparison responsive | invariant/component/browser tests |
 | D — Personalization & OpenAI readiness | memory opt-in، encrypted key، adapter stub و gates | secret/memory/model tests؛ live calls zero |
+| D.1 — Contextual assistant closure | bounded context، validated answer blocks، meaningful safe streaming و synthetic in-app demos | real worker/SSE tests with transport stub + mobile/desktop NGINX demo |
 | E — Production rehearsal & pilot gate | SSE proxy/restart/backup/retention و allowlist review | Compose rehearsal؛ approvals جدا |
 
 ## Project Structure

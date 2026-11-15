@@ -10,12 +10,16 @@ from .operations import OperationCancelView, OperationDetailView, OperationEvent
 from .uploads import UploadCreateView, UploadDetailView
 from .research import ResearchCancelView, ResearchDetailView, ResearchStartView
 from .choices import ChoiceCandidatesView, ChoiceDemoView, ChoiceDeskView
-from .memory import CopilotSettingsView, MemoryListView, MemoryDetailView, ConversationMemoryView, MemoryExportView
+from .memory import (
+    CopilotModelsRefreshView, CopilotSettingsView, MemoryListView, MemoryDetailView,
+    ConversationMemoryView, MemoryExportView,
+)
 from .credentials import CredentialView
 
 urlpatterns = [
     path('copilot/credential', CredentialView.as_view()),
     path('copilot/settings', CopilotSettingsView.as_view()),
+    path('copilot/models/refresh', CopilotModelsRefreshView.as_view()),
     path('copilot/memory', MemoryListView.as_view()),
     path('copilot/memory/export', MemoryExportView.as_view()),
     path('copilot/memory/<uuid:memory_id>', MemoryDetailView.as_view()),

@@ -112,6 +112,22 @@ and both viewport regressions passed without weakening assertions. Frontend test
 Earlier browser failures (locator/readiness synchronization and a loaded-run timeout) are retained in the handoff,
 not counted as successes. No provider/source calls; feature001 T039, T042–T048/T050 and T066 remain pending.
 
+## Phase 11.1 — contextual assistant closure
+
+Authorization is limited to T071–T077. AI remains mock by default, research remains OFFLINE and all provider/source
+transports are stubbed. Milestone E, T066, feature001 T039 and live quality/coverage gates remain open.
+
+- [x] T071 [P] [US4] Write failing bounded-context tests for history/brief/ChoiceSet/evidence/cost/image/consented-memory inclusion, temporary/context isolation, explicit-over-memory precedence, deterministic truncation and critical-context limited state in `backend/tests/unit/test_copilot_context.py`
+- [x] T072 [US4] Implement the pure context assembler and additive StreamOperation manifest/fingerprint migration; pin and revalidate turn/brief/generation/settings/ChoiceSet/evidence/upload/memory context in `backend/analysis/ai/copilot_context.py` and the existing operation boundary
+- [x] T073 [P] [US4] Write failing answer-plan/parser/semantic evidence tests and installed-SDK model-list transport tests, including malformed/unsupported blocks, prompt-like source data, unavailable selection and zero implicit provider calls
+- [x] T074 [US4] Implement the narrow answer contract, deterministic Persian renderer, evidence/value/freshness/candidate validation and explicit gated `models.list()` refresh seam without free-form factual publication
+- [x] T075 [P] [US4] Write failing real worker/SSE regressions for supplied budget, «چرا گزینه دوم؟», enjoyment, unknown technical comparison, supported alternative, missing evidence, temporary memory exclusion, explicit override and stale context races; stub only external provider transport
+- [x] T076 [US4] Wire meaningful safe-lead/validated-block streaming without provider typing delay and add three labelled deterministic in-app scripted demonstrations through the same assembler/worker/publication path; update React status/copy tests only as required
+- [x] T077 [US4] Run scoped/full PostgreSQL and frontend verification plus real NGINX mobile/desktop demo journeys; archive Phase 11 handoff and update contracts/operations/quickstart/handoff with stub-versus-live limitations, then commit/push related files only
+
+**Checkpoint D.1**: contextual behavior is verified through synthetic/stubbed application paths only. Live OpenAI
+quality, account model access and live market coverage remain unevaluated.
+
 ## Milestone E — Operations rehearsal and controlled pilot gates
 
 - [ ] T042 [E] Finalize and approve per-entity retention, export/deletion and backup-erasure caveat in `docs/decisions.md` and operations docs

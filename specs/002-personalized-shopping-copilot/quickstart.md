@@ -126,3 +126,26 @@ uv run --project .. python manage.py test \
 ```
 
 No public deployment, provider call, broad crawl, product ranking, memory or credential storage belongs to Milestone B.
+
+## Phase 11.1 contextual synthetic demos
+
+Keep `COPILOT_AI_MODE=mock` and `BEFOREBUY_RESEARCH_MODE=OFFLINE`. Apply migration `0015`, open
+`http://127.0.0.1:58080/copilot`, create/confirm a brief and use «بارگذاری دادهٔ مصنوعی» plus «ساخت مقایسه».
+The following messages exercise the same context assembler/worker/SSE/publication path as the adapter:
+
+1. electronics, 10,000,000 toman, intended «رایانهٔ نمایشی آ»: `چه جایگزینی در همین مقایسه داری؟`
+2. electronics, enjoyment intent, portable=true hard, intended «رایانهٔ نمایشی ب»: `چرا این گزینه با نیاز من هم‌خوان نیست؟`
+3. sports, waterproof=true hard, intended «کفش نمایشی پ»: `برای تصمیم چه چیزی هنوز نامعلوم است؟`
+
+Expected output is explicitly fixture/synthetic: supported alternative and authoritative total, evidence-backed mismatch,
+or unknown plus a next-check action. It is not live Persian-quality evidence. Reproduce the real NGINX browser checks:
+
+```sh
+cd frontend
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080 \
+  node node_modules/@playwright/test/cli.js test \
+  ../tests/e2e/copilot-contextual-assistant.spec.ts --config=playwright.config.ts --project=chrome
+```
+
+In settings, «بررسی صریح مدل‌های حساب» is the sole discovery action and currently returns a visible regional block.
+Loading/saving settings or a key must issue zero model-list calls. Do not enter a real key for these demos.

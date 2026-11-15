@@ -50,6 +50,14 @@ export function AssistantSettings() {
       catch (reason) { setError(failureText(reason)) } finally { setBusy(false) }
     }}>{settings.catalog.saved_status === 'UNAVAILABLE' && <option value={settings.model}>مدل ذخیره‌شده دیگر در فهرست نیست</option>}
       {settings.catalog.items.map(m => <option key={m.id} value={m.id}>{m.id} — تأییدنشده برای حساب</option>)}</select></label>}
+    <button className="button ghost" type="button" disabled={busy} onClick={async () => {
+      setBusy(true); setError('')
+      try {
+        const catalog = await memoryApi.refreshModels()
+        setSettings(current => current ? { ...current, catalog } : current)
+      } catch (reason) { setError(failureText(reason)) } finally { setBusy(false) }
+    }}>بررسی صریح مدل‌های حساب</button>
+    <p>این بررسی فقط با اقدام شما انجام می‌شود؛ خواندن یا ذخیرهٔ تنظیمات هیچ درخواست فهرست مدلی نمی‌فرستد.</p>
     <p>اگر مدل در دسترس نباشد، درخواست متوقف می‌شود؛ مدل یا ارائه‌دهندهٔ دیگری خودکار جایگزین نمی‌شود.</p>
     <details><summary>حریم خصوصی و محدودیت حذف</summary><p>کلید فقط رمز‌شده در سرور نگه‌داری می‌شود و دوباره نمایش داده نمی‌شود. سیاست موقت توسعه ۳۰ روز است، محدود به عمر دسترسی شما؛ فقط همین مرورگر دسترسی دارد. گم‌شدن دسترسی مرورگر بازیابی خودکار ندارد. حذف یا جایگزینی، کارهای صف‌شده را باطل می‌کند؛ درخواست قبلاً ارسال‌شده قابل پس‌گرفتن نیست. حذف فوری از نسخه‌های پشتیبان تضمین نمی‌شود.</p></details>
     {error && <p role="alert">{error}</p>}

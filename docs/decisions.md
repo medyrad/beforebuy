@@ -1,5 +1,18 @@
 # ثبت تصمیم‌ها
 
+## Phase 11.1 — contextual assistant closure
+
+- T071–T077 are authorized for bounded contextual assembly, typed answer validation, meaningful safe streaming,
+  SDK model-list seam and synthetic in-app demonstrations. No live provider/source call or Milestone E work is allowed.
+- Provider input is ephemeral and bounded. StreamOperation persists only a non-secret context manifest/fingerprint;
+  it pins current turn, brief/generation, model settings, ChoiceSet/evidence, uploads and included memory revisions.
+- Model output is a typed answer plan, not authoritative prose. Candidate/value/attribution/freshness/variant checks
+  precede deterministic Persian factual rendering. Residual free-form semantic entailment is not claimed solved.
+- Safe context-aware lead text may stream before plan completion; validated block text follows validation. Neither is
+  authoritative until final publication. No artificial typing delay is presented as provider streaming.
+- Account model refresh is an explicit future action behind region and validated-credential gates. Model IDs returned
+  by `models.list()` are intersected with documentation metadata and never imply capabilities or pricing by themselves.
+
 ## Phase 11 — authorized development and provisional lifecycle
 
 - Session spending uses durable guest aggregates in the existing LiveBudgetLedger; purging 90-day invocation

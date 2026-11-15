@@ -19,12 +19,18 @@ class CopilotAdapterTests(TestCase):
             still_current=lambda: True, operation_cap=10000, session_cap=20000, daily_cap=100000,
             input_text='فقط نیاز را روشن کن', **kwargs)
 
+    @staticmethod
+    def plan(key='budget_toman'):
+        return json.dumps({'answer_type': 'CLARIFICATION', 'lead_key': 'NEEDS_CONTEXT',
+                           'clarification_key': key, 'blocks': []})
+
     def test_events_to_provisional_and_validated_final_usage(self):
-        events = [{'type': 'response.output_text.delta', 'delta': '{"question_key":"budget_toman"}'},
+        events = [{'type': 'response.output_text.delta', 'delta': self.plan()},
                   {'type': 'response.completed', 'response': {'id': 'resp_synthetic', 'status': 'completed',
                    'usage': {'input_tokens': 40, 'output_tokens': 10}}}]
         adapter = self.adapter(events)
-        self.assertTrue(list(adapter.generate()))
+        chunks = list(adapter.generate())
+        self.assertEqual([chunk['phase'] for chunk in chunks], ['PROVISIONAL_CONTEXT', 'VALIDATED_BLOCK'])
         self.assertEqual(adapter.final_text, 'سقف بودجهٔ این خرید چقدر است؟')
         row = AIInvocation.objects.get()
         self.assertEqual((row.input_tokens, row.output_tokens, row.attempt_count), (40, 10, 1))
@@ -92,12 +98,26 @@ class CopilotAdapterTests(TestCase):
             list(sdk_events(key='synthetic-not-real', model='gpt-6-luna', input='test', stream=True, store=False,
                             http_client=original(transport=httpx.MockTransport(timeout))))
 
+    def test_sdk_models_list_uses_actual_protocol_without_live_network(self):
+        import httpx2 as httpx
+        from analysis.ai.openai_copilot import sdk_model_ids
+        original = httpx.Client
+        def handler(request):
+            self.assertEqual(str(request.url), 'https://api.openai.com/v1/models')
+            return httpx.Response(200, json={'object': 'list', 'data': [
+                {'id': 'gpt-6-luna', 'object': 'model', 'created': 1, 'owned_by': 'synthetic'},
+                {'id': 'not-supported', 'object': 'model', 'created': 1, 'owned_by': 'synthetic'},
+            ]})
+        self.assertEqual(sdk_model_ids(
+            key='synthetic-not-real', http_client=original(transport=httpx.MockTransport(handler)),
+        ), ['gpt-6-luna', 'not-supported'])
+
     def test_session_limit_unknown_usage_and_image_request(self):
         from analysis.ai.openai_copilot import CopilotProviderError
         requests = []
         def transport(**request):
             requests.append(request)
-            return iter([{'type': 'response.output_text.delta', 'delta': '{"question_key":"none"}'},
+            return iter([{'type': 'response.output_text.delta', 'delta': self.plan()},
                          {'type': 'response.completed', 'response': {'status': 'completed'}}])
         adapter = self.adapter([], images=['data:image/png;base64,c3ludGhldGlj'])
         adapter.transport = transport
@@ -128,7 +148,7 @@ class CopilotAdapterTests(TestCase):
         from django.core.management import call_command
         from analysis.ai.openai_copilot import CopilotProviderError
         from io import StringIO
-        events = [{'type': 'response.output_text.delta', 'delta': '{"question_key":"none"}'},
+        events = [{'type': 'response.output_text.delta', 'delta': self.plan()},
                   {'type': 'response.completed', 'response': {'status': 'completed'}}]
         adapter = self.adapter(events)
         list(adapter.generate())

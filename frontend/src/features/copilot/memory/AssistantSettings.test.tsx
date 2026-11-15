@@ -22,6 +22,8 @@ it('shows blocked account-unverified settings and clears the synthetic credentia
   expect(input).toHaveAttribute('type', 'password')
   expect(screen.getByText(/اشتراک ChatGPT/)).toBeInTheDocument()
   expect(screen.getByText(/ایران/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'بررسی صریح مدل‌های حساب' })).toBeInTheDocument()
+  expect(fetcher.mock.calls.some(([url]) => url.endsWith('/models/refresh'))).toBe(false)
   await user.type(input, 'synthetic-test-only-123456')
   await user.click(screen.getByRole('button', { name: 'ذخیرهٔ کلید' }))
   await waitFor(() => expect(input).toHaveValue(''))

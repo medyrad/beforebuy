@@ -25,8 +25,10 @@ Reviewed 2026-11-15 using official OpenAI documentation:
 - `discover_models(account_ids, saved_model=...)` intersects account IDs with explicit capability/pricing metadata.
   With no account evidence it returns `DOCUMENTATION_UNVERIFIED`/`ACCOUNT_UNVERIFIED`; a missing saved model is
   `UNAVAILABLE`, never silently substituted. No model-list HTTP request occurs in this phase.
-- The narrow strict schema selects one clarification key. Persian final wording is deterministic; streamed progress
-  is provisional and cannot become an authoritative product fact, price, constraint or ranking.
+- Phase 11.1 replaces the clarification-only schema with a narrow answer-plan contract. It selects a controlled lead
+  and typed blocks referencing only the assembled current candidates/criteria/evidence. Persian factual wording is
+  deterministic after value/attribution/freshness/variant validation; model prose is not evidence. Safe leads and
+  validated blocks remain provisional until final publication.
 - Responses uses `store=false`, standard service tier, a 256-output-token ceiling, bounded text/image input,
   per-attempt timeout and transient-only bounded retries. Cancellation/invalid output never publishes a final answer.
 - OpenAI SDK transport is tested with HTTP stubs. No AvalAI fallback or configurable alternate base URL is allowed.
@@ -34,6 +36,8 @@ Reviewed 2026-11-15 using official OpenAI documentation:
   money remains whole toman; AI runtime accounting uses integer micro-USD. Estimates are not invoice guarantees.
 - Operation/session/daily caps default to zero. Missing finite configuration fails closed. Credential creation,
   replacement, model selection and memory operations never authorize spending or make provider calls.
+- The installed SDK 3.49.0 documents `client.models.list()` as `GET /models`; the new seam is HTTP-stub tested only.
+  Explicit refresh remains region/validated-credential gated and returned IDs are intersected with this catalog.
 
 ## Remaining gates
 

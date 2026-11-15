@@ -55,7 +55,8 @@ class CopilotConcurrencyTests(TransactionTestCase):
 
         self.assertTrue(reserve_execution_slot())
         with (
-            patch("analysis.conversation.streaming.FixtureGenerator.generate", return_value=iter(["دلتای کنترل‌شده"])),
+            patch("analysis.ai.openai_copilot.ContextualFixtureGenerator.generate",
+                  return_value=iter([{'text': 'دلتای کنترل‌شده', 'phase': 'VALIDATED_BLOCK'}])),
             patch("analysis.conversation.streaming.finalize_operation", side_effect=blocked_finalize),
         ):
             worker = threading.Thread(target=_execute, args=(operation.id,))
@@ -107,6 +108,33 @@ class CopilotConcurrencyTests(TransactionTestCase):
             ),
         )
         self.assertFalse(StreamOperation.objects.filter(id=operation.id).exists())
+
+    def test_real_worker_pins_context_and_publishes_safe_then_validated_phases(self):
+        operation = self.operation()
+        self.assertTrue(reserve_execution_slot())
+        _execute(operation.id)
+        operation.refresh_from_db()
+        self.assertEqual(operation.status, 'COMPLETED')
+        self.assertEqual(len(operation.context_fingerprint), 64)
+        deltas = list(operation.events.filter(event_type='assistant.text.delta').values_list('payload', flat=True))
+        self.assertEqual([item['phase'] for item in deltas], ['PROVISIONAL_CONTEXT', 'VALIDATED_BLOCK'])
+        self.assertIn('سقف بودجه', operation.final_message.text)
+        self.assertNotIn('پرسش روشن‌کننده', operation.final_message.text)
+
+    def test_settings_change_prevents_contextual_final_publication(self):
+        from analysis.models import CopilotSettings
+        operation = self.operation()
+
+        def change_settings():
+            item = CopilotSettings.objects.get(guest_context=self.guest)
+            item.revision += 1
+            item.save(update_fields=['revision'])
+
+        self.run_at_final_publication(operation, change_settings)
+        operation.refresh_from_db()
+        self.assertEqual(operation.status, 'INTERRUPTED')
+        self.assertEqual(operation.terminal_code, 'CONTEXT_STALE')
+        self.assertIsNone(operation.final_message_id)
 
     def test_stale_pending_operation_becomes_interrupted_without_restart(self):
         operation = self.operation()

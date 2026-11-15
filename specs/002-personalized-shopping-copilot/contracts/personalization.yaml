@@ -21,6 +21,16 @@ settings:
       '403': {description: CSRF rejected}
       '409': {description: STALE_SETTINGS}
       '422': {description: Invalid value or MODEL_UNAVAILABLE}
+modelsRefresh:
+  post:
+    description: Explicit future account-model refresh; saving/opening settings never invokes it. Region and validated credential gates run before transport.
+    requestBody:
+      content: {application/json: {schema: {type: object, additionalProperties: false}}}
+    responses:
+      '200': {description: Account IDs intersected with documented capability/pricing catalog; selected model may be UNAVAILABLE}
+      '403': {description: CSRF rejected}
+      '409': {description: REGION_BLOCKED or CREDENTIAL_UNVALIDATED; no provider call}
+      '503': {description: Safe PROVIDER_UNAVAILABLE without raw provider error}
 credential:
   get:
     responses:

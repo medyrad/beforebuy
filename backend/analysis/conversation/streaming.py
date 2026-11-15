@@ -160,6 +160,14 @@ def _publish(operation_id, event_type, payload, *, lease_owner=None):
             "INTERRUPTED", "STALE_BRIEF", now,
         )
         return False
+    if operation.context_fingerprint:
+        from analysis.ai.copilot_context import manifest_is_current
+        if not manifest_is_current(operation.id, operation.context_manifest, operation.context_fingerprint):
+            _terminalize_locked(
+                operation, conversation, "operation.failed", {"code": "CONTEXT_STALE"},
+                "INTERRUPTED", "CONTEXT_STALE", now,
+            )
+            return False
     if operation.cancel_requested_at:
         _terminalize_locked(
             operation, conversation, "operation.cancelled", {"reason": "USER_REQUEST"},
@@ -204,6 +212,14 @@ def finalize_operation(operation_id, lease_owner, text):
             "INTERRUPTED", "STALE_BRIEF", now,
         )
         return False
+    if operation.context_fingerprint:
+        from analysis.ai.copilot_context import manifest_is_current
+        if not manifest_is_current(operation.id, operation.context_manifest, operation.context_fingerprint):
+            _terminalize_locked(
+                operation, conversation, "operation.failed", {"code": "CONTEXT_STALE"},
+                "INTERRUPTED", "CONTEXT_STALE", now,
+            )
+            return False
     if operation.cancel_requested_at:
         _terminalize_locked(
             operation, conversation, "operation.cancelled", {"reason": "USER_REQUEST"},
@@ -306,19 +322,25 @@ def _execute(operation_id):
             return
         text = ""
         for chunk in generator.generate():
-            time.sleep(0.12)
-            if len(chunk.encode("utf-8")) > 1024:
+            if generator.kind.startswith('DEVELOPMENT_'):
+                time.sleep(0.12)
+            phase = 'LEGACY_FIXTURE'
+            if isinstance(chunk, dict):
+                phase = chunk.get('phase')
+                chunk = chunk.get('text')
+            if not isinstance(chunk, str) or not isinstance(phase, str) or len(chunk.encode("utf-8")) > 1024:
                 raise ValueError("fixture delta exceeds contract")
             if not _publish(
-                operation_id, "assistant.text.delta", {"text": chunk},
+                operation_id, "assistant.text.delta", {"text": chunk, "phase": phase},
                 lease_owner=_worker_identity,
             ):
                 return
             text += chunk
         finalize_operation(operation_id, _worker_identity, getattr(generator, 'final_text', None) or text)
     except Exception:
-        fail_owned_operation(operation_id, _worker_identity,
-                             "FIXTURE_FAILED" if isinstance(generator, FixtureGenerator) else "GENERATION_FAILED")
+        fail_owned_operation(operation_id, _worker_identity, "FIXTURE_FAILED"
+                             if generator is not None and generator.kind.startswith('DEVELOPMENT_')
+                             else "GENERATION_FAILED")
     finally:
         close_old_connections()
         _capacity.release()

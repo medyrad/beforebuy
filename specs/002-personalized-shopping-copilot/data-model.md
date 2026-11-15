@@ -19,6 +19,12 @@ runtime file outside DB/Git/images. Saving sets STORED_UNVALIDATED; no authorize
 and running operations; callbacks and final publication reject stale/expired credentials. Requests already sent
 cannot be recalled. Memory application stores an independent action receipt, not a pointer to deletable memory.
 
+Phase 11.1 adds `context_fingerprint` and `context_manifest` to conversation StreamOperation rows. The manifest is a
+bounded set of IDs/revisions/hashes only: user turn, latest accepted turn, brief/generation, settings/model, ChoiceSet
+and evidence snapshots, upload hashes and included memory revisions/expiries. It deliberately excludes message text,
+profile prose, raw source content and credentials. The provider payload is assembled ephemerally; final publication
+revalidates every manifest anchor and rejects stale/deleted/expired context.
+
 `GuestContext.copilot_reserved_microusd` and `copilot_spent_microusd` are durable aggregates maintained by the existing
 LiveBudgetLedger. Guest -> daily window -> invocation is the lock order. Settlement is idempotent and known usage
 is not clipped; missing usage uses its reservation allowance. Purging 90-day invocation metadata does not reset

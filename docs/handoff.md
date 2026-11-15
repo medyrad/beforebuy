@@ -1,117 +1,77 @@
-# تحویل Phase 11 — تنظیمات دستیار و شناخت من
+# تحویل Phase 11.1 — دستیار خرید context-aware
 
-**Milestone D settings and opt-in memory implemented and verified;
-OpenAI adapter stub-tested — live activation remains pending.**
+**Context assembly, validated shopping answers, meaningful streaming and synthetic UI demos implemented;
+live OpenAI and public research remain disabled.**
 
 تاریخ: 2026-11-15؛ branch: `002-personalized-shopping-copilot`؛ baseline:
-`686a3e4d1135ff72e4c6a193c7b192e7895b0e94`. تماس provider/public source و هزینهٔ واقعی: **صفر**.
-AI روی `mock` و research روی `OFFLINE` است؛ انتشار عمومی یا خرید انجام نشد.
+`1ba303c00b1f61944fd0a0295dee4bf9d9a3d7fc`. تماس provider/public source، مصرف پولی و deployment عمومی: **صفر**.
+AI روی `mock` و research روی `OFFLINE` باقی ماند. Milestone E شروع نشد.
 
-## دامنه و workflow
+## دامنه و Spec Kit
 
-T032–T041 feature002 تکمیل شدند. feature001 T039، T042–T048/T050 feature002، T066 و gateهای باز قبلی pending
-هستند؛ full-product convergence و Milestone E ادعا نمی‌شوند. مهارت‌های موجود project، Spec Kit analyze/implement،
-backend، AI، TDD/debugging، frontend، verification و Playwright استفاده شدند؛ subagent یا toolchain جدید نداریم.
-Checklist برابر 16/16 و extension hook موجود نیست. Analyze محدود: ۱۵ FR و سه SC به ۱۰ task نگاشت شدند؛
-پوشش دامنهٔ مجاز ۱۰۰٪، task نامرتبط و مانع بحرانی باز صفر. FR-035 اینجا فقط memory-only export است، نه T050.
-handoff قبلی عیناً در `docs/archive/phase-10-handoff.md` حفظ و hash آن با baseline مقایسه شد.
+T071–T077 به feature موجود افزوده شدند. requirements/plan/data model، OpenAPI، personalization، stream contract،
+OpenAI readiness و decisions با FR-069–FR-075 هم‌راستا شدند. analyze غیرمخرب: ۷ requirement جدید و سه scenario جدید
+به T071–T077 نگاشت کامل دارند؛ ambiguity/duplicate/placeholder/constitution conflict بحرانی صفر و checklist برابر
+16/16 است. feature001 T039، T066، T042–T048/T050 و gateهای live/release همچنان pending هستند.
 
-## تجربهٔ قابل نمایش
+## پیاده‌سازی
 
-در `http://127.0.0.1:58080/copilot`، بالای صفحه «تنظیمات دستیار» و «شناخت من» را باز کنید؛ `/` legacy است.
-کلید password-style وارد، backend-side رمز و masked می‌شود؛ save/replace/delete هیچ درخواست بیرونی ندارد.
-ورودی بعد از submit پاک می‌شود. unconfigured، stored/unvalidated، failed و blocked جدا هستند؛ validated برای آینده
-تعریف شده و هیچ کلید واقعی اعتبارسنجی نشده است. catalog مستندات account-unverified است.
+- `copilot_context.py` یک payload موقت و bounded از turn جاری، تاریخچهٔ محدود، brief، ChoiceSet جاری، هزینه/unknown،
+  provenance ساختاریافته، upload واجد شرایط و فقط حافظهٔ confirmed/consented مرتبط می‌سازد. معیار صریح brief بر حافظه
+  مقدم است؛ temporary و memory-disabled حافظه را حذف می‌کنند. critical context بیش‌ازحد، قبل از transport پاسخ محدود می‌دهد.
+- migration افزایشی `0015` فقط manifest/fingerprint غیرمحرمانه را به StreamOperation اضافه می‌کند. manifest متن پیام،
+  پروفایل یا source را تکرار نمی‌کند. turn/brief/generation/settings/model/ChoiceSet/snapshot/upload/memory هنگام هر delta و
+  final دوباره بررسی می‌شوند؛ تغییرشان publication دیرهنگام را با `CONTEXT_STALE` قطع می‌کند.
+- schema provider اکنون answer plan محدود است، نه clarification-only یا متن factual آزاد. candidate/criterion/evidence ID،
+  value، attribution، freshness و source membership پیش از renderer قطعی فارسی اعتبارسنجی می‌شوند. block بدون شاهد حذف
+  و به محدودیت صریح تبدیل می‌شود؛ ranking، قیمت، arithmetic و facts همچنان از pipeline deterministic می‌آیند.
+- stream ابتدا `PROVISIONAL_CONTEXT` ایمن و سپس فقط `VALIDATED_BLOCK` server-rendered می‌دهد. raw JSON/hidden reasoning
+  منتشر نمی‌شود؛ مسیر OpenAI delay مصنوعی typing ندارد. پیام persisted نهایی authoritative است.
+- mock محلی از همان assembler/validator/worker/event ledger/publication استفاده می‌کند و `DEVELOPMENT_CONTEXT_FIXTURE`
+  برچسب دارد. این مسیر فهم زبان یا کیفیت مدل زنده را اثبات نمی‌کند.
+- `sdk_model_ids()` واقعاً SDK 3.49.0 `client.models.list()` را صدا می‌زند و با MockTransport آزموده شد. endpoint صریح
+  `POST /api/v1/copilot/models/refresh` قبل از credential/transport eligibility را بررسی می‌کند؛ در ایران
+  `REGION_BLOCKED` است. GET/PATCH settings و credential read/write هیچ discovery ندارند.
 
-دموی دو گفت‌وگو: حافظه را روشن کنید؛ در اولی electronics/SELF و ترجیح «قابل‌حمل بودن: بله» را ذخیره و نیاز را
-تأیید کنید؛ «پیشنهاد ترجیح برای شناخت من» و «تأیید ترجیح» را بزنید. در گفت‌وگوی تازهٔ هم‌دسته، «استفاده در این خرید»
-ترجیح را صریحاً وارد brief تأییدنشده می‌کند. آن را برای این خرید به «خیر» تغییر دهید؛ ترجیح ذخیره‌شدهٔ «بله» مستقل
-باقی می‌ماند و قابل حذف است. brief تأییدشده یا مقایسه خودکار بازنویسی نمی‌شود. هدیه/خانه/خودم جدا هستند؛ گفت‌وگوی
-بدون حافظه از ترجیحات پایدار نمی‌خواند/نمی‌نویسد. استخراج فقط ساختاریافته است، نه یادگیری آزاد زبان یا ویژگی حساس.
+## سه گفت‌وگوی مصنوعی قابل نمایش
 
-## امنیت، adapter و lifecycle
+1. electronics، بودجه ۱۰٬۰۰۰٬۰۰۰، intended «رایانهٔ نمایشی آ»، سؤال «چه جایگزینی در همین مقایسه داری؟»؛ پاسخ:
+   «رایانهٔ نمایشی پ» جایگزین پشتیبانی‌شده با هزینهٔ نهایی ۹٬۰۰۰٬۰۰۰ تومان.
+2. electronics با intent لذت/پاداش، شرط قطعی portable=true، intended «رایانهٔ نمایشی ب»، سؤال «چرا این گزینه با نیاز من هم‌خوان نیست؟»؛
+   پاسخ mismatch قابل‌حمل‌بودن فقط با evidence همان candidate/source.
+3. sports، شرط قطعی waterproof=true، intended «کفش نمایشی پ»، سؤال «برای تصمیم چه چیزی هنوز نامعلوم است؟»؛ پاسخ:
+   ضدآب‌بودن نامعلوم است و باید از منبع معتبر بررسی شود؛ ادعای «ضدآب است» ساخته نمی‌شود.
 
-- migrations افزایشی 0011–0014: settings/memory، credential envelope، revision کلید و aggregate هزینهٔ نشست.
-- dependency مستقیم `cryptography==50.0.2`؛ lock شامل `cffi==2.1.1` و `pycparser==3.12`؛ مجوز cryptography:
-  Apache-2.0 OR BSD-3-Clause. Fernet/MultiFernet استاندارد با PyNaCl/KMS مقایسه شد؛ SDK موجود OpenAI 3.49.0 و
-  httpx2 2.16.0 reuse شدند. رمزنگاری سفارشی یا framework تازه نداریم؛ شواهد در `docs/tooling.md` است.
-- master بیرون Git/DB/image است؛ offline بدون master شروع می‌شود و write بدون آن 503 است. replace/delete عملیات
-  queued/running وابسته را باطل می‌کند؛ expiry/revision پیش از final publication بازبینی می‌شود. درخواست قبلاً
-  ارسال‌شده قابل پس‌گرفتن نیست؛ secret/provider error پیام امن دارد.
-- Responses adapter پشت generator موجود با schema محدود clarification، stream، timeout، حداکثر دو attempt،
-  cancellation، usage/request ID و `store=false` stub-tested است؛ rank/price/fact قطعی و evidence-bound می‌ماند.
-  `store=false` تضمین zero retention نیست؛ AvalAI fallback نداریم. worker واقعی هم با transport ساختگی آزموده شد.
-- LiveBudgetLedger موجود reservation/settlement را مالک است؛ aggregateهای GuestContext با purge metadata یا
-  تعویض کلید reset نمی‌شوند. missing usage محافظه‌کارانه حساب می‌شود. capهای operation/session/daily پیش‌فرض صفر؛
-  خرید با تومان و AI با micro-USD جدا هستند. برآورد ضمانت invoice نیست.
-- مدل مستند `gpt-6-luna`: input استاندارد $0.10/M، output $0.50/M؛ cache-write $0.25/M مبنای محافظه‌کارانهٔ input.
-  account availability و کیفیت زنده تأیید نشده‌اند. ایران مستقل از key/checkbox blocked است. منابع رسمی در
-  `specs/002-personalized-shopping-copilot/openai-readiness.md` ثبت شده‌اند.
-- **سیاست موقت توسعه، نیازمند review پیش از انتشار:** candidate هفت روز، confirmed نود روز از اولین تأیید،
-  credential سی روز از save/replace؛ configurable، non-sliding و محدود به owner/source expiry. disable با delete
-  متفاوت است. حذف source حافظهٔ مشتق‌شده را cascade می‌کند؛ ترجیح اعمال‌شده در brief مقصد مستقل است. cross-browser
-  recovery، حذف فوری backup یا بازیابی کلید با master گم‌شده وعده داده نمی‌شود. rotation در operations توضیح دارد.
+مسیر بازتولید کامل در `quickstart.md` است. screenshots مرتبط:
+`copilot-phase11-1-{alternative,mismatch,unknown}.png`. تصاویر قدیمی Phase8/9.2 نامرتبط stage نمی‌شوند.
 
-## بازیابی محیط و داده
+## verification واقعی و شکست‌های ثبت‌شده
 
-پس از آزادشدن 7 GiB، Docker پاسخ داد. PostgreSQL موجود با همان volume
-`beforebuy_beforebuy_pgdata_v18:/var/lib/postgresql` شروع شد؛ crash recovery/checkpoint عادی و readiness موفق شدند.
-خطای write تازه در بازه‌های بررسی‌شدهٔ DB log دیده نشد؛ repair/reset یا حذف volume انجام نشد.
-پیش از migration با API متوقف، backup زیر ساخته شد؛ `pg_restore --list` موفق بود (۲۱۷ خط)، نه restore کامل:
+- TDD متمرکز context/answer/adapter/model refresh/worker، شامل overflow کل context و سقف سه block، موفق. worker واقعی phaseهای safe/validated را نوشت و
+  تغییر settings پیش از final با `CONTEXT_STALE` و بدون final message متوقف شد.
+- canonical backend روی HEAD نهایی: **۳۰۰/۳۰۰ موفق**؛ صفر failure/error؛ system check پاک.
+  `makemigrations --check --dry-run` بدون drift. HTTPهای 200/401 SDK فقط MockTransport هستند، نه تماس provider.
+- frontend: **۲۱/۲۱ در ۷ فایل**؛ typecheck و lint موفق. Docker web build (`tsc -b` + Vite) موفق؛ migration 0015 روی
+  PostgreSQL توسعه اعمال شد؛ API/DB/web پس از restart سالم و volume/data حذف یا reset نشد.
+- Playwright واقعی پشت NGINX: سه conversation بالا در یک worker موفق شدند و screenshot تولید شد. refresh مدل در UI
+  نیز region block قابل‌مشاهده نشان داد و هیچ transportی اجرا نکرد.
+- اجرای نخست Vitest به‌علت Node خراب `~/.local/bin`/Hermes قبل از test متوقف شد؛ با Node 20.19.0 pin‌شده اجرا شد.
+  اجرای نخست Playwright یک import harness failure داشت. سپس یک assertion strict چندقیمتی و انتخاب‌نشدن صریح دستهٔ
+  fixture ورزشی شکست خورد؛ علت‌ها اصلاح و rerunهای موفق جدا ثبت شدند. هیچ شکست اولیه موفق شمرده نشده است.
 
-```text
-/Users/mehdi/Backups/beforebuy/phase-11-20261115/pre-memory-credentials.dump
-mode0600; parent0700; 200133 bytes
-SHA-256: 3833d10d45612a82bc5a328498bfbd9af54070e31bdbb997cc8ee7bc2a29f7c2
-```
+## محدودیت‌ها و gateهای باز
 
-backup و source volume حفظ می‌شوند؛ rollback باید به volume تازه restore کند، نه overwrite دادهٔ موجود.
-تمام migrations توسعه اعمال و consistency تأیید شد. master محلی mode0600 در
-`/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key` است؛ این فایل API credential نیست.
-overlay اختیاری `compose.copilot-secrets.yaml` آن را mount می‌کند؛ خواندن توسط API non-root UID100 این محیط تأیید شد.
-مالکیت Linux، ساخت فایل، rotation و بازیابی در `docs/backend-operations.md` توضیح داده شده‌اند.
+هیچ live OpenAI call، account model listing، کیفیت فارسی، latency، invoice یا source coverage اندازه‌گیری نشده است.
+`models.list()` فقط seam stubbed است؛ ID حساب به‌تنهایی capability/price/retention را ثابت نمی‌کند. validation ساختاریافته
+می‌تواند ID/value/provenance جاری را enforce کند، اما semantic entailment آزاد و prompt injection عمومی را حل‌شده ادعا
+نمی‌کنیم؛ به همین دلیل renderer factual آزاد وجود ندارد. context محدود است و تاریخچهٔ قدیمی ممکن است با marker حذف شود.
 
-## verification واقعی
+فعال‌سازی آینده نیازمند eligibility رسمی برای کاربران/سرور ایران، credential validated، account-model intersection،
+مجوز مستقل هزینه و live evaluation، review retention/key operations، source coverage و target-host/release rehearsal است.
+T066 و feature001 T039 باز می‌مانند؛ full-product convergence ادعا نمی‌شود.
 
-- canonical: `PGCONNECT_TIMEOUT=5 ./scripts/test-backend.sh --keepdb --verbosity 0`:
-  **۲۸۳ اجرا/موفق، صفر skipped/failure/error**؛ system check بدون issue.
-- دیتابیس آزمون تازه و مجزا: **۲۲/۲۲** تست memory/credential/adapter/config با migrations کامل موفق؛ runner فقط
-  همان DB synthetic را حذف کرد. دیتابیس توسعه و backup حفظ شدند.
-- RED→GREEN: فراموش‌شدن هزینه پس از purge، snapshot کلید، expiry publication، JSON غیر-object و برچسب worker.
-  queued replacement/deletion، no-log key save و SDK timeout نیز آزموده شدند. HTTP 200/401 تست SDK از MockTransport
-  است، نه provider. مجموعهٔ متمرکز آخر کلید/adapter ۱۵/۱۵ و worker/concurrency برابر ۱۳/۱۳ موفق بود.
-- پس از اصلاح جای‌گذاری skip-link، frontend مجدداً اجرا شد: **۲۱/۲۱ در ۷ فایل** و lint/typecheck/build موفق.
-  Docker API/web build موفق، سه سرویس healthy و runtime دوباره mock/OFFLINE تأیید شد.
-- Playwright پشت NGINX: journey تنظیمات و دو گفت‌وگو در **390 و 1440 موفق**؛ keyboard، 200% zoom، نبود overflow
-  و axe serious/critical صفر. trace/video و screenshot خودکار credential خاموش؛ تصاویر بعد از حذف کلید گرفته شدند.
-  اجرای نهایی مشترک با Choice Desk و `--workers=1`: **۴/۴ موفق در 1.7m**؛ تنظیمات 16.1s/17.0s.
-- اجراهای اولیهٔ browser شکست داشتند: selector select و انتظار state جدید اصلاح شدند؛ دسکتاپ هم‌زمان با
-  build/regression به 75s رسید. rerun همان تست بدون افزایش timeout در 21s موفق شد؛ شکست‌ها موفق شمرده نشدند.
-- regression مرتبط Choice Desk ابتدا در هر دو عرض یک پیکسل overflow پیدا کرد: skip-link با margin منفی بیرون
-  صفحه قرار داشت. با جای‌گذاری صریح و بدون پنهان‌کردن overflow یا ضعیف‌کردن assertion اصلاح شد؛ rerun در 1440 و
-  390 موفق بود (38.0s و 20.3s)، شامل source dialog، keyboard و axe.
-- `git diff --check` و `makemigrations --check --dry-run` موفق؛ screenshotهای
-  `artifacts/screenshots/copilot-phase11-{settings,memory}-{1440,390}.png` بازبینی شدند.
+## Git و فایل‌های محلی
 
-## اجرای مجدد و gateها
-
-```sh
-./scripts/test-backend.sh --keepdb --verbosity 1
-export COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key
-docker compose -f compose.yaml -f compose.copilot-secrets.yaml up -d --no-build api web
-```
-
-Browser runner موجود: `beforebuy-e2e:phase81` با `--network host`،
-`PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080`، `PLAYWRIGHT_USE_BUNDLED=1`، `NODE_PATH=/app/frontend/node_modules`؛
-`tests/e2e` و `frontend/playwright.config.ts` را read-only در مسیرهای متناظر `/app` mount کنید؛ screenshot directory
-در `/app/artifacts/screenshots` و `.runtime/phase11-browser-results` در `/app/frontend/test-results` mount شود؛
-فرمان: `npx playwright test --config=playwright.config.ts copilot-settings-memory.spec.ts --reporter=list`.
-
-Gateهای باز: eligibility رسمی OpenAI، validation کلید/مدل حساب، مجوز مستقل هزینه و live evaluation، review سیاست
-retention/key operations، source coverage و target-host/public-release rehearsal. feature001 T039 همچنان pending است.
-
-## Git
-
-این handoff همراه تغییرات مرتبط Phase11 برای origin موجود `medyrad/beforebuy` آماده شده؛ hash و نتیجهٔ push در گزارش
-نهایی اعلام می‌شود. حذف نامرتبط `test.txt` و چهار screenshot قدیمی Phase8/9.2 خارج commit می‌مانند.
-secret، backup، runtime DB/log/trace و محیط‌های محلی وارد Git نمی‌شوند.
+فقط کد، migration، تست، Spec Kit docs، operations/quickstart/handoff و سه screenshot جدید Phase11.1 مرتبط باید commit
+شوند. حذف نامرتبط `test.txt` و چهار screenshot قدیمی Phase8/9.2 خارج commit می‌مانند. secret، key، backup، DB، log،
+trace، cache، `.env` و runtime artifact وارد Git نمی‌شوند. hash و نتیجهٔ push در گزارش نهایی اعلام می‌شود.

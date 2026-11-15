@@ -50,6 +50,36 @@ class CopilotSettingsView(ObjectBodyAPIView):
         return self.get(request)
 
 
+class CopilotModelsRefreshView(ObjectBodyAPIView):
+    def post(self, request):
+        from analysis.ai.credentials import CredentialUnavailable, active_credential, decrypt_current
+        from analysis.ai.openai_copilot import (
+            CopilotProviderError, ensure_live_eligible, sdk_model_ids,
+        )
+        from analysis.ai.copilot_catalog import discover_models
+        from analysis.ai.openai_adapter import ProviderTransientError
+        guest = get_or_create_guest(request)
+        try:
+            ensure_live_eligible()
+        except CopilotProviderError:
+            return error('REGION_BLOCKED', 'فهرست حساب در منطقهٔ فعلی قابل بازیابی نیست.', 409)
+        credential = active_credential(guest.id)
+        if credential is None or credential.state != 'VALIDATED':
+            return error('CREDENTIAL_UNVALIDATED', 'ابتدا اتصال را به‌طور صریح تأیید کنید.', 409)
+        try:
+            account_ids = sdk_model_ids(key=decrypt_current(guest.id, credential.revision))
+        except CredentialUnavailable:
+            return error('CREDENTIAL_UNAVAILABLE', 'کلید ذخیره‌شده قابل استفاده نیست.', 409)
+        except ProviderTransientError:
+            return error('PROVIDER_UNAVAILABLE', 'بازیابی فهرست حساب موقتاً ممکن نیست.', 503)
+        except CopilotProviderError:
+            return error('PROVIDER_REJECTED', 'ارائه‌دهنده درخواست فهرست حساب را نپذیرفت.', 409)
+        preferences, _ = CopilotSettings.objects.get_or_create(guest_context=guest)
+        response = Response(discover_models(account_ids, saved_model=preferences.model))
+        response['Cache-Control'] = 'private, no-store'
+        return response
+
+
 class MemoryListView(ObjectBodyAPIView):
     def get(self, request):
         response = Response({'items': [serialize(i) for i in preferences(get_or_create_guest(request))]})

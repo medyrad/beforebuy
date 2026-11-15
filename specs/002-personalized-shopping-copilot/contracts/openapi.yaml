@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Beforebuy Shopping Copilot API
-  version: 0.5.0-milestone-d
+  version: 0.5.1-contextual-assistant
   description: |
     Same-origin guest-owned Milestone A/B contract. Unsafe requests require the
     existing csrftoken cookie and matching X-CSRFToken header. Missing, foreign,
@@ -10,6 +10,8 @@ servers: [{url: /api/v1}]
 paths:
   /copilot/settings:
     $ref: './personalization.yaml#/settings'
+  /copilot/models/refresh:
+    $ref: './personalization.yaml#/modelsRefresh'
   /copilot/credential:
     $ref: './personalization.yaml#/credential'
   /copilot/memory:
@@ -122,7 +124,7 @@ paths:
         '404': {$ref: '#/components/responses/Unavailable'}
   /conversations/{conversationId}/messages:
     post:
-      summary: Accept a message and schedule one bounded fixture operation
+      summary: Accept a message and schedule one bounded contextual operation
       operationId: submitMessage
       parameters:
         - {$ref: '#/components/parameters/ConversationId'}
