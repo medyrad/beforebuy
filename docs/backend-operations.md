@@ -299,6 +299,23 @@ docker compose --project-name beforebuy-prod --env-file /etc/beforebuy/productio
 
 ## محدودیت‌های فعلی
 
+### Phase 10 — local Choice Desk
+
+Migration `0010_shoppingbrief_comparison_choiceset` adds the conversation-local comparison profile and immutable
+ChoiceSet rows. Apply it before restarting the updated API; the development PostgreSQL volume is reused, never reset.
+Default mode stays OFFLINE/mock with all public policies disabled. Choice comparison and explicit synthetic-demo loading
+make no network/provider calls and do not extend conversation retention. ChoiceSets cascade on conversation deletion.
+
+Startup and three worked category demonstrations: `specs/002-personalized-shopping-copilot/quickstart.md`.
+`/choices` requires a confirmed revision; edit/expiry/epoch changes invalidate prior results. Empty GET is JSON `null`.
+The frontend keeps the existing real-offer panel under «پژوهش منابع و پیشنهادهای فروش», collapsed initially; opening it
+does not execute research. Sources/LLM remain independent release gates; this is not Milestone D or live coverage.
+
+Do not reverse 0010 casually: it drops ChoiceSet data and the comparison profile. A rollback needs a protected logical
+backup and coordinated code/schema steps; reverting only application code is not promised schema-compatible.
+No rollback/reset/volume deletion was performed in this phase. Dedicated migration-test databases are synthetic and
+separate from development; no backup or developer database is removed by the verification commands.
+
 ### پایلوت منبع واقعی Phase 9.2
 
 حالت امن Compose همچنان `BEFOREBUY_RESEARCH_MODE=OFFLINE` است. policyهای exact-product فقط با فرمان operator نصب

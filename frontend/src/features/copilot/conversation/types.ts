@@ -9,6 +9,10 @@ export interface Brief {
   unknowns: string[]
   contradictions: string[]
   confirmed: boolean
+  comparison?: {
+    intent?: string; budget_mode?: string; prefer_lower_cost?: boolean
+    criteria?: { field: string; expected: number | boolean; kind: string; scope: string }[]
+  }
   updated_at: string
 }
 

@@ -10,6 +10,14 @@ class CopilotMigrationTests(TransactionTestCase):
     migrate_from = [("analysis", "0004_evaluation_accounting")]
     migrate_to = [("analysis", "0007_research_targets_and_transport_counters")]
 
+    def setUp(self):
+        # Historical schema tests must restore the current graph before other suites run.
+        self.addCleanup(self.restore_latest_schema)
+
+    def restore_latest_schema(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
     def test_upgrade_preserves_feature_001_rows(self):
         executor = MigrationExecutor(connection)
         executor.migrate(self.migrate_from)

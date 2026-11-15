@@ -14,6 +14,7 @@ def serialize_brief(brief: ShoppingBrief):
         "contradictions": brief.contradictions,
         "provenance": brief.provenance,
         "confirmed": brief.confirmed,
+        "comparison": brief.comparison,
         "updated_at": brief.updated_at.isoformat(),
     }
 

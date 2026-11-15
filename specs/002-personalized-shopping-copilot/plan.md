@@ -16,6 +16,13 @@ require successful SafeFetcher preflight; T066 remains pending until extraction/
 
 ## Technical Context
 
+Phase 10 authorizes T024–T031 only. Completed evidence models and controlled fixtures unblock offline Milestone C;
+T066/public-source success gates live coverage, not this implementation. Milestone B remains partial. Add a validated
+comparison profile to ShoppingBrief and an immutable ChoiceSet JSON result (items embedded, no redundant ChoiceItem
+table). Same owner-scoped evidence adapter and pure categorical engine serve synthetic, captured and future live data.
+No network/LLM calls or memory/credential work. Existing Concept 2 tokens/layout remain; comparison cards and source
+disclosure occupy the main workspace, with merchant offers nested under their exact variant.
+
 **Language/Version**: Python `3.12.x`، TypeScript `5.9.x`  
 **Primary Dependencies**: Django `5.2.16`, DRF `3.17.1`, React `19.3.1`, Vite `8.3.8`; Pillow `13.0.0` فقط برای decode/re-encode امن upload؛ safe fetch از Python 3.12 stdlib با socket pinning استفاده می‌کند و dependency runtime تازه ندارد  
 **Storage**: PostgreSQL 18؛ object/file storage جدید تا سنجش upload volume اضافه نمی‌شود  
@@ -24,7 +31,7 @@ require successful SafeFetcher preflight; T066 remains pending until extraction/
 **Project Type**: web application / modular monolith  
 **Performance Goals**: acknowledgement محلی message زیر 500ms p95 در rehearsal؛ first fixture stream event زیر 2s؛ ranking بیست گزینه زیر 100ms  
 **Constraints**: کاربران/backend ایران؛ OpenAI direct live blocked؛ bounded research؛ بدون queue/Redis/WebSocket پیش‌فرض؛ secrets فقط backend  
-**Scale/Scope**: pilot کم‌حجم، سه category fixture، حداکثر 20 option در Choice Desk و limits source/job صریح
+**Scale/Scope**: pilot کم‌حجم، سه category fixture، یک محصول موردنظر و حداکثر سه محصول جایگزین در Choice Desk؛ merchant offerها جدا و limits source/job صریح
 
 ## Constitution Check
 

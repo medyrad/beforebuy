@@ -1,93 +1,104 @@
-# تحویل Phase 9.3 — تشخیص اتصال و اصلاحات محدود
+# تحویل Phase 10 — Milestone C / Choice Desk
 
-تاریخ: 2026-11-15؛ baseline: `40a1add3d5459291a2bda9f78eda8e367dacd8c5`؛ branch: `002-personalized-shopping-copilot`.
+تاریخ: 2026-11-15؛ baseline: `ccb90adf5d5270175111e963d39a46fe12da352b`؛ branch: `002-personalized-shopping-copilot`.
 
-**Real-source offer pilot partially complete — source blockers documented**
+**Milestone C Choice Desk implemented and verified with labelled fixtures — live market coverage and live AI remain pending.**
+پوشش بازار زنده و AI زنده همچنان pending؛ Milestone D اجرا نشده است.
 
-## نتیجه و علت‌یابی
+## دامنه و workflow
 
-این فاز کاملاً local و بدون توکن/فراخوانی AI اجرا شد. Docker Desktop خاموش بود؛ برنامهٔ موجود راه‌اندازی و همان
-volume توسعه استفاده شد. هیچ volume reset، زیرساخت جدید، deployment عمومی یا subagent وجود نداشت.
+- Spec Kit تنها workflow owner است؛ prerequisites، analyze و implement برای T024–T031 اجرا شدند. checklist
+  requirements برابر 16/16 بود و تغییر نکرد؛ extensions.yml/hook ثبت‌شده وجود ندارد.
+  T024–T031 تکمیل و علامت‌گذاری شدند؛ شماره یا وضعیت taskهای تاریخی نامرتبط تغییر نکرد.
+- تحلیل محدود ۱۰ نیاز مرتبط (FR-012/013/015/016/017/018/019/031/063/064) را به ۸ task نگاشت؛ coverage در این scope
+  100%، task بدون نگاشت صفر، critical صفر. ناسازگاری سقف قدیمی ۲۰ گزینه، وضعیت planned قرارداد ChoiceSet و
+  attributionهای fixture در اسناد اصلاح شد. این تحلیل ادعای convergence کل feature نیست.
+- مهارت‌های project، Django/DRF، frontend-design، TDD، debugging، verification و playwright-cli از catalog موجود
+  و فایل‌های نصب‌شده استفاده شدند؛ هیچ ابزار، framework، dependency یا subagent تازه‌ای اضافه نشد.
+- evidence models و controlled fixtures اجازهٔ توسعهٔ offline Milestone C می‌دهند؛ موفقیت public extraction فقط
+  gate پوشش live است. T066 و T013/T018/T019 باز مانده‌اند؛ T039 هر دو feature و milestoneهای بعدی کامل نشده‌اند.
 
-هدف دقیق: `https://torob.com/p/bb037069-fba8-4964-a758-6adcec22898f/q60d/`.
-در 08:03:36–08:09:30 UTC، DNS فقط `81.12.31.29` از نوع IPv4 برگرداند:
+## پیاده‌سازی و قواعد
 
-| مسیر | نتیجه |
+- migration افزایشی `0010_shoppingbrief_comparison_choiceset`، پروفایل صریح comparison و ChoiceSet immutable با
+  revision/epoch/rule version/snapshot/freshness اضافه شد. آیتم‌ها JSON داخلی‌اند؛ جدول تکراری ChoiceItem ساخته نشد.
+  داده/volume توسعه حذف یا reset نشد. retention/delete از conversation ارث می‌رسد؛ read/compare/demo تمدید نمی‌کنند.
+- COPILOT-RANK-v0.1 بدون وزن یا امتیاز ۰–۱۰۰: شرط قطعی و ترجیح؛ satisfied/failed/unknown جدا؛ STRICT پیش‌فرض،
+  FLEXIBLE فقط با تأیید؛ ارسال و هزینهٔ اجباری نامعلوم هرگز صفر نیستند. known total از قیمت کالا جداست.
+- دسته‌ها: سازگار، حل‌نشده، ناسازگار. coverage سپس ترجیح‌های مستند، و فقط در صورت ترجیح صریح هزینهٔ نهایی کمتر.
+  UUID صرفاً ترتیب نمایش tie را پایدار می‌کند. شواهد stale/conflicting/unsupported و variant mismatch امتیاز مثبت ندارند.
+  تناقض brief و شرط متنی حل‌نشده winner قطعی نمی‌سازند. هدیه از معیار گیرنده استفاده می‌کند؛ لذت هدف معتبری است.
+- یک محصول موردنظر + حداکثر سه محصول جایگزین؛ merchant offerها جدا و متعلق به همان variant هستند.
+  پیشنهاد کاملِ گران، پیشنهاد ارزان‌تر با ارسال نامعلوم را «قطعاً بالای بودجه» نمی‌کند؛ این حالت حل‌نشده می‌ماند.
+  گزینهٔ ناموجود جایگزین نمی‌شود؛ نبود جایگزین پشتیبانی‌شده صریح است. unknownها، tradeoff، coverage و شرایط تغییر
+  نتیجه قابل مشاهده‌اند. متن توضیح deterministic template است، نه پاسخ LLM.
+- API جدید `/conversations/{id}/choices`، `/choices/candidates` و `/choices/demo` با مالکیت/CSRF/expiry و validation.
+  publication زیر lock تغییر revision/epoch را دوباره بررسی می‌کند؛ نتیجهٔ دیررس رد می‌شود.
+- سه نمونهٔ صریح در Product/Variant/Offer/Claim عادی ذخیره می‌شوند و همان engine/API/UI آینده را مصرف می‌کنند؛
+  SYNTHETIC/CAPTURED_FIXTURE هرگز VERIFIED_SOURCE یا قیمت بازار فعلی نامیده نمی‌شوند.
+- Concept 2 حفظ شد: conversation rail، brief ribbon، جدول دسکتاپ/کارت‌های responsive، disclosure و کشوی منابع،
+  RTL/Vazirmatn، focus/keyboard و ناوبری موبایل با state حفظ‌شده. تغییر brief نتیجهٔ قبلی را فوراً پنهان/نامعتبر می‌کند.
+  rail در راست و میز در چپ است؛ پنل پژوهش پیش‌فرض بسته است و با بازشدن، درخواست شبکه اجرا نمی‌کند.
+  routing پیش‌فرض legacy، streaming و cancellation حفظ شدند؛ memory/API-key settings وجود ندارند.
+
+## سه مقایسهٔ قابل تکرار
+
+همهٔ محصولات و قیمت‌های این جدول مصنوعی‌اند، نه دادهٔ بازار:
+
+| نیاز تأییدشده | نتیجه |
 |---|---|
-| میزبان مستقیم | DNS و TCP موفق؛ TLS/SNI معتبر؛ HTTP 490 |
-| API container مستقیم | همان IPv4؛ TCP و TLS موفق؛ HTTP 490 |
-| SafeFetcher میزبان/container | HTTP 490 → HTTP_STATUS؛ پیش از body/extraction متوقف شد |
-| API واقعی از NGINX | یک request؛ NO_SUPPORTED_SOURCES؛ snapshot شکست PostgreSQL؛ صفر offer |
+| electronics، SELF، ENJOYMENT، سقف۱۰ میلیون، portable=true قطعی | آ۸ میلیون و پ۹ میلیون tie؛ ب۷ میلیون portable=false و ارسال نامعلوم ناسازگار. سقف۸ میلیون فقط آ را سازگار می‌گذارد. |
+| home، HOUSEHOLD، سقف۶ میلیون، dishwasher_safe=true قطعی | آ۶ میلیون سازگار؛ ب۴ میلیون شرط شست‌وشو را نقض می‌کند؛ پ۷ میلیون بالای سقف و شست‌وشو/ارسال نامعلوم. |
+| sports، GIFT، سقف۲ میلیون، size_eu=42 برای RECIPIENT | آ۲ میلیون سازگار؛ ب سایز۴۰ ناسازگار؛ پ سایز۴۲ و قیمت۱٫۸ میلیون با ارسال نامعلوم حل‌نشده. |
 
-job تشخیصی: `deccf843-4d5f-401c-80d5-35e50ccb60de` در 08:07:33 UTC، snapshot برابر `FAILED/HTTP_STATUS`.
-این درخواست مقایسهٔ اولیه API بود؛ بعد از preflight ناموفق هیچ retry پایلوت API اجرا نشد. فرمان pilot در 08:09:30
-نیز preflight را اجرا کرد، 490 گرفت و صریحاً صفر API job ساخت. UI تغییر نکرد و browser suite دوباره اجرا نشد.
+PRACTICAL نیز با همان قواعد بودجه/شرط بررسی می‌شود، بدون تشخیص impulsivity یا hardship.
 
-مرز شکست اثبات‌شده HTTP پس از TLS معتبر است. علت صدور 490 توسط endpoint (edge/origin/access policy یا علت دیگر)
-هنوز معلوم نیست. این مشاهده ناشی از نبود توکن AI یا انتخاب اولین IP نیست؛ تنها یک IP وجود داشت. timeout تاریخی
-و captured/tool content با شبکهٔ فعلی هم‌ارز نیستند. موفقیت روی سرور/شبکهٔ دیگر فرض نشده است. proxy محیطی یا
-system proxy در میزبان/container مشاهده نشد؛ هیچ مسیر proxy یا bypass افزوده نشد.
+## verification
 
-## اصلاحات و workflow
+- REDهای اولیه: نبود engine/API/UI؛ سپس unknown offer attribution و تناقض brief. اصلاح و GREEN مشاهده شد.
+- canonical PostgreSQL: `./scripts/test-backend.sh --keepdb --verbosity 1` → **260 discovered/run، 260 passed**،
+  صفر skipped/failed/errors در 58.735s. تست migration تاریخی schema را روی 0007 باقی می‌گذاشت؛ cleanup به graph
+  leaf اضافه شد. اجرای نخست 258 passed/1 error بود و موفق گزارش نمی‌شود.
+- focused ranking/API/invariants بعد از اصلاح JSON null و provenance: 17/17؛ race با دو connection PostgreSQL
+  و Event/row lock رد انتشار دیررس را بررسی کرد. hand-authored موارد بودجه، enjoyment، هدیه، variant mismatch،
+  stale/conflict، missing shipping، tie و sparse evidence همراه invariantهای ترتیب/prose اجرا شدند.
+- migrationها روی دیتابیس تستِ تازه `test_beforebuy_phase10_migrations_20261115` اعمال شدند؛ نبود آن پیش از اجرا
+  بررسی شد، سپس 6/6 تست API/هم‌زمانی با DiscoverRunner و keepdb موفق بود. این دیتابیس مصنوعی جدا حفظ شده است.
+  مورد چندفروشنده‌ای ابتدا RED و بعد همراه 12/12 تست pure و مجموعهٔ نهایی 260تایی GREEN شد.
+- frontend: آخرین مجموعهٔ بررسی‌شده 19/19؛ خطای قبلی تایپ پیش از enabled شدن ورودی در تست‌های stream با
+  انتظار صریح و act اصلاح شد. typecheck، lint و build موفق؛ build واقعی Compose/NGINX نیز انجام شد.
+- مرورگر واقعی پشت NGINX: `copilot-choice-desk.spec.ts` → **2/2 passed** در 390/1440، keyboard/focus و
+  Escape، 200% zoom بدون overflow ضروری، منابع، brief-edit/recompute، حفظ draft و لغو واقعی سرور با status=CANCELLED.
+  axe در هر دو عرض و zoom برابر صفر serious/critical؛ route legacy نیز موفق بود. هیچ API/SSE/cancel این دو تست mock نشده است.
+  REDهای مرورگر: selector/انتظار bootstrap، JSON-null خالی، focus dialog، min-width legacy در zoom و race پنجرهٔ کوتاه stream.
+  اصلاح‌ها: پاسخ null معتبر، trap Tab/Shift-Tab، width/RTL محدود به Copilot، reduced-motion و کلیک stop در اولین DOM update.
+  screenshotهای `artifacts/screenshots/copilot-phase10-1440.png` و `copilot-phase10-390.png` باز و بازبینی شدند.
+- رگرسیون browserِ گفت‌وگو/brief و پنل captured offer در `copilot-milestone-a.spec.ts`: **2/2 passed**؛
+  screenshotهای این رگرسیون فقط در `.runtime/phase10-legacy-browser-results` نوشته شدند و چهار تصویر قبلی دست‌نخورده‌اند.
+- Django check و migration drift موفق؛ runtime مؤثر: `research_mode=OFFLINE`، `ai_mode=mock`،
+  `enabled_policies=0`. هیچ درخواست public-source یا LLM، تغییر سقف هزینه، deployment عمومی یا volume reset انجام نشد.
 
-- Spec Kit prerequisites، analyze و implement فقط برای `T067–T070` اجرا شدند؛ checklist برابر 16/16، extension hook
-  ثبت‌شده وجود نداشت. FR-061/062 به چهار task جدید map شدند؛ نیازمندی بدون task یا تعارض constitution در scope صفر.
-  ناسازگاری historical/current source status اصلاح شد. شمارهٔ taskهای قدیمی تغییر نکرد.
-- مهارت‌های project، bounded research، debugging، Django/DRF، TDD و verification استفاده شدند.
-- SafeFetcher حداکثر دو IP متمایز از یک پاسخ DNS کاملاً public-validated را قبل از ارسال HTTP امتحان می‌کند.
-  deadline request/job مشترک، سهم زمانی connection محدود، Host/SNI/certificate اصلی و socket/capacity cleanup حفظ شدند.
-  اتصال numeric socket نیازمند lookup دوباره نیست. fallback در request/domain budget موجود حساب می‌شود؛ HTTP، parser
-  یا policy failure retry ندارد و mixed public/private همچنان رد می‌شود.
-- configure_market_sources تاریخ review، readiness، متن شواهد و URL اسناد موجود را در toggle حفظ می‌کند. row تازه exact timestamp=null
-  و اشاره به evidence تاریخ 2026-11-15 دارد؛ تاریخ دقیق جعل نمی‌شود. timestampهای قدیمیِ تولیدشده هنگام toggle
-  برای audit حفظ شدند ولی review تازه محسوب نمی‌شوند. enable شدن row اثبات technical readiness نیست.
-- دو فرمان diagnostic/pilot قابل‌تکرار اضافه شدند؛ pilot فقط پس از extraction موفق preflight دو conversation تازه
-  ایجاد می‌کند تا repeat از cache نباشد. مسیر موفق آن هنوز اجرا نشده است.
+## راه‌اندازی و نمایش محلی
 
-## verification و مصرف
-
-- RED: سه تست fallback قبل اصلاح و دو تست provenance قبل اصلاح شکست مورد انتظار داشتند.
-- focused transport/provenance: 21/21؛ سپس دو تست TLS cleanup و budget اضافه شدند.
-- canonical PostgreSQL: `./scripts/test-backend.sh --keepdb --verbosity 1` → **242 discovered/run، 242 passed،
-  صفر skipped/failed/errors** در اجرای نهایی 78.066s. پاسخ‌های 4xx و DisallowedHost در تست‌های negative مورد انتظار بودند.
-- regression تکمیلی حفظ متن شواهد ابتدا RED و سپس 2/2 provenance GREEN شد؛ Django check، migration drift،
-  OpenAPI YAML، compile اسکریپت‌ها و diff whitespace موفق بودند.
-- AI/provider calls صفر. 10 تلاش outbound با خروجی بررسی‌شده ثبت شد؛ خروجی نهایی فرآیند تشخیصی اولیهٔ دو‌تلاشی
-  نگه‌داری نشد، پس دو تلاش کامل محافظه‌کارانه رزرو شد: **12/30 سقف مصرف/رزرو**، بدون reset بودجه.
-- host/container direct، SafeFetcher، API و فرمان pilot failed-preflight واقعاً اجرا شدند؛ body/secret چاپ یا commit نشد.
-- runtime مؤثر پس از reset: `research_mode=OFFLINE`، `ai_mode=mock`، `enabled_policies=0`؛ db/api/web healthy.
-
-## فرمان‌های ادامهٔ کار
-
-از ریشه، فقط در allowance باقی‌مانده:
+با .env موجود و AI mock، از root:
 
 ```sh
-docker compose exec -T api python scripts/diagnose-research.py --layer safe
+docker compose up -d db
+docker compose run --rm --no-deps api python backend/manage.py migrate --noinput
+BEFOREBUY_RESEARCH_MODE=OFFLINE docker compose up -d --build api web
 ```
 
-پس از رفع HTTP failure و با رزرو حداکثر 16 تلاش برای یک اجرای pilot:
-
-```sh
-docker compose exec -T api python backend/manage.py configure_market_sources --enable
-BEFOREBUY_RESEARCH_MODE=LIVE docker compose up -d --no-build --force-recreate api
-docker compose exec -T api python scripts/pilot-reviewed-offer.py
-```
-
-بعد از هر نتیجه، بازگشت صریح و بررسی واقعی:
-
-```sh
-docker compose exec -T api python backend/manage.py configure_market_sources --disable
-BEFOREBUY_RESEARCH_MODE=OFFLINE docker compose up -d --no-build --force-recreate api
-docker compose exec -T api python backend/manage.py shell -c 'from django.conf import settings; from analysis.models import SourcePolicy; print(settings.BEFOREBUY_RESEARCH_MODE, SourcePolicy.objects.filter(live_enabled=True).count())'
-```
-
-انتظار `OFFLINE 0` است. فرمان موفق pilot، browser success و اجرای شبکهٔ دیگری ادعا نشده‌اند.
+بازکردن `http://127.0.0.1:58080/copilot` → گفت‌وگوی تازه → در موبایل میز انتخاب → ویرایش brief.
+category دقیق electronics/home/sports، مخاطب، بودجه و معیار اختیاری را ذخیره و تأیید کنید؛ در انتخاب محصولات،
+همان دستهٔ آموزشی را بارگذاری و «ساخت مقایسه» را بزنید. هر دسته را در گفت‌وگوی تازه امتحان کنید.
+منابع عمومی را فعال نکنید؛ token لازم نیست. جزئیات و تست‌ها در quickstart feature ثبت شده‌اند.
 
 ## gateها و Git
 
-T066 باز است: صفر offer زنده، سه فروشندهٔ comparable در API/UI محقق نشده و fresh successful repeat نداریم.
-T013/T018/T019 و T039 هر دو feature همچنان باز؛ این فاز crawler/live AI/public release را آماده اعلام نمی‌کند.
-T067–T070 اصلاحات و تشخیص را پوشش می‌دهند و پذیرش مشروط T066 را جایگزین نمی‌کنند.
+T066/public-source repeatable extraction، T013/T018/T019، T039 و live AI/region/cost/human review بازند.
+هیچ ادعای آمادگی انتشار عمومی یا convergence کل محصول وجود ندارد. توقف پیش از Milestone D.
 
-handoff قبلی در `docs/archive/phase-9.2-handoff.md` آرشیو شد. فقط code/test/spec/docs/scripts مرتبط stage می‌شوند؛
-حذف نامرتبط test.txt و چهار screenshot قبلی خارج commit باقی می‌مانند. push به branch/remote موجود بدون force است.
+handoff قبلی بدون تغییر در `docs/archive/phase-9.3-handoff.md` آرشیو شد.
+مسیر Git: همین branch روی `origin` پروژهٔ `medyrad/beforebuy`، بدون merge یا force-push.
+حذف نامرتبط `test.txt` و چهار screenshot قدیمی خارج stage باقی می‌مانند؛ hash و نتیجهٔ push در گزارش نهایی ارائه می‌شود.
+اسرار، .env، database، runtime trace و دادهٔ حساس وارد Git نمی‌شوند.

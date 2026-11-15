@@ -31,11 +31,38 @@ def normalize_money_toman(value):
 def validate_brief_changes(changes: dict) -> dict:
     if not isinstance(changes, dict) or not changes:
         raise ValidationError("حداقل یک تغییر لازم است.")
-    allowed = {"recipient_context", "category", "selected_product_label", "budget_toman", *_LIST_FIELDS}
+    allowed = {"recipient_context", "category", "selected_product_label", "budget_toman", "comparison", *_LIST_FIELDS}
     unknown = set(changes) - allowed
     if unknown:
         raise ValidationError({key: ["فیلد پشتیبانی نمی‌شود."] for key in sorted(unknown)})
     result = {}
+    if 'comparison' in changes:
+        from analysis.ranking.engine import CRITERIA
+        value = changes['comparison']
+        invalid = lambda: ValidationError({'comparison': ['معیار مقایسه نامعتبر است.']})
+        if not isinstance(value, dict) or set(value) - {'intent', 'budget_mode', 'criteria', 'prefer_lower_cost'}:
+            raise invalid()
+        if value.get('intent', 'UNKNOWN') not in ('PRACTICAL', 'ENJOYMENT', 'GIFT', 'HOUSEHOLD', 'UNKNOWN'):
+            raise invalid()
+        if value.get('budget_mode', 'STRICT') not in ('STRICT', 'FLEXIBLE') or type(value.get('prefer_lower_cost', False)) is not bool:
+            raise invalid()
+        criteria = value.get('criteria', [])
+        if not isinstance(criteria, list) or len(criteria) > 6:
+            raise invalid()
+        fields = {key: kind for category in CRITERIA.values() for key, kind in category.items()}
+        seen = set()
+        for criterion in criteria:
+            if not isinstance(criterion, dict) or set(criterion) != {'field', 'expected', 'kind', 'scope'}:
+                raise invalid()
+            field = criterion['field']
+            if not isinstance(field, str) or field not in fields or type(criterion['expected']) is not fields[field]:
+                raise invalid()
+            if criterion['kind'] not in ('HARD', 'PREFERENCE') or criterion['scope'] not in ('SELF', 'RECIPIENT', 'HOUSEHOLD'):
+                raise invalid()
+            if field in seen or (type(criterion['expected']) is int and not 0 < criterion['expected'] <= 100000):
+                raise invalid()
+            seen.add(field)
+        result['comparison'] = value
     if "recipient_context" in changes:
         value = changes["recipient_context"]
         if value not in {None, "SELF", "GIFT", "HOUSEHOLD"}:

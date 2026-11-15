@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Milestone B Phase 9.2 real-source offer pilot authorized; full Choice Desk and later milestones remain planned
+**Status**: Phase 10 Milestone C offline Choice Desk authorized; Milestone B live-source coverage remains partial; Milestone D not authorized
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و کلید OpenAI متعلق به کاربر.
 
@@ -106,6 +106,9 @@
 
 ### Functional Requirements
 
+- **FR-063**: Milestone C MUST use confirmed structured comparison criteria and categorical COPILOT-RANK-v0.1 rules, compare one intended variant with at most three evidenced product alternatives, preserve unresolved/tied outcomes and expose criterion/evidence/tradeoff/unknown/coverage/would-change reasoning. Explicit enjoyment is valid and gift criteria belong to the recipient.
+- **FR-064**: ChoiceSet MUST be owner-scoped, revision/epoch guarded and visibly invalidated by brief edits or stale evidence. Three labelled synthetic category demonstrations MUST use the same persisted evidence, ranking/API/UI path as future live evidence, without source/LLM calls or upgrading attribution.
+
 - **FR-061**: Phase 9.3 connection fallback MUST use at most two distinct addresses from one fully public-validated DNS result, retain hostname TLS/SNI/Host, share request/job deadlines, close failed sockets and count each additional connection against existing request/domain budgets. Fallback is only before HTTP send; policy, HTTP and parser failures are not retried.
 - **FR-062**: Source enable/disable MUST preserve real review timestamps; configuration changes are not observations. Diagnostics MUST distinguish fresh host/container/application responses from captured/tool content, use at most 30 outbound attempts, and restore explicit OFFLINE/disabled policies. T066 requires real extraction/publication and a fresh repeat.
 
@@ -126,7 +129,7 @@
 - **FR-015**: ranking MUST ابتدا hard filters و سپس criterionهای نسخه‌دار را اعمال کند؛ weight/normalization/tie/missing-evidence rule و rationale per option قابل مشاهده باشد.
 - **FR-016**: LLM MUST NOT product fact، price، availability، arithmetic، seller trust، compatibility، score، rank یا citation بسازد/override کند.
 - **FR-017**: Choice Desk MUST shortlist cards، comparison view، budget/fit/tradeoff/concern/unknown و evidence coverage را نشان دهد و در mobile بدون scroll افقی ضروری قابل استفاده باشد.
-- **FR-018**: هر claim قابل مشاهده MUST citation یا attribution `USER_REPORTED`, `DETERMINISTIC`, `VERIFIED_SOURCE`, `ASSISTANT_INFERENCE`, یا `UNKNOWN` داشته باشد.
+- **FR-018**: هر claim قابل مشاهده MUST citation یا attribution `USER_REPORTED`, `DETERMINISTIC`, `VERIFIED_SOURCE`, `ASSISTANT_INFERENCE`, `SYNTHETIC`, `CAPTURED_FIXTURE` یا `UNKNOWN` داشته باشد. دو حالت fixture هرگز شاهد بازار جاری نیستند.
 - **FR-019**: recommendation MUST توضیح دهد چرا، با کدام tradeoff، تحت چه uncertainty و چه evidence تازه‌ای تغییر می‌کند؛ هدف افزایش خرید یا budget نیست.
 - **FR-020**: stream MUST event ID، operation ID، sequence، type، timestamp و payload version داشته باشد؛ provisional delta fact نهایی محسوب نمی‌شود.
 - **FR-021**: stream MUST progress واقعی مرحله/تعداد bounded work را ارسال کند و MUST hidden chain-of-thought، progress جعلی یا secret منتشر نکند.

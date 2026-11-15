@@ -122,3 +122,12 @@ project overlay forbids introducing Next.js, Tailwind/shadcn or Vercel deploymen
 
 `frontend-design` is natively discoverable in the Phase 8 skill catalog and was invoked as an installed project skill;
 this differs from Phase 7, when only its files had been inspected after the catalog snapshot was created.
+
+## Phase 10 skill discovery and reuse
+
+Current session catalog and filesystem both expose project, frontend-design, django-drf-backend, TDD, systematic-debugging,
+verification-before-completion, playwright-cli and Spec Kit analyze/implement skills. Their SKILL.md files and applicable
+references were read; no native `skills.list` callable exists in this tool set, so no separate callable-discovery claim is made.
+No installation/version change: existing React/Vite/Vazirmatn, Playwright Test 1.65.1 + axe 4.11.1 and local matching
+browser image are reused. Playwright CLI skill directs repeatable tests; MCP is not needed. Frontend design is constrained
+by Concept 2 palette/layout and project RTL overlay. No future-phase tools, code-intelligence index or new framework.

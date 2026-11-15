@@ -1,13 +1,63 @@
 openapi: 3.1.0
 info:
   title: Beforebuy Shopping Copilot API
-  version: 0.3.0-milestone-b
+  version: 0.4.0-milestone-c
   description: |
     Same-origin guest-owned Milestone A/B contract. Unsafe requests require the
     existing csrftoken cookie and matching X-CSRFToken header. Missing, foreign,
     deleted and expired resources all return RESOURCE_UNAVAILABLE.
 servers: [{url: /api/v1}]
 paths:
+  /conversations/{conversationId}/choices:
+    parameters: [{$ref: '#/components/parameters/ConversationId'}]
+    get:
+      operationId: getChoiceDesk
+      summary: Latest immutable comparison, with current=false after revision or freshness expiry; no execution
+      responses:
+        '200': {description: ChoiceSet or null, content: {application/json: {schema: {oneOf: [{$ref: '#/components/schemas/ChoiceSet'}, {type: 'null'}]}}}}
+        '404': {$ref: '#/components/responses/Unavailable'}
+    post:
+      operationId: compareChoices
+      summary: Compare confirmed brief against owned persisted evidence without any network or LLM calls
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expected_revision, variant_ids, intended_variant_id]
+              properties:
+                expected_revision: {type: integer, minimum: 0}
+                variant_ids: {type: array, minItems: 1, maxItems: 4, uniqueItems: true, items: {type: string, format: uuid}}
+                intended_variant_id: {type: string, format: uuid, description: Must be included in variant_ids; one variant per product and one category}
+      responses:
+        '201': {description: Published after owner/expiry/revision/epoch check, content: {application/json: {schema: {$ref: '#/components/schemas/ChoiceSet'}}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409': {description: STALE_BRIEF_REVISION or STALE_COMPARISON; confirm/recompute explicitly}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+  /conversations/{conversationId}/choices/candidates:
+    parameters: [{$ref: '#/components/parameters/ConversationId'}]
+    get:
+      operationId: listChoiceCandidates
+      summary: Candidates from at most 200 latest owned extracted snapshots; does not execute retrieval
+      responses:
+        '200': {description: Candidate variants with product identity, normalized claims, offers and source attribution, content: {application/json: {schema: {type: object, properties: {items: {type: array, items: {type: object}}}}}}}
+        '404': {$ref: '#/components/responses/Unavailable'}
+  /conversations/{conversationId}/choices/demo:
+    parameters: [{$ref: '#/components/parameters/ConversationId'}]
+    post:
+      operationId: seedChoiceDemonstration
+      summary: Explicitly seed or reuse three SYNTHETIC products using normal evidence entities; does not change the brief or call sources
+      requestBody:
+        required: true
+        content: {application/json: {schema: {type: object, required: [expected_revision, category], properties: {expected_revision: {type: integer, minimum: 0}, category: {type: string, enum: [electronics, home, sports]}}}}}
+      responses:
+        '201': {description: Synthetic variant_ids for this conversation, content: {application/json: {schema: {type: object, properties: {variant_ids: {type: array, items: {type: string, format: uuid}}, attribution: {const: SYNTHETIC}}}}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409': {description: Brief must be confirmed at expected_revision}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
   /session:
     get:
       summary: Reuse the existing guest and CSRF bootstrap
@@ -267,6 +317,70 @@ components:
     Unavailable: {description: Missing/foreign/expired/deleted, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: RESOURCE_UNAVAILABLE, message: این منبع در دسترس نیست.}}}}}
     StaleRevision: {description: Expected revision is stale, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: STALE_BRIEF_REVISION, message: Brief changed., current_revision: 3}}}}}
   schemas:
+    ComparisonProfile:
+      type: object
+      additionalProperties: false
+      properties:
+        intent: {type: string, enum: [UNKNOWN, PRACTICAL, ENJOYMENT, GIFT, HOUSEHOLD], default: UNKNOWN}
+        budget_mode: {type: string, enum: [STRICT, FLEXIBLE], default: STRICT}
+        prefer_lower_cost: {type: boolean, default: false}
+        criteria:
+          type: array
+          maxItems: 6
+          description: One criterion per field; equality, not inferred minimum; category and exact value type checked
+          items:
+            type: object
+            additionalProperties: false
+            required: [field, expected, kind, scope]
+            properties:
+              field: {type: string, enum: [capacity_gb, portable, capacity_l, dishwasher_safe, size_eu, waterproof]}
+              expected: {oneOf: [{type: boolean}, {type: integer, minimum: 1, maximum: 100000}]}
+              kind: {type: string, enum: [HARD, PREFERENCE]}
+              scope: {type: string, enum: [SELF, RECIPIENT, HOUSEHOLD]}
+    ChoiceSet:
+      type: object
+      required: [id, brief_revision, current, evidence_valid_until, result, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        brief_revision: {type: integer, minimum: 0}
+        current: {type: boolean}
+        evidence_valid_until: {type: string, format: date-time}
+        created_at: {type: string, format: date-time}
+        result:
+          type: object
+          required: [rule_version, brief_snapshot, outcome, leaders, items, clarification, response_mode, intent, scope, no_alternatives]
+          properties:
+            rule_version: {const: COPILOT-RANK-v0.1}
+            brief_snapshot: {type: object, description: Immutable comparison inputs only; private to the conversation owner and its retention}
+            response_mode: {const: DETERMINISTIC_TEMPLATE}
+            outcome: {enum: [SUPPORTED_CHOICE, TIED, UNRESOLVED, NO_SUPPORTED_CHOICE]}
+            leaders: {type: array, items: {type: string, format: uuid}}
+            no_alternatives: {type: boolean}
+            intent: {type: string}
+            scope: {enum: [SELF, RECIPIENT, HOUSEHOLD]}
+            clarification: {type: [string, 'null']}
+            items:
+              type: array
+              maxItems: 4
+              items:
+                type: object
+                required: [id, product_id, name, intended, group, checks, total, item_price, cost_state, unknowns, tradeoffs, coverage, would_change_if, sources, offers]
+                properties:
+                  id: {type: string, format: uuid}
+                  product_id: {type: string, format: uuid}
+                  name: {type: string}
+                  intended: {type: boolean}
+                  group: {enum: [SUPPORTED, UNRESOLVED, INCOMPATIBLE]}
+                  total: {type: [integer, 'null'], minimum: 0, description: Normalized toman; complete supported in-stock total only}
+                  item_price: {type: [integer, 'null'], minimum: 0}
+                  cost_state: {enum: [WITHIN_BUDGET_CONFIRMED, ABOVE_BUDGET, UNKNOWN]}
+                  checks: {type: array, items: {type: object, required: [field, expected, kind, scope, result, actual, evidence_id, attribution]}}
+                  sources: {type: array, items: {type: object, required: [id, attribution, url, label, observed_at, fresh_until, fresh]}}
+                  offers: {type: array, items: {type: object, required: [id, price, shipping, mandatory, stock, fresh, source_id, attribution, observation_kind, url, observed_at]}}
+                  unknowns: {type: array, items: {type: string}}
+                  tradeoffs: {type: array, items: {type: string}}
+                  would_change_if: {type: array, items: {type: string}}
+                  coverage: {type: object, required: [known, total], properties: {known: {type: integer, minimum: 0}, total: {type: integer, minimum: 0}}}
     Problem:
       type: object
       additionalProperties: false
@@ -333,6 +447,7 @@ components:
       additionalProperties: false
       required: [revision, recipient_context, category, selected_product_label, budget_toman, use_cases, hard_constraints, unknowns, contradictions, provenance, confirmed, updated_at]
       properties:
+        comparison: {$ref: '#/components/schemas/ComparisonProfile'}
         revision: {type: integer, minimum: 0}
         recipient_context: {type: [string, 'null'], enum: [SELF, GIFT, HOUSEHOLD, null]}
         category: {type: [string, 'null'], maxLength: 120}
@@ -356,6 +471,7 @@ components:
           additionalProperties: false
           minProperties: 1
           properties:
+            comparison: {$ref: '#/components/schemas/ComparisonProfile'}
             recipient_context: {type: [string, 'null'], enum: [SELF, GIFT, HOUSEHOLD, null]}
             category: {type: [string, 'null'], maxLength: 120}
             selected_product_label: {type: [string, 'null'], maxLength: 160}
@@ -549,4 +665,4 @@ components:
         job: {$ref: '#/components/schemas/ResearchJob'}
         operation: {$ref: '#/components/schemas/Operation'}
 
-# Choice sets, memory, credentials and export remain planned later-milestone contracts.
+# Memory, credentials and export remain planned later-milestone contracts.

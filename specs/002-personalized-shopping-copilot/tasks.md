@@ -12,7 +12,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 - [X] T070 [B] Provide reproducible diagnostics; retry API/publication/fresh-fetch/browser only after successful preflight; run PostgreSQL regressions, archive handoff, restore explicit OFFLINE/disabled policies, commit/push. Keep T066 open without its live evidence. — Preflight blocked at HTTP 490; successful live branch remains T066, not claimed complete.
 
 **Input**: artifacts in `/specs/002-personalized-shopping-copilot/`  
-**Authorization**: Phase 9/9.1 authorizes Milestone B tasks `T013–T023` and `T055–T059`. Phase 9.2 authorizes only `T060–T066` for a real-source offer pilot and minimal offer panel؛ the rest of Milestones C–E remains pending.  
+**Authorization**: Phase 9/9.1 authorizes Milestone B tasks `T013–T023` and `T055–T059`. Phase 9.2 authorizes only `T060–T066` for the bounded offer pilot. Phase 10 authorizes `T024–T031` for offline Milestone C; incomplete B source tasks and Milestones D/E remain pending.  
 **TDD**: behavioral tests MUST fail for the intended missing behavior before paired implementation.
 
 ## Milestone A — Conversation foundation
@@ -67,16 +67,22 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 ## Milestone C — Choice Desk
 
-- [ ] T024 [P] [US3] Write hand-authored ranking cases for budget, total cost, hard constraints, missing evidence, stale offer, gift context and ties in `backend/tests/unit/test_copilot_ranking.py`
-- [ ] T025 [P] [US3] Write property/exhaustive invariants for determinism, no unsupported contribution and stable ties in `backend/tests/unit/test_ranking_invariants.py`
-- [ ] T026 [US3] Implement `COPILOT-RANK-v0.1` pure pipeline in `backend/analysis/ranking/` and persist versioned ChoiceSet results
-- [ ] T027 [P] [US3] Write API contract tests for ChoiceSet attribution, citations, coverage and unknown total-cost components in `backend/tests/api/test_choice_desk.py`
-- [ ] T028 [US3] Implement current Choice Desk serializer/API in `backend/analysis/api/choices.py`
-- [ ] T029 [P] [US3] Write React tests for cards/table/mobile disclosure, source drawer, long Persian/bidi, partial/final and keyboard semantics in `frontend/src/features/copilot/choice-desk/*.test.tsx`
-- [ ] T030 [US3] Implement Choice Desk Concept 2 in `frontend/src/features/copilot/choice-desk/` using installed design skill plus project RTL/accessibility overlay and no new UI framework
-- [ ] T031 [US3] Add Playwright journeys for 390/1440 viewports, keyboard, 200% zoom, stream stop and axe serious/critical zero in `tests/e2e/copilot-choice-desk.spec.ts`
+- [x] T024 [P] [US3] Write hand-authored ranking cases for budget, total cost, hard constraints, missing evidence, stale offer, gift context and ties in `backend/tests/unit/test_copilot_ranking.py`
+- [x] T025 [P] [US3] Write property/exhaustive invariants for determinism, no unsupported contribution and stable ties in `backend/tests/unit/test_ranking_invariants.py`
+- [x] T026 [US3] Implement `COPILOT-RANK-v0.1` pure pipeline in `backend/analysis/ranking/` and persist versioned ChoiceSet results
+- [x] T027 [P] [US3] Write API contract tests for ChoiceSet attribution, citations, coverage and unknown total-cost components in `backend/tests/api/test_choice_desk.py`
+- [x] T028 [US3] Implement current Choice Desk serializer/API in `backend/analysis/api/choices.py`
+- [x] T029 [P] [US3] Write React tests for cards/table/mobile disclosure, source drawer, long Persian/bidi, partial/final and keyboard semantics in `frontend/src/features/copilot/choice-desk/*.test.tsx`
+- [x] T030 [US3] Implement Choice Desk Concept 2 in `frontend/src/features/copilot/choice-desk/` using installed design skill plus project RTL/accessibility overlay and no new UI framework
+- [x] T031 [US3] Add Playwright journeys for 390/1440 viewports, keyboard, 200% zoom, stream stop and axe serious/critical zero in `tests/e2e/copilot-choice-desk.spec.ts`
 
 **Checkpoint C**: fixture-based multi-category Choice Desk is deterministic and accessible; still no live provider.
+
+Phase 10 evidence: canonical PostgreSQL 260/260; React 19/19; typecheck/lint/build; real NGINX Playwright at
+390/1440 with sources, keyboard, 200% zoom, brief invalidation/recompute, real cancellation and axe serious/critical zero.
+Fixtures are explicitly synthetic/captured; public-source T066 and other incomplete source tasks remain pending.
+Implementation corrections within C: category/count/attribution contract closure, migration-test schema cleanup,
+JSON-null empty GET, short-stream test synchronization, scoped RTL/zoom and modal focus. No Milestone D work.
 
 ## Milestone D — Opt-in memory and OpenAI readiness
 
@@ -106,7 +112,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 ## Dependencies
 
-`A → B → C`; T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 gates general source integration; FR-055 separately authorizes the narrow factual pilot. T034 blocks credential implementation. T037/T040 and official region support block live AI calls. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
+`A → B evidence models/controlled fixtures → offline C`; public extraction and T066 gate live coverage, not offline C. T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 gates general source integration; FR-055 separately authorizes the narrow factual pilot. T034 blocks credential implementation. T037/T040 and official region support block live AI calls. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
 
 ## Implementation strategy
 

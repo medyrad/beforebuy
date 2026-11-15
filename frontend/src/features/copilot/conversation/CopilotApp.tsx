@@ -4,6 +4,8 @@ import type { FormEvent } from 'react'
 import { copilotApi, CopilotApiError, newIdempotencyKey } from './api'
 import { Icon } from './Icons'
 import type { Conversation, ConversationSummary, OperationStatus, ResearchJob, Upload } from './types'
+import { ChoiceDesk } from '../choice-desk/ChoiceDesk'
+import { ComparisonProfile } from '../choice-desk/ComparisonProfile'
 
 type MobilePane = 'conversation' | 'desk'
 
@@ -16,9 +18,12 @@ function BriefEditor({ conversation, onSaved }: { conversation: Conversation; on
   const [budget, setBudget] = useState(conversation.brief.budget_toman?.toString() ?? '')
   const [useCases, setUseCases] = useState(conversation.brief.use_cases.join('، '))
   const [busy, setBusy] = useState(false)
+  const [profile, setProfile] = useState(conversation.brief.comparison ?? {})
+  const [failure, setFailure] = useState('')
   const confirm = async () => {
     setBusy(true)
     try { await copilotApi.confirmBrief(conversation.id, conversation.brief_revision); await onSaved() }
+    catch (reason) { setFailure(errorText(reason)) }
     finally { setBusy(false) }
   }
 
@@ -30,9 +35,10 @@ function BriefEditor({ conversation, onSaved }: { conversation: Conversation; on
         category: category.trim() || null,
         budget_toman: budget.trim() === '' ? null : budget,
         use_cases: useCases.split('،').map((item) => item.trim()).filter(Boolean),
+        comparison: profile,
       })
       await onSaved(); setOpen(false)
-    } finally { setBusy(false) }
+    } catch (reason) { setFailure(errorText(reason)) } finally { setBusy(false) }
   }
 
   return <section className="brief-ribbon" aria-labelledby="brief-title">
@@ -48,8 +54,10 @@ function BriefEditor({ conversation, onSaved }: { conversation: Conversation; on
       <label>دسته<input value={category} onChange={(e) => setCategory(e.target.value)} maxLength={120} /></label>
       <label>سقف بودجه (تومان)<input inputMode="numeric" value={budget} onChange={(e) => setBudget(e.target.value)} /></label>
       <label>کاربردها، جدا با «،»<input value={useCases} onChange={(e) => setUseCases(e.target.value)} /></label>
+      <ComparisonProfile value={profile} onChange={setProfile} category={category} recipient={recipient} />
       <div className="inline-actions"><button className="button primary" disabled={busy}>ذخیره</button><button type="button" className="button ghost" onClick={() => setOpen(false)}>بستن</button></div>
     </form>}
+    {failure && <p role="alert">{failure}</p>}
   </section>
 }
 
@@ -224,7 +232,9 @@ export function CopilotApp() {
       </form>
     </aside>
     <main id="copilot-main" className={`choice-desk ${pane === 'desk' ? 'mobile-active' : ''}`} tabIndex={-1}>
-      {conversation && <BriefEditor conversation={conversation} onSaved={refresh} />}
+      {conversation && <BriefEditor key={`${conversation.id}:${conversation.brief_revision}`} conversation={conversation} onSaved={refresh} />}
+      {conversation && <ChoiceDesk key={conversation.id} conversation={conversation} evidenceRevision={`${researchJob?.id ?? ''}:${researchJob?.completed ?? ''}`} />}
+      <details className="research-ledger"><summary>پژوهش منابع و پیشنهادهای فروش</summary>
       <section className="research-panel" aria-labelledby="desk-title">
         <p className="overline">Choice Desk · پایلوت محدود</p><h2 id="desk-title">پیشنهادهای واقعی و منبع‌دار</h2>
         <p className="research-scope">این بررسی فقط لینک‌های دقیق شما و منابع فعال را می‌بیند؛ پوشش همهٔ بازار یا قیمت نهایی تحویل را تضمین نمی‌کند.</p>
@@ -233,6 +243,7 @@ export function CopilotApp() {
         {researchJob?.offers.length ? <div className="offer-results"><div className="offer-heading"><div><p className="overline">مرتب‌شده بر پایه قیمت کالا</p><h3>کمترین قیمت بین منابع بررسی‌شده</h3></div><span>{researchJob.offers.length.toLocaleString('fa-IR')} پیشنهاد</span></div><div className="offer-list">{researchJob.offers.map((offer) => <article className="offer-card" key={offer.id}><div><span className={`evidence-badge ${offer.evidence_state.toLowerCase()}`}>{offer.evidence_state === 'LIVE' ? 'مشاهدهٔ زنده' : offer.evidence_state === 'CACHE' ? 'نسخهٔ ذخیره‌شده' : offer.evidence_state === 'STALE' ? 'قدیمی' : offer.evidence_state === 'CAPTURED_FIXTURE' ? 'ثبت واقعیِ تاریخی' : 'دادهٔ مصنوعی'}</span><h4>{offer.product_name}</h4><p>{offer.seller ?? 'فروشنده نامشخص'} · {offer.source_name}</p></div><strong>{offer.price_toman === null ? 'قیمت نامعلوم' : `${offer.price_toman.toLocaleString('fa-IR')} تومان`}</strong><dl><div><dt>موجودی</dt><dd>{offer.availability === 'IN_STOCK' ? 'موجود' : offer.availability === 'OUT_OF_STOCK' ? 'ناموجود' : 'نامعلوم'}</dd></div><div><dt>نوع مشاهده</dt><dd>{offer.observation_kind === 'MERCHANT_PAGE_VERIFIED' ? 'صفحهٔ فروشنده' : 'مشاهده در مقایسه‌گر'}</dd></div></dl><p className="unknown-cost">{offer.total_payable_toman === null ? 'هزینهٔ ارسال و مبلغ نهایی نامعلوم است.' : `مبلغ نهایی معلوم: ${offer.total_payable_toman.toLocaleString('fa-IR')} تومان`}</p><footer><time dateTime={offer.observed_at}>{new Date(offer.observed_at).toLocaleString('fa-IR')}</time>{(offer.merchant_url ?? offer.source_url) && <a href={offer.merchant_url ?? offer.source_url ?? '#'} target="_blank" rel="noreferrer">مشاهده منبع</a>}</footer></article>)}</div></div> : !researchJob && <div className="desk-empty compact"><div className="desk-orbit" aria-hidden="true"><Icon name="desk" /></div><h3>هنوز پیشنهادی بررسی نشده است.</h3><p>یک تا سه صفحهٔ دقیق از همان محصول را وارد کنید. failure منبع با fixture جایگزین نمی‌شود.</p></div>}
         {researchJob && !researchBusy && !researchJob.offers.length && <div className="research-empty"><h3>پیشنهاد قابل‌نمایشی پیدا نشد.</h3><p>وضعیت اجرا: {researchJob.status}. failure زنده با fixture جایگزین نشده است.</p><ul>{[...(researchJob.coverage.failed ?? []), ...(researchJob.coverage.blocked ?? [])].map((item) => <li key={`${item.source_id}-${item.code}`}>{item.source_id}: {item.code}</li>)}</ul></div>}
       </section>
+      </details>
     </main>
     <nav className="mobile-switcher" aria-label="نمای موبایل"><button className={pane === 'conversation' ? 'active' : ''} onClick={() => setPane('conversation')}><Icon name="chat" />گفت‌وگو</button><button className={pane === 'desk' ? 'active' : ''} onClick={() => setPane('desk')}><Icon name="desk" />میز انتخاب</button></nav>
   </div>

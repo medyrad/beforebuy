@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -24,12 +24,20 @@ class FakeEventSource {
   close() { this.closed = true }
 }
 
+async function readyMessageInput() {
+  const input = await screen.findByRole('textbox', { name: 'پیام شما' })
+  await waitFor(() => expect(input).toBeEnabled())
+  return input
+}
+
 describe('Copilot milestone A shell', () => {
   beforeEach(() => {
+    FakeEventSource.current = null
     vi.stubGlobal('EventSource', FakeEventSource)
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
       const data = url.endsWith('/session') ? { expires_at: conversation.expires_at }
+        : url.endsWith('/choices/candidates') ? { items: [] } : url.endsWith('/choices') ? null
         : url.endsWith('/messages') && init?.method === 'POST' ? { operation: { id: 'op', status: 'PENDING' }, message_id: 'message', events_url: '/events' }
         : url.endsWith('/cancel') ? { id: 'op', status: 'CANCELLED' }
         : url.endsWith('/operations/op') ? { id: 'op', conversation_id: conversation.id, status: 'RUNNING', expected_brief_revision: 0, final_message_id: null, terminal_code: null }
@@ -43,6 +51,8 @@ describe('Copilot milestone A shell', () => {
     render(<CopilotApp />)
     expect(await screen.findByRole('heading', { name: 'همراه خرید' })).toBeInTheDocument()
     expect(screen.getByText('بدون AI زنده')).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'لینک‌های دقیق محصول' })).not.toBeVisible()
+    await userEvent.click(screen.getByText('پژوهش منابع و پیشنهادهای فروش', { exact: true }))
     expect(screen.getByRole('heading', { name: 'پیشنهادهای واقعی و منبع‌دار' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'هنوز پیشنهادی بررسی نشده است.' })).toBeInTheDocument()
     expect(screen.queryByText(/قیمت بازار:/)).not.toBeInTheDocument()
@@ -71,9 +81,10 @@ describe('Copilot milestone A shell', () => {
     const input = await screen.findByLabelText('افزودن تصویر') as HTMLInputElement
     await user.upload(input, new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.jpg', { type: 'image/jpeg' }))
     expect(screen.getByRole('alert')).toHaveTextContent('حداکثر ۵ مگابایت')
-    await user.type(screen.getByRole('textbox', { name: 'پیام شما' }), 'پیام آزمایشی')
+    await user.type(await readyMessageInput(), 'پیام آزمایشی')
     await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
-    FakeEventSource.current?.emit('operation.started')
+    await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
+    act(() => FakeEventSource.current?.emit('operation.started'))
     expect(await screen.findByRole('button', { name: 'توقف تولید' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'توقف تولید' }))
   })
@@ -81,10 +92,11 @@ describe('Copilot milestone A shell', () => {
   it('offers an explicit controlled retry after a terminal fixture failure', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
-    await user.type(await screen.findByRole('textbox', { name: 'پیام شما' }), 'همان درخواست قبلی')
+    await user.type(await readyMessageInput(), 'همان درخواست قبلی')
     await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
-    FakeEventSource.current?.emit('operation.started')
-    FakeEventSource.current?.emit('operation.failed', JSON.stringify({ code: 'FIXTURE_FAILURE' }))
+    await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
+    act(() => FakeEventSource.current?.emit('operation.started'))
+    act(() => FakeEventSource.current?.emit('operation.failed', JSON.stringify({ code: 'FIXTURE_FAILURE' })))
     await user.click(await screen.findByRole('button', { name: 'تلاش دوباره' }))
     const messageCalls = vi.mocked(fetch).mock.calls.filter(([input, init]) =>
       String(input).endsWith('/messages') && init?.method === 'POST')
@@ -94,10 +106,11 @@ describe('Copilot milestone A shell', () => {
   it('reconciles stream errors through REST without regenerating active work', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
-    await user.type(await screen.findByRole('textbox', { name: 'پیام شما' }), 'پیام reconnect')
+    await user.type(await readyMessageInput(), 'پیام reconnect')
     await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
-    FakeEventSource.current?.emit('operation.started')
-    FakeEventSource.current?.onerror?.(new Event('error'))
+    await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
+    act(() => FakeEventSource.current?.emit('operation.started'))
+    act(() => FakeEventSource.current?.onerror?.(new Event('error')))
     await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/operations/op'))).toBe(true))
     expect(FakeEventSource.current?.closed).toBe(false)
     const messageCalls = vi.mocked(fetch).mock.calls.filter(([input, init]) =>
@@ -108,10 +121,11 @@ describe('Copilot milestone A shell', () => {
   it('uses REST reconciliation for an in-stream replay gap', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
-    await user.type(await screen.findByRole('textbox', { name: 'پیام شما' }), 'پیام gap')
+    await user.type(await readyMessageInput(), 'پیام gap')
     await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
-    FakeEventSource.current?.emit('operation.started')
-    FakeEventSource.current?.emit('stream.replay_gap', JSON.stringify({ reconcile_url: '/api/v1/operations/op' }))
+    await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
+    act(() => FakeEventSource.current?.emit('operation.started'))
+    act(() => FakeEventSource.current?.emit('stream.replay_gap', JSON.stringify({ reconcile_url: '/api/v1/operations/op' })))
     await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/operations/op'))).toBe(true))
     expect(FakeEventSource.current?.closed).toBe(true)
   })
@@ -132,12 +146,15 @@ describe('Copilot milestone A shell', () => {
           fresh_until: '2026-11-15T16:00:00Z' }], created_at: '2026-11-15T10:00:00Z', started_at: '2026-11-15T10:00:00Z', completed_at: '2026-11-15T10:00:01Z',
       }
       const data = url.endsWith('/session') ? { expires_at: conversation.expires_at }
+        : url.endsWith('/choices/candidates') ? { items: [] } : url.endsWith('/choices') ? null
         : url.endsWith('/research') && init?.method === 'POST' ? { job, operation: { id: 'research-op', status: 'COMPLETED' }, idempotent_replay: false, events_url: '/events' }
         : url.endsWith('/research-jobs/job-1') ? job : url.includes('/conversations/') ? conversation : { items: [conversation], next_cursor: null }
       return new Response(JSON.stringify(data), { status: url.endsWith('/research') ? 202 : 200, headers: { 'Content-Type': 'application/json' } })
     })
     render(<CopilotApp />)
+    await user.click(await screen.findByText('پژوهش منابع و پیشنهادهای فروش', { exact: true }))
     const input = await screen.findByRole('textbox', { name: 'لینک‌های دقیق محصول' })
+    await waitFor(() => expect(input).toBeEnabled())
     await user.type(input, 'https://takkalaban.com/product/philips-na230/')
     await user.click(screen.getByRole('button', { name: 'بررسی پیشنهادها' }))
     expect(await screen.findByText('کمترین قیمت بین منابع بررسی‌شده')).toBeInTheDocument()

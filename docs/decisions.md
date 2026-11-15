@@ -273,3 +273,13 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
 - قیمت original/currency از `price_toman` جداست؛ IRR فقط با `10 IRR = 1 TOMAN` تبدیل می‌شود و تعارض واحد fail closed است. shipping و mandatory charges نامعلوم صفر نیستند و total payable فقط با اجزای کامل ساخته می‌شود.
 - مقایسه فقط variantهای compatible است؛ merchant SKU شناسهٔ بین‌فروشگاهی نیست. duplicate observation حذف نمایشی می‌شود ولی provenance/discrepancy خام باقی می‌ماند.
 - default runtime همچنان `OFFLINE` است. فعال‌سازی policy و اجرای pilot commandهای صریح operator می‌خواهد؛ هیچ fixture، AI/provider، account، purchase یا public deployment در این تصمیم مجاز نیست.
+
+## Phase 10 — bounded offline Choice Desk
+
+- مجوز فقط T024–T031 است. evidence models و fixture کنترل‌شده dependency اجرای C را تأمین می‌کنند؛ موفقیت public extraction فقط gate پوشش زنده است. Milestone B، T066 و T039 کامل محسوب نمی‌شوند.
+- closure اجرایی COPILOT-RANK-v0.1 دسته‌ای/lexicographic است: HARD/PREFERENCE، SATISFIED/FAILED/UNKNOWN، STRICT پیش‌فرض و FLEXIBLE فقط با تأیید، known total جدا از item price؛ بدون وزن یا امتیاز ساختگی.
+- ترتیب: سازگار، حل‌نشده، ناسازگار؛ در هر گروه coverage سپس ترجیح‌های مستند؛ هزینهٔ کمتر فقط با ترجیح صریح. UUID صرفاً نمایش tie را پایدار می‌کند، نه winner ساختگی.
+- معیار عددی equality است، نه حداقل استنباط‌شده. هدیه فقط معیار گیرنده را مصرف می‌کند؛ هدف لذت معتبر است؛ هیچ تشخیص روانی/مالی انجام نمی‌شود. تناقض brief و شرط متنی حل‌نشده مانع winner قطعی‌اند.
+- ChoiceSet immutable JSON با itemهای embedded، revision/epoch و freshness است؛ owner/expiry/revision در publication زیر lock بازبینی می‌شود. retention و حذف از conversation ارث می‌رسند؛ read/compare/demo تمدید نمی‌کنند.
+- نمونه‌های صریح سه دسته در Product/Variant/Offer/Claim عادی ذخیره و از همان API/engine/UI مصرف می‌شوند. synthetic/captured به بازار فعلی یا VERIFIED_SOURCE ارتقا نمی‌یابند. بارگذاری نمونه نیاز تأییدشده را تغییر نمی‌دهد.
+- یک محصول موردنظر + حداکثر سه محصول جایگزین؛ merchant offerها جدا. memory، credential settings، provider و deployment خارج این فازند. پوشش live بازار و AI همچنان باز است.

@@ -219,6 +219,7 @@ class ShoppingBrief(models.Model):
     contradictions = models.JSONField(default=list)
     provenance = models.JSONField(default=list)
     confirmed = models.BooleanField(default=False)
+    comparison = models.JSONField(default=dict)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -228,6 +229,18 @@ class ShoppingBrief(models.Model):
                 name="copilot_brief_budget_null_or_nonnegative",
             ),
         ]
+
+
+class ChoiceSet(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name='choice_sets')
+    brief_revision = models.PositiveIntegerField()
+    generation_epoch = models.PositiveBigIntegerField()
+    rule_version = models.CharField(max_length=64)
+    result = models.JSONField()
+    snapshot_ids = models.JSONField(default=list)
+    evidence_valid_until = models.DateTimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Message(models.Model):

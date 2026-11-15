@@ -9,8 +9,12 @@ from .conversations import (
 from .operations import OperationCancelView, OperationDetailView, OperationEventView
 from .uploads import UploadCreateView, UploadDetailView
 from .research import ResearchCancelView, ResearchDetailView, ResearchStartView
+from .choices import ChoiceCandidatesView, ChoiceDemoView, ChoiceDeskView
 
 urlpatterns = [
+    path('conversations/<uuid:conversation_id>/choices', ChoiceDeskView.as_view(), name='choice-desk'),
+    path('conversations/<uuid:conversation_id>/choices/candidates', ChoiceCandidatesView.as_view(), name='choice-candidates'),
+    path('conversations/<uuid:conversation_id>/choices/demo', ChoiceDemoView.as_view(), name='choice-demo'),
     path("health/live", live, name="health-live"),
     path("health/ready", ready, name="health-ready"),
     path("session", bootstrap_session, name="session"),

@@ -1,4 +1,39 @@
-# Quickstart — Milestone A/B offline and fixture stack
+# Quickstart — Milestone A/B/C offline and fixture stack
+
+## Phase 10 — Choice Desk without tokens or public sources
+
+از root، با `.env` محلی موجود و `BEFOREBUY_AI_MODE=mock`، policyهای عمومی غیرفعال بمانند:
+
+```sh
+docker compose up -d db
+docker compose run --rm --no-deps api python backend/manage.py migrate --noinput
+BEFOREBUY_RESEARCH_MODE=OFFLINE docker compose up -d --build api web
+```
+
+`http://127.0.0.1:58080/copilot` را باز کنید؛ «گفت‌وگوی تازه»، در موبایل «میز انتخاب»، سپس «ویرایش brief».
+مخاطب و بودجه را تعیین کنید؛ category دقیق `electronics`، `home` یا `sports` و ترجیحات اختیاری را وارد کنید.
+«ذخیره» و «تأیید brief برای پژوهش»؛ زیر «محصول موردنظر و جایگزین‌ها» دستهٔ همان نمونه را انتخاب و
+«بارگذاری دادهٔ مصنوعی» را بزنید. محصول موردنظر و حداکثر سه جایگزین قابل تغییرند؛ سپس «ساخت مقایسه».
+این دکمه هیچ source یا AI call ندارد. قیمت‌ها ساختگی‌اند، نه بازار زنده. برای category دیگر گفت‌وگوی تازه بسازید.
+
+نمونه‌های تکرارپذیر (همه synthetic، همه مبالغ تومان):
+
+| دسته/هدف | نیاز صریح | نتیجهٔ مورد انتظار |
+|---|---|---|
+| electronics / ENJOYMENT، SELF | سقف ۱۰ میلیون، portable=true شرط قطعی | آ ۸ میلیون و پ ۹ میلیون tie؛ ب ۷ میلیون portable=false و ارسال نامعلوم ناسازگار؛ با سقف ۸ میلیون آ تنها سازگار |
+| home / HOUSEHOLD | سقف ۶ میلیون، dishwasher_safe=true شرط قطعی | آ ۶ میلیون سازگار؛ ب ۴ میلیون شرط را نقض می‌کند؛ پ ۷ میلیون بالای سقف و شاهد شست‌وشو/ارسال نامعلوم |
+| sports / GIFT | سقف ۲ میلیون، size_eu=42 برای RECIPIENT | آ ۲ میلیون سازگار؛ ب سایز۴۰ ناسازگار؛ پ سایز۴۲ با قیمت۱٫۸ میلیون و ارسال نامعلوم حل‌نشده |
+
+همان criterionها در حالت PRACTICAL نیز بدون داوری دربارهٔ هدف خرید اجرا می‌شوند. unknown shipping یا mandatory fee
+هرگز صفر فرض نمی‌شود. کشوی «شواهد و منابع» و disclosure پیشنهادهای فروش، provenance و زمان‌ها را نشان می‌دهند.
+تغییر brief نتیجهٔ قبلی را باطل می‌کند؛ تأیید مجدد و ساخت مقایسه لازم است. ریشهٔ `/` همچنان legacy است.
+
+تست backend: `./scripts/test-backend.sh --keepdb --verbosity 1`؛ frontend: `npm --prefix frontend test`،
+`npm --prefix frontend run typecheck`، `npm --prefix frontend run lint`، `npm --prefix frontend run build`.
+Playwright از image محلی موجود و test واقعی `tests/e2e/copilot-choice-desk.spec.ts` پشت NGINX استفاده می‌کند؛
+`PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080`، `PLAYWRIGHT_USE_BUNDLED=1` و `NODE_PATH=/app/frontend/node_modules`.
+
+فرمان‌های LIVE تاریخی زیر، جزو مجوز Phase 10 نیستند؛ default OFFLINE را تغییر ندهید.
 
 Phase 9.3 diagnostics/pilot/reset commands: [backend operations](../../docs/backend-operations.md#phase-93--local-research-diagnostics).
 The diagnostic scripts need no AI token. Current source preflight returns HTTP 490; successful live pilot is pending.

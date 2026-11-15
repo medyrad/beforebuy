@@ -9,7 +9,7 @@ function csrfCookie() {
   return item ? decodeURIComponent(item.slice('csrftoken='.length)) : ''
 }
 
-async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers)
   const method = (init.method ?? 'GET').toUpperCase()
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json')
