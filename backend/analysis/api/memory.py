@@ -25,10 +25,27 @@ def stale(data, revision):
 class CopilotSettingsView(ObjectBodyAPIView):
     def get(self, request):
         item, _ = CopilotSettings.objects.get_or_create(guest_context=get_or_create_guest(request))
-        from analysis.ai.copilot_catalog import discover_models
-        return Response({'memory_enabled': item.memory_enabled, 'model': item.model, 'revision': item.revision,
-                         'mode': 'DEMONSTRATION' if settings.COPILOT_AI_MODE == 'mock' else 'BLOCKED',
-                         'connection': 'BLOCKED', 'catalog': discover_models(None, saved_model=item.model)})
+        from analysis.ai.provider_catalog import catalog_for
+        from analysis.ai.provider_credentials import active_provider_credential
+        from analysis.ai.credentials import active_credential
+        credential = active_credential(item.guest_context_id) if item.provider == 'openai' else active_provider_credential(
+            item.guest_context_id, item.provider)
+        connection = 'NOT_CONFIGURED' if credential is None else credential.state
+        if item.provider == 'openai':
+            connection = 'VALIDATION_BLOCKED' if credential else connection
+        mode = 'DEMONSTRATION' if settings.COPILOT_AI_MODE == 'mock' else 'BLOCKED'
+        if settings.COPILOT_AI_MODE != 'mock' and connection == 'VALIDATED':
+            from analysis.ai.openai_copilot import CopilotProviderError
+            from analysis.ai.provider_readiness import ensure_provider_live_eligible
+            try:
+                ensure_provider_live_eligible(item.provider)
+                mode = 'LIVE_READY'
+            except CopilotProviderError:
+                pass
+        return Response({'memory_enabled': item.memory_enabled, 'provider': item.provider,
+                         'model': item.model, 'revision': item.revision,
+                         'mode': mode,
+                         'connection': connection, 'catalog': catalog_for(item.provider, item.model)})
 
     @transaction.atomic
     def patch(self, request):
@@ -40,9 +57,17 @@ class CopilotSettingsView(ObjectBodyAPIView):
             if type(request.data['memory_enabled']) is not bool:
                 return error('VALIDATION_ERROR', 'گزینهٔ حافظه نامعتبر است.', 422)
             item.memory_enabled = request.data['memory_enabled']
+        if 'provider' in request.data:
+            from analysis.ai.provider_catalog import CATALOGS, DEFAULT_MODELS
+            provider = request.data['provider']
+            if not isinstance(provider, str) or provider not in CATALOGS:
+                return error('PROVIDER_UNAVAILABLE', 'ارائه‌دهنده پشتیبانی نمی‌شود.', 422)
+            if provider != item.provider:
+                item.provider = provider
+                item.model = DEFAULT_MODELS[provider]
         if 'model' in request.data:
-            from analysis.ai.copilot_catalog import CATALOG
-            if not isinstance(request.data['model'], str) or request.data['model'] not in CATALOG:
+            from analysis.ai.provider_catalog import CATALOGS
+            if not isinstance(request.data['model'], str) or request.data['model'] not in CATALOGS[item.provider]:
                 return error('MODEL_UNAVAILABLE', 'مدل پشتیبانی نمی‌شود.', 422)
             item.model = request.data['model']
         item.revision += 1
@@ -52,6 +77,7 @@ class CopilotSettingsView(ObjectBodyAPIView):
 
 class CopilotModelsRefreshView(ObjectBodyAPIView):
     def post(self, request):
+        from analysis.ai.provider_credentials import active_provider_credential, decrypt_provider_credential
         from analysis.ai.credentials import CredentialUnavailable, active_credential, decrypt_current
         from analysis.ai.openai_copilot import (
             CopilotProviderError, ensure_live_eligible, sdk_model_ids,
@@ -59,6 +85,60 @@ class CopilotModelsRefreshView(ObjectBodyAPIView):
         from analysis.ai.copilot_catalog import discover_models
         from analysis.ai.openai_adapter import ProviderTransientError
         guest = get_or_create_guest(request)
+        preferences, _ = CopilotSettings.objects.get_or_create(guest_context=guest)
+        if preferences.provider == 'gapgpt':
+            credential = active_provider_credential(guest.id, 'gapgpt')
+            if credential is None:
+                return error('CREDENTIAL_UNVALIDATED', 'ابتدا کلید GapGPT را ذخیره کنید.', 409)
+            from analysis.ai.openai_copilot import CopilotProviderError
+            from analysis.ai.provider_readiness import ensure_provider_live_eligible
+            try:
+                ensure_provider_live_eligible('gapgpt')
+            except CopilotProviderError as exc:
+                return error(str(exc), 'اعتبارسنجی GapGPT یک فراخوانی مولد کم‌حجم است و مجوز هزینهٔ Phase 12 کامل نیست.', 409)
+            # GapGPT documents no free model-list/auth probe. This explicit action therefore makes one
+            # bounded, ledger-accounted generation through the same adapter and exact selected model.
+            import uuid
+            from analysis.ai.gapgpt_copilot import GapGPTCopilotGenerator, sdk_chat_events
+            context = {
+                'current_message': 'اعتبارسنجی صریح اتصال؛ فقط یک پرسش کوتاه و طبیعی بپرس.',
+                'brief': {}, 'history': {'items': [], 'omitted_count': 0, 'truncated': False},
+                'choice': None, 'confirmed_memory': [], 'uploads': [],
+            }
+            adapter = GapGPTCopilotGenerator(
+                guest_id=guest.id, operation_id=uuid.uuid4(), model=preferences.model,
+                transport=sdk_chat_events,
+                credential=lambda: decrypt_provider_credential(guest.id, 'gapgpt', credential.revision),
+                still_current=lambda: bool(
+                    (current := active_provider_credential(guest.id, 'gapgpt')) is not None
+                    and current.revision == credential.revision),
+                operation_cap=settings.COPILOT_OPERATION_CAP_MICROUSD,
+                session_cap=settings.COPILOT_SESSION_CAP_MICROUSD,
+                daily_cap=settings.COPILOT_DAILY_CAP_MICROUSD, context=context,
+            )
+            try:
+                list(adapter.generate())
+            except CredentialUnavailable:
+                return error('CREDENTIAL_UNAVAILABLE', 'کلید ذخیره‌شده قابل استفاده نیست.', 409)
+            except CopilotProviderError as exc:
+                code = str(exc)
+                if code in {'PROVIDER_REJECTED', 'MALFORMED_OUTPUT', 'TRANSIENT_EXHAUSTED', 'PROVIDER_FAILED'}:
+                    type(credential).objects.filter(id=credential.id, revision=credential.revision).update(
+                        state='VALIDATION_FAILED')
+                if code not in {'BUDGET_REJECTED', 'SESSION_COST_LIMIT', 'OPERATION_COST_LIMIT',
+                                'STALE_OPERATION', 'PROVIDER_REJECTED', 'MALFORMED_OUTPUT',
+                                'TRANSIENT_EXHAUSTED', 'PROVIDER_FAILED'}:
+                    code = 'PROVIDER_REJECTED'
+                return error(code, 'اعتبارسنجی صریح اتصال موفق نبود.', 409)
+            updated = type(credential).objects.filter(
+                id=credential.id, revision=credential.revision, state='STORED_UNVALIDATED').update(state='VALIDATED')
+            if updated != 1:
+                return error('STALE_CREDENTIAL', 'کلید در زمان اعتبارسنجی تغییر کرد.', 409)
+            from analysis.ai.provider_catalog import catalog_for
+            catalog = deepcopy(catalog_for('gapgpt', preferences.model))
+            catalog['source'] = 'EXPLICIT_BILLABLE_VALIDATION'
+            catalog['saved_status'] = 'AVAILABLE'
+            return Response(catalog)
         try:
             ensure_live_eligible()
         except CopilotProviderError:
@@ -74,7 +154,6 @@ class CopilotModelsRefreshView(ObjectBodyAPIView):
             return error('PROVIDER_UNAVAILABLE', 'بازیابی فهرست حساب موقتاً ممکن نیست.', 503)
         except CopilotProviderError:
             return error('PROVIDER_REJECTED', 'ارائه‌دهنده درخواست فهرست حساب را نپذیرفت.', 409)
-        preferences, _ = CopilotSettings.objects.get_or_create(guest_context=guest)
         response = Response(discover_models(account_ids, saved_model=preferences.model))
         response['Cache-Control'] = 'private, no-store'
         return response

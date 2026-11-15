@@ -6,6 +6,16 @@
 
 Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A conversation/brief، upload و streaming fixture را پیاده کرده و Milestone B pipeline کنترل‌شده را متصل کرده است. Phase 9.2 فقط Torob و direct merchantهای محدود را از همان pipeline فعال، offer normalization/dedup را اضافه و یک offer panel حداقلی در Choice Desk نشان می‌دهد؛ ranking محصول، memory و provider همچنان milestoneهای بعدی‌اند.
 
+## Phase 12 execution boundary
+
+Product-lead authorization removes OpenAI exclusivity without weakening eligibility or evidence gates. The selected
+adapter is the fixed GapGPT Chat Completions streaming path for `gapgpt-deepseek-v4.1-flash`; AvalAI is documented as
+a non-automatic fallback only. Existing OpenAI ciphertext remains in its current table. A new minimal provider-bound
+credential record serves GapGPT, and settings pin provider/model. No registry, arbitrary base URL, self-hosted runtime,
+purchase or live call is introduced. The provider emits bounded JSON text because exact-model JSON Schema/tool support
+is undocumented; server validation/rendering remains authoritative. Natural acknowledgement/one next question may be
+model-authored only inside a narrow non-factual contract; factual blocks still require validated application evidence.
+
 ## Phase 9.3 corrective boundary
 
 Only T067–T070 are authorized. Diagnose an existing reviewed URL before attributing failure to address selection.
@@ -62,7 +72,7 @@ disclosure occupy the main workspace, with merchant offers nested under their ex
 **Target Platform**: یک Linux server کوچک با Docker Compose و same-origin HTTPS  
 **Project Type**: web application / modular monolith  
 **Performance Goals**: acknowledgement محلی message زیر 500ms p95 در rehearsal؛ first fixture stream event زیر 2s؛ ranking بیست گزینه زیر 100ms  
-**Constraints**: کاربران/backend ایران؛ OpenAI direct live blocked؛ bounded research؛ بدون queue/Redis/WebSocket پیش‌فرض؛ secrets فقط backend  
+**Constraints**: کاربران/backend ایران؛ direct OpenAI live blocked؛ GapGPT live requires independent credential/spend gate؛ bounded research؛ بدون queue/Redis/WebSocket پیش‌فرض؛ secrets فقط backend  
 **Scale/Scope**: pilot کم‌حجم، سه category fixture، یک محصول موردنظر و حداکثر سه محصول جایگزین در Choice Desk؛ merchant offerها جدا و limits source/job صریح
 
 ## Constitution Check
@@ -78,7 +88,7 @@ disclosure occupy the main workspace, with merchant offers nested under their ex
 | Low-cost deployment | topology موجود؛ SSE؛ bounded jobs؛ no new service | PASS |
 | Verification | fixtures، contract، cancellation، ownership، source failure و browser journeys | PASS |
 
-Post-design re-check: service مستقل و dependency speculative اضافه نمی‌شود. OpenAI region و source permission gateهای بازند، نه فرض پنهان.
+Post-design re-check: service مستقل و dependency speculative اضافه نمی‌شود. GapGPT credential/spend validation، OpenAI region و source permission gateهای بازند، نه فرض پنهان.
 
 ## Architecture and Boundaries
 
@@ -90,7 +100,8 @@ NGINX web ── /api/ ──> Django/DRF
                          ├─ conversation + brief
                          ├─ bounded research coordinator
                          ├─ deterministic ranking/evidence publisher
-                         ├─ OpenAI Responses adapter (disabled by region default)
+                         ├─ GapGPT Chat Completions adapter (live gated)
+                         ├─ optional OpenAI Responses adapter (region blocked)
                          └─ PostgreSQL
 ```
 
@@ -179,7 +190,8 @@ tests/e2e/copilot-milestone-a.spec.ts
 
 1. هر source فقط پس از policy review و extraction fixture وارد allowlist می‌شود.
    Phase 9.2 narrow pilot برای `/p/` ترب و exact product pathهای direct merchant با pace حداقل 2s، freshness 6h، raw 24h و attribution مجاز است؛ این تصمیم blanket license یا full-market coverage نیست.
-2. OpenAI برای ایران تا پشتیبانی رسمی/قابل اتکا fail closed است؛ user key bypass نیست. Milestone A هیچ provider call ندارد.
+2. GapGPT selected path تا credential validated و مجوز هزینه fail closed است؛ direct OpenAI برای ایران region-blocked
+   باقی می‌ماند. user key هیچ gate را bypass نمی‌کند و هیچ provider fallback خودکاری وجود ندارد.
 3. retention Milestone A و raw/evidence Milestone B مصوب است؛ retention مربوط به memory/credential، backup-erasure operations، encryption-key operations و target host پیش از pilot بسته می‌شوند.
 4. هیچ milestone این feature، `T039` feature 001 را کامل نمی‌کند.
 

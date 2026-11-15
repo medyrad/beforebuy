@@ -13,7 +13,7 @@ class RenderedAnswer:
     supported_blocks: int
 
 
-def validate_and_render(plan, context):
+def validate_and_render(plan, context, *, allow_empty=False):
     _validate_shape(plan)
     if plan['clarification_key'] != 'none':
         question = _clarification(plan['clarification_key'], context.get('brief') or {})
@@ -26,11 +26,73 @@ def validate_and_render(plan, context):
         rendered = _render_block(block, candidate)
         if rendered:
             chunks.append(rendered)
+    if not chunks and allow_empty:
+        return RenderedAnswer('', (), 0)
     if not chunks:
         limited = 'برای این بخش از پاسخ، شاهد کافی و معتبر در مقایسهٔ فعلی ندارم.'
         return RenderedAnswer(limited, (limited,), 0)
     final = ' '.join(chunks)
     return RenderedAnswer(final, tuple(chunks), len(chunks))
+
+
+def validate_conversational_plan(payload, context):
+    """Allow natural needs dialogue while keeping every factual block server-owned."""
+    import re
+    if not isinstance(payload, dict) or set(payload) != {'conversation', 'answer_plan'}:
+        raise AnswerPlanError('MALFORMED_PLAN')
+    conversation = payload['conversation']
+    if not isinstance(conversation, dict) or set(conversation) != {
+        'acknowledgement', 'next_question', 'brief_proposal'
+    }:
+        raise AnswerPlanError('MALFORMED_PLAN')
+    acknowledgement = conversation['acknowledgement']
+    question = conversation['next_question']
+    proposal = conversation['brief_proposal']
+    if not isinstance(acknowledgement, str) or not 1 <= len(acknowledgement.strip()) <= 300:
+        raise AnswerPlanError('MALFORMED_PLAN')
+    if question is not None and (not isinstance(question, str) or not 1 <= len(question.strip()) <= 220
+                                 or not question.rstrip().endswith(('؟', '?'))):
+        raise AnswerPlanError('MALFORMED_PLAN')
+    texts = [acknowledgement] + ([] if question is None else [question])
+    source_text = ' '.join([context.get('current_message', '')] + [
+        item.get('text', '') for item in (context.get('history') or {}).get('items', []) if isinstance(item, dict)
+    ])
+    source_digits = set(re.findall(r'\d+', _ascii_digits(source_text)))
+    forbidden = ('http://', 'https://', 'قیمت امروز', 'قیمت فعلی', 'موجود است', 'ناموجود است', 'تومان', 'ریال', 'دلار')
+    for text in texts:
+        normalized = _ascii_digits(text)
+        if any(value in text for value in forbidden):
+            raise AnswerPlanError('UNSUPPORTED_CONVERSATION_CLAIM')
+        if any(value not in source_digits for value in re.findall(r'\d+', normalized)):
+            raise AnswerPlanError('UNSUPPORTED_CONVERSATION_CLAIM')
+    factual = validate_and_render(payload['answer_plan'], context, allow_empty=True)
+    chunks = [acknowledgement.strip()]
+    if proposal:
+        from rest_framework.exceptions import ValidationError
+        from analysis.conversation.brief import validate_brief_changes
+        try:
+            clean = validate_brief_changes(proposal)
+        except ValidationError:
+            raise AnswerPlanError('MALFORMED_PLAN') from None
+        labels = {
+            'recipient_context': 'مخاطب', 'category': 'دسته', 'selected_product_label': 'محصول',
+            'budget_toman': 'بودجه', 'use_cases': 'کاربردها', 'hard_constraints': 'الزام‌ها',
+        }
+        values = []
+        for key, value in clean.items():
+            if key not in labels:
+                raise AnswerPlanError('MALFORMED_PLAN')
+            shown = '، '.join(value) if isinstance(value, list) else str(value)
+            values.append(f'{labels[key]}: {shown}')
+        chunks.append('پیشنهاد برای تأیید brief: ' + '؛ '.join(values) + '. این تغییر هنوز اعمال نشده است.')
+    chunks.extend(factual.chunks)
+    if question:
+        chunks.append(question.strip())
+    return RenderedAnswer(' '.join(chunks), tuple(chunks), factual.supported_blocks)
+
+
+def _ascii_digits(value):
+    return value.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789'))
 
 
 def safe_lead(context):

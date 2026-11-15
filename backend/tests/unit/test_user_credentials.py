@@ -12,7 +12,10 @@ class CredentialTests(TestCase):
         self.path = '/api/v1/copilot/credential'
 
     def write(self, method, data=None):
-        return getattr(self.client, method)(self.path, data or {}, content_type='application/json', HTTP_X_CSRFTOKEN=self.token)
+        payload = dict(data or {})
+        if method in {'put', 'delete'}:
+            payload['provider'] = 'openai'
+        return getattr(self.client, method)(self.path, payload, content_type='application/json', HTTP_X_CSRFTOKEN=self.token)
 
     def test_non_object_bodies_are_rejected_without_server_error(self):
         self.client.raise_request_exception = False

@@ -313,7 +313,7 @@ def _execute(operation_id):
     try:
         if not claim_operation(operation_id, _worker_identity):
             return
-        from analysis.ai.openai_copilot import configured_copilot_generator
+        from analysis.ai.copilot_factory import configured_copilot_generator
         generator = configured_copilot_generator(operation_id)
         if not _publish(
             operation_id, "operation.started", {"kind": generator.kind},

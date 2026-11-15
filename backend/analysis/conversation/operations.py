@@ -49,12 +49,28 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
     if len(uploads) != len(set(upload_ids)):
         raise OperationConflict("UPLOAD_UNAVAILABLE", "یک یا چند تصویر در دسترس نیست.")
     credential_revision = None
+    credential_provider = None
     from django.conf import settings
     if settings.COPILOT_AI_MODE != 'mock':
-        from analysis.ai.openai_copilot import ensure_live_eligible
-        from analysis.ai.credentials import active_credential
-        ensure_live_eligible()
-        credential = active_credential(guest.id)
+        from analysis.ai.provider_readiness import ensure_provider_live_eligible
+        from analysis.ai.openai_copilot import CopilotProviderError
+        from analysis.models import CopilotSettings
+        preferences, _ = CopilotSettings.objects.get_or_create(guest_context=guest)
+        credential_provider = preferences.provider
+        try:
+            ensure_provider_live_eligible(credential_provider)
+        except CopilotProviderError as exc:
+            code = str(exc)
+            if code not in {'REGION_BLOCKED', 'SPENDING_AUTHORIZATION_REQUIRED', 'CONFIGURATION_MISSING',
+                            'PROVIDER_UNAVAILABLE'}:
+                code = 'PROVIDER_UNAVAILABLE'
+            raise OperationConflict(code, 'فعال‌سازی اتصال زنده کامل نشده است.') from None
+        if credential_provider == 'gapgpt':
+            from analysis.ai.provider_credentials import active_provider_credential
+            credential = active_provider_credential(guest.id, credential_provider)
+        else:
+            from analysis.ai.credentials import active_credential
+            credential = active_credential(guest.id)
         if credential is None or credential.state != 'VALIDATED':
             raise OperationConflict('CREDENTIAL_UNVALIDATED', 'اتصال تأیید نشده است.')
         credential_revision = credential.revision
@@ -67,6 +83,7 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
         request_hash=request_hash,
         expected_brief_revision=expected_revision,
         credential_revision=credential_revision,
+        credential_provider=credential_provider,
     )
     expiry = now + timedelta(days=90)
     conversation.last_eligible_activity_at = now

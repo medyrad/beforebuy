@@ -71,11 +71,14 @@ def save_credential(guest, plaintext):
 
 
 def invalidate_credential_operations(guest_id):
+    from django.db.models import Q
     from analysis.models import StreamOperation
     from analysis.conversation.streaming import cancel_operation
     # Guest already locked by caller; cancel uses Conversation -> Operation locks.
     ids = StreamOperation.objects.filter(conversation__guest_context_id=guest_id,
-        credential_revision__isnull=False, status__in=['PENDING', 'RUNNING']).order_by('conversation_id', 'id').values_list('id', flat=True)
+        credential_revision__isnull=False, status__in=['PENDING', 'RUNNING']).filter(
+            Q(credential_provider='openai') | Q(credential_provider__isnull=True)
+        ).order_by('conversation_id', 'id').values_list('id', flat=True)
     for operation_id in list(ids):
         cancel_operation(operation_id)
 

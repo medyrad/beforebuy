@@ -436,6 +436,30 @@ reuse; delete/clear removes active rows. Source conversation deletion cascades d
 preferences become independent destination brief data with an application receipt. Export is owner-scoped memory
 only, not the broader T050 export. Existing expiry command removes expired records; public scheduler remains a gate.
 
+## Phase 12 — GapGPT operational boundary
+
+Migration `0016` adds provider/model selection, a provider-bound encrypted credential row and the provider pinned to
+each live operation. Existing `UserCredential` ciphertext is not copied, reinterpreted or deleted. Default execution
+remains `COPILOT_AI_MODE=mock`; default research remains `OFFLINE`. The selected exact model uses only fixed
+`https://api.gapgpt.app/v1/chat/completions`; Responses, JSON Schema, tools and image input are not claimed.
+
+Local encrypted storage continues to use `compose.copilot-secrets.yaml`. Enter a GapGPT key only in the same-origin
+settings UI. GET/PUT/DELETE settings and credentials are zero-call. The explicit model-check action is the only
+validation action; after a newly approved spending envelope it makes one bounded generation and records it in the AI
+ledger. Success validates only that provider/key/model revision. Key replacement/deletion invalidates queued/running
+dependent work; a transmitted request cannot be recalled.
+
+All of these are required before that action or live messages: `COPILOT_PHASE12_SPENDING_AUTHORIZED=1`, a positive
+dated `COPILOT_USD_TO_TOMAN_RATE`, positive `COPILOT_PHASE12_TOTAL_CAP_TOMAN`, positive operation/session/daily
+micro-USD caps and non-negative `COPILOT_EXCHANGE_MARGIN_RATIO`. The 50,000-toman envelope in provider readiness is
+only proposed. The authorization ledger accounts validation plus generation plus retries and reserves unknown-usage
+attempts conservatively. Do not reuse the historical 100,000-toman AvalAI evaluation authorization.
+
+Production Compose maps these non-secrets explicitly and keeps all defaults zero/off. The provider key is guest-owned
+encrypted database data and the master remains the existing file secret; neither belongs in Compose interpolation,
+images, Git or frontend bundles. No Phase 12 provider call, token use, invoice, Persian-quality or latency measurement
+exists yet.
+
 ## Phase 11 storage recovery and migration evidence
 
 After space recovery, Docker `_ping` returned OK with 7.0 GiB free. Existing `beforebuy-db-1` was started, not

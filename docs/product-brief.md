@@ -12,8 +12,9 @@ Beforebuy اکنون به‌عنوان دستیار شخصی خرید چنددس
 - Choice Desk ranking، total payable cost، hard constraint، tradeoff، evidence coverage و unknown را کنار هم نشان
   می‌دهد. arithmetic/filter/rank قطعی از rule نسخه‌دار است و LLM authoritative نیست.
 - memory فقط opt-in است؛ preference صریح، inferred candidate و self/gift/household context جدا می‌مانند.
-- runtime جدید direct OpenAI Responses و user-owned API key را هدف می‌گیرد، اما key eligibility یا region support
-  را ثابت نمی‌کند. با کاربران/backend ایران activation تا پشتیبانی رسمی blocked است.
+- runtime جدید provider/model صریح و eligible برای کاربران/backend ایران را هدف می‌گیرد. Phase 12 انحصار OpenAI را
+  لغو و GapGPT با مدل میزبانی‌شدهٔ `gapgpt-deepseek-v4.1-flash` را مسیر منتخب مشروط کرده است؛ direct OpenAI فقط
+  جایی اختیاری است که region رسمی پشتیبانی شود. key به‌تنهایی eligibility، validation یا مجوز هزینه نیست.
 - research bounded است؛ bypass، crawl انبوه، checkout، affiliate optimization و price alert خارج scope هستند.
 - معماری React + Vite، Django/DRF، PostgreSQL، same-origin، Compose و تک‌سرور حفظ می‌شود.
 

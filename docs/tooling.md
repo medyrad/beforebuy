@@ -23,6 +23,15 @@ performance عمومی نیست. dependency برنامه‌ای نصب نشد.
 
 ## Inventory
 
+Phase 12 adds no package or infrastructure. It reuses the locked OpenAI Python SDK only as the client for GapGPT's
+documented OpenAI-compatible Chat Completions endpoint; this does not imply Responses compatibility or upstream
+eligibility. Official GapGPT model/pricing/terms and AvalAI quickstart/service-tier documents were checked on
+2026-11-15. Endpoint/model/tariff are provider claims; Persian quality and latency remain unmeasured.
+
+| Need | Selected tool/skill | Alternatives | Evidence | Version | Install phase | Verification | Reason for deferral |
+|---|---|---|---|---|---|---|---|
+| Iran conversational runtime | GapGPT Chat Completions + `purchase-ai-analysis` seam | AvalAI hosted gateway; self-hosted open-weight model | Exact Iran-hosted model/streaming/API terms and tariff documented; no JSON Schema claim | `gapgpt-deepseek-v4.1-flash`, docs checked 2026-11-15; existing SDK 3.49.0 | Phase 12, no install | fixed-endpoint stub tests; live pending | credential, explicit spend cap, validation and human evaluation required |
+
 Phase 11 addition: project runtime now pins `cryptography==50.0.2` with `cffi==2.1.1` and `pycparser==3.12` in
 `uv.lock`. Official [Fernet/MultiFernet documentation](https://cryptography.io/en/50.0.2/fernet/) and package metadata
 were reviewed for Python 3.12 compatibility and Apache-2.0 OR BSD-3-Clause licensing. [PyNaCl SecretBox](https://pynacl.readthedocs.io/en/latest/secret/)

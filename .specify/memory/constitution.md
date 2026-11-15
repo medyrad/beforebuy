@@ -81,8 +81,10 @@ MUST با همان وضعیت واقعی گزارش شوند.
   کاربر بیاید؛ نبود source یا variant match MUST به‌عنوان unknown گزارش شود.
 - React + TypeScript + Vite، Django + DRF، PostgreSQL، Docker Compose، same-origin و single-server modular monolith
   direction تاییدشده باقی می‌مانند. fixture development از real integration جدا است.
-- runtime AI feature جدید direct OpenAI-only است؛ user-owned key مجوز eligibility، هزینه یا region support نیست و
-  fallback پنهان به provider دیگر ممنوع است. ChatGPT subscription و API billing MUST جدا توضیح داده شوند.
+- runtime AI MAY از یک provider/model صریح و مستند که eligibility کاربران و deployment ایران را برآورده می‌کند
+  استفاده کند؛ OpenAI فقط در region پشتیبانی‌شده اختیاری می‌ماند. provider/model MUST بدون routing یا fallback پنهان
+  انتخاب شود و credential هر provider association جدا داشته باشد. OpenAI-compatible بودن به‌تنهایی eligibility،
+  Responses compatibility یا upstream authorization را ثابت نمی‌کند؛ subscription و API billing MUST جدا توضیح داده شوند.
 - guest-first MAY باقی بماند، اما browser loss، نبود cross-device recovery، credential ownership و retention متفاوت
   conversation/preference/credential/research-cache/accounting MUST صریح باشند؛ account اجباری بدون تصمیم تازه مجاز نیست.
 
@@ -114,4 +116,4 @@ MINOR، و شفاف‌سازی غیرمعنایی PATCH است. هر plan و rev
 دلیل، scope، ریسک و مسیر بازگشت ثبت‌شده مجاز است. `AGENTS.md` قواعد اجرایی و `docs/decisions.md` وضعیت تصمیم‌های محصول
 را نگه می‌دارند؛ هیچ‌کدام جای این constitution را نمی‌گیرند.
 
-**Version**: 2.0.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-15
+**Version**: 3.0.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-15

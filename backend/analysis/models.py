@@ -208,7 +208,8 @@ class Conversation(models.Model):
 class CopilotSettings(models.Model):
     guest_context = models.OneToOneField(GuestContext, primary_key=True, on_delete=models.CASCADE)
     memory_enabled = models.BooleanField(default=False)
-    model = models.CharField(max_length=64, default="gpt-6-luna")
+    provider = models.CharField(max_length=32, default="gapgpt")
+    model = models.CharField(max_length=64, default="gapgpt-deepseek-v4.1-flash")
     revision = models.PositiveIntegerField(default=0)
 
 
@@ -220,6 +221,24 @@ class UserCredential(models.Model):
     state = models.CharField(max_length=32, default="STORED_UNVALIDATED")
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField(db_index=True)
+
+
+class ProviderCredential(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    guest_context = models.ForeignKey(GuestContext, on_delete=models.CASCADE, related_name="provider_credentials")
+    provider = models.CharField(max_length=32)
+    ciphertext = models.TextField()
+    wrapped_key = models.TextField()
+    revision = models.UUIDField(default=uuid.uuid4, editable=False)
+    state = models.CharField(max_length=32, default="STORED_UNVALIDATED")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["guest_context", "provider"], name="copilot_provider_credential_unique"),
+            models.CheckConstraint(condition=models.Q(provider__in=["gapgpt"]), name="copilot_provider_credential_supported"),
+        ]
 
 
 class PreferenceMemory(models.Model):
@@ -295,6 +314,7 @@ class Message(models.Model):
 class StreamOperation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     credential_revision = models.UUIDField(null=True, editable=False)
+    credential_provider = models.CharField(max_length=32, null=True, editable=False)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="operations")
     user_message = models.OneToOneField(
         Message, null=True, on_delete=models.CASCADE, related_name="stream_operation"

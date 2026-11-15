@@ -192,7 +192,7 @@ def _manifest(operation, preferences, latest, brief, choice, memory, uploads):
         'operation_id': str(operation.id),
         'latest_user_message_id': str(latest.id) if latest else None,
         'brief': {'revision': brief.revision, 'generation_epoch': operation.conversation.generation_epoch},
-        'settings': {'revision': preferences.revision, 'model': preferences.model},
+        'settings': {'revision': preferences.revision, 'provider': preferences.provider, 'model': preferences.model},
         'choice': None if choice is None else {
             'id': str(choice.id), 'brief_revision': choice.brief_revision,
             'generation_epoch': choice.generation_epoch,

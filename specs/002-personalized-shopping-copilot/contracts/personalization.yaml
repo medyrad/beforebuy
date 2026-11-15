@@ -3,7 +3,7 @@
 settings:
   get:
     responses:
-      '200': {description: 'memory_enabled, model, revision, mode (DEMONSTRATION/BLOCKED), connection BLOCKED, catalog with account-unverified metadata'}
+      '200': {description: 'memory_enabled, explicit provider/model, revision, mode, connection state and provider-specific catalog metadata'}
   patch:
     requestBody:
       required: true
@@ -15,6 +15,7 @@ settings:
             properties:
               expected_revision: {type: integer, minimum: 0}
               memory_enabled: {type: boolean}
+              provider: {type: string, enum: [gapgpt, openai], description: Explicit provider; never an arbitrary base URL}
               model: {type: string, description: Exact documentation allowlist ID; never validates account}
     responses:
       '200': {description: Updated settings; revision incremented}
@@ -23,18 +24,18 @@ settings:
       '422': {description: Invalid value or MODEL_UNAVAILABLE}
 modelsRefresh:
   post:
-    description: Explicit future account-model refresh; saving/opening settings never invokes it. Region and validated credential gates run before transport.
+    description: Explicit provider validation/discovery action; saving/opening settings never invokes it. Provider eligibility, validated credential and spending gates run before billable generation.
     requestBody:
       content: {application/json: {schema: {type: object, additionalProperties: false}}}
     responses:
       '200': {description: Account IDs intersected with documented capability/pricing catalog; selected model may be UNAVAILABLE}
       '403': {description: CSRF rejected}
-      '409': {description: REGION_BLOCKED or CREDENTIAL_UNVALIDATED; no provider call}
+      '409': {description: REGION_BLOCKED, SPENDING_AUTHORIZATION_REQUIRED, budget rejection or CREDENTIAL_UNVALIDATED; no unaccounted generation}
       '503': {description: Safe PROVIDER_UNAVAILABLE without raw provider error}
 credential:
   get:
     responses:
-      '200': {description: 'Private no-store; state, fixed masked indicator, revision, expires_at, encryption_available, validation UNAVAILABLE_BLOCKED. Never plaintext.'}
+      '200': {description: 'Private no-store; explicit provider, state, fixed masked indicator, revision, expires_at, encryption_available and validation state. Never plaintext.'}
   put:
     requestBody:
       required: true
@@ -42,8 +43,9 @@ credential:
         application/json:
           schema:
             type: object
-            required: [key]
+            required: [provider, key]
             properties:
+              provider: {type: string, enum: [gapgpt, openai]}
               key: {type: string, minLength: 16, maxLength: 512, writeOnly: true, description: ASCII without whitespace; saving makes no external request}
               expected_revision: {type: [string, 'null'], format: uuid, description: Current revision or null for unconfigured state}
     responses:

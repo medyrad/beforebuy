@@ -4,6 +4,17 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 # Tasks: دستیار شخصی خرید
 
+## Phase 12 — provider-neutral real conversational path
+
+- [x] T078 [D] Record product-lead supersession of OpenAI exclusivity; compare at most GapGPT/AvalAI from official sources and freeze selected/fallback evidence, tariff, protocol and unresolved gates.
+- [x] T079 [P] [US5] Write failing migration/credential/API tests for explicit provider association, preserved OpenAI ciphertext, independent GapGPT credential lifecycle and zero-call save/read/settings.
+- [x] T080 [US5] Add the minimal additive provider/settings/credential migration and backend APIs; no arbitrary base URL or credential reinterpretation.
+- [x] T081 [P] [US4] Write failing GapGPT Chat Completions streaming adapter tests for fixed endpoint/model, bounded JSON plan, natural Persian acknowledgement/question, usage/missing-usage accounting, timeout/retry/cancel/error and unsupported facts.
+- [x] T082 [US4] Implement the selected GapGPT adapter behind the existing context/worker/SSE/budget seam; retain OpenAI as region-blocked optional and preserve deterministic evidence publication.
+- [x] T083 [P] [US5] Write failing React settings tests for provider discovery, separate credential states, no implicit validation/call and exact local configuration/help copy.
+- [x] T084 [US5] Implement the Persian settings/provider UI and conversational copy without a technical-brief prerequisite or secret exposure.
+- [x] T085 [US4] Run Spec Kit analyze, focused/full backend/frontend/browser verification, document the exact live credential/budget gate and synthetic evaluation scenarios, archive handoff, then commit/push related files only; keep T066, feature001 T039 and public release open.
+
 ## Phase 9.3 — authorized corrective scope
 
 - [X] T067 [B] Diagnose one reviewed exact URL across host, API container, SafeFetcher and API; record stages/proxy presence under 30 outbound attempts; no bypass or new infrastructure.

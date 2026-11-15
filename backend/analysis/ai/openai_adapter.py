@@ -229,7 +229,7 @@ class LiveBudgetLedger:
         day_start = datetime.combine(day, datetime_time.min, tzinfo=datetime_timezone.utc)
         with transaction.atomic():
             session = None
-            if self.provider == 'openai-copilot':
+            if self.provider.startswith(('openai-copilot', 'gapgpt-copilot')):
                 session = GuestContext.objects.select_for_update().get(id=guest_id)
                 if (type(session_cap_microusd) is not int or session_cap_microusd <= 0
                         or session.access_expires_at <= now):
@@ -293,7 +293,7 @@ class LiveBudgetLedger:
             # Same lock order as reservation: Guest -> daily window -> invocation.
             snapshot = AIInvocation.objects.get(id=invocation_id)
             session = None
-            if snapshot.provider == 'openai-copilot' and snapshot.guest_context_id is not None:
+            if snapshot.provider.startswith(('openai-copilot', 'gapgpt-copilot')) and snapshot.guest_context_id is not None:
                 session = GuestContext.objects.select_for_update().filter(id=snapshot.guest_context_id).first()
             window = AILiveBudgetWindow.objects.select_for_update().get(day=day)
             invocation = AIInvocation.objects.select_for_update().get(id=invocation_id)

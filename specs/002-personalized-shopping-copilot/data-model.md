@@ -15,6 +15,10 @@ does not renew it. These settings are provisional development policy requiring p
 30 days from save/replace, capped by owner access). No plaintext or key suffix is stored/returned. Master keyring is a
 runtime file outside DB/Git/images. Saving sets STORED_UNVALIDATED; no authorized validation exists in this phase.
 
+Phase 12 preserves `UserCredential` as the historical direct-OpenAI association and adds a separate
+`ProviderCredential` row keyed by `(guest_context, provider)` for the selected GapGPT path. `CopilotSettings.provider`
+pins the provider independently from its exact model. No migration copies or decrypts historical ciphertext.
+
 `StreamOperation.credential_revision` snapshots the accepted key version. Replace/delete cancels dependent queued
 and running operations; callbacks and final publication reject stale/expired credentials. Requests already sent
 cannot be recalled. Memory application stores an independent action receipt, not a pointer to deletable memory.
@@ -41,6 +45,7 @@ Product 1─* Variant 1─* Offer
 Conversation 1─* ChoiceSet (immutable result items embedded as JSON)
 GuestContext 1─* PreferenceMemory
 GuestContext 1─0..1 UserCredential
+GuestContext 1─* ProviderCredential (unique provider per owner)
 Conversation 1─* StreamOperation 1─* StreamEvent
 ```
 
@@ -54,6 +59,7 @@ Conversation 1─* StreamOperation 1─* StreamEvent
 - **ChoiceSet**: migration 0010؛ owner از Conversation، pinned brief_revision/generation_epoch/rule_version، immutable result JSON شامل item/check/evidence/coverage/unknown/offer، snapshot_ids و evidence_valid_until. جدول ChoiceItem تکراری ساخته نمی‌شود. همراه conversation حذف/منقضی می‌شود؛ read/compare/demo retention را تمدید نمی‌کنند. `ShoppingBrief.comparison` فقط ترجیحات صریح همین گفت‌وگوست، نه memory.
 - **PreferenceMemory**: scope/context/provenance، `CANDIDATE|CONFIRMED|REJECTED`، consent/expiry/delete; only confirmed reusable.
 - **UserCredential**: fixed OPENAI provider، ciphertext/wrapped key/revision/state/timestamps; fixed UI mask (no stored suffix); master key external.
+- **ProviderCredential**: explicit non-OpenAI provider association، ciphertext/wrapped key/revision/state/timestamps؛ same envelope and masking rules، unique `(guest, provider)` and no arbitrary endpoint field.
 - **StreamOperation/Event**: revision/token/kind/status/cancel، idempotency key/request hash، lease owner/expiry و terminal reason؛ eventها sequence یکتا و expiry 24 ساعته دارند. operation/message authoritative تا conversation expiry باقی می‌ماند.
 
 Phase 9.3: `request_count` conservatively includes each connection fallback in the existing request/domain cap.

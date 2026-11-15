@@ -6,9 +6,25 @@
 
 SSE از Django تا browser انتخاب می‌شود؛ command/cancel با REST است. Responses API upstream با `stream=true` semantic event می‌فرستد، اما eventهای provider مستقیماً public contract نیستند و به contract داخلی map می‌شوند. WebSocket فقط با requirement دوطرفهٔ اندازه‌گیری‌شده بررسی می‌شود.
 
-## OpenAI runtime
+## Phase 12 provider supersession
 
-Feature 002 direct OpenAI Responses API only است؛ AvalAI feature 001 fallback نیست. exact model ID در implementation پس از بررسی model catalog، text/image، structured output، streaming، context و price انتخاب می‌شود. در 2026-11-15 ایران در فهرست supported countries OpenAI نیست؛ live calls با users/backend ایران blocked و calls این phase صفر است.
+OpenAI-only بودن با مجوز صریح product lead لغو شد. shortlist فعلی فقط GapGPT و AvalAI است. GapGPT مدل دقیق
+`gapgpt-deepseek-v4.1-flash` را با میزبانی/پردازش در ایران، Chat Completions streaming، API تجاری و تعرفهٔ
+USD 0.15/M input، USD 0.015/M cached input و USD 0.60/M output مستند می‌کند؛ کیفیت فارسی، latency و invoice در این
+workspace هنوز اندازه‌گیری نشده‌اند. JSON Schema/tool calling exact-model مستند نیست، پس contract فقط JSON text محدود
+و validation سخت application است. AvalAI Responses و usage را دقیق‌تر مستند می‌کند، اما authorization/data path
+upstream مدل‌های واسطه‌ای برای ایران حل نشده و fallback خودکار نیست. self-host روی Mac با فضای محدود و بدون مجوز
+زیرساخت practical انتخاب نشد.
+
+منابع رسمی: [GapGPT model](https://aigap.app/platform-v2/docs/models/deepseek-v4-1-flash-iran)،
+[GapGPT pricing](https://aigap.app/platform-v2/pricing?model=gapgpt-deepseek-v4.1-flash)،
+[GapGPT terms/privacy](https://aigap.app/rules)، [AvalAI quickstart](https://docs.avalai.ir/en/quickstart)،
+[AvalAI service tiers](https://docs.avalai.ir/en/service-tiers).
+
+## Historical OpenAI runtime (superseded only for exclusivity)
+
+Phase 7 direct OpenAI Responses API only را تعیین کرده بود؛ Phase 12 فقط این exclusivity را supersede می‌کند. direct
+OpenAI همچنان برای ایران blocked است و AvalAI feature 001 fallback خودکار نیست.
 
 `store=false` application-state را محدود می‌کند ولی abuse-monitoring retention یا ZDR را تضمین نمی‌کند. key user-owned eligibility را ثابت نمی‌کند و ChatGPT subscription از API billing جداست.
 
@@ -50,4 +66,4 @@ DB فقط envelope ciphertext/key version نگه می‌دارد و master key �
 
 ## Rejected complexity
 
-distributed crawler، browser fleet، bypass، Celery/Redis، WebSocket پیش‌فرض، vector DB، agent framework، multi-provider، self-hosted model و model-generated authoritative rank.
+distributed crawler، browser fleet، bypass، Celery/Redis، WebSocket پیش‌فرض، vector DB، agent framework، provider routing، self-hosted model بدون feasibility/infrastructure approval و model-generated authoritative rank.

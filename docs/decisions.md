@@ -1,5 +1,26 @@
 # ثبت تصمیم‌ها
 
+## Phase 12 — provider-neutral authorization and selected Iran path
+
+- Product lead explicitly withdraws the OpenAI-only requirement. This supersedes only exclusivity clauses; the
+  evidence, ownership, privacy, cancellation, stale-publication and cost gates remain authoritative.
+- At most two hosted candidates were reviewed from current first-party material: GapGPT and AvalAI. The selected
+  path is GapGPT `gapgpt-deepseek-v4.1-flash` over documented streaming Chat Completions at the fixed
+  `https://api.gapgpt.app/v1` endpoint. GapGPT states that this model is hosted/processed in Iran and permits
+  commercial API application use. The published tariff is USD 0.15/M input, USD 0.015/M cached input and USD
+  0.60/M output. These are provider claims, not workspace measurements or invoice guarantees.
+- GapGPT documents Persian/API access and streaming, but does not document JSON Schema/tool calling for this exact
+  model. The adapter therefore MUST NOT claim either capability: it requests bounded JSON text, rejects everything
+  outside the server-owned plan contract and reserves worst-case cost when usage is absent.
+- AvalAI remains the fallback recommendation because its Responses, usage and tariff documentation are stronger,
+  but gateway availability does not resolve each upstream model's regional authorization/data path. It is not an
+  automatic fallback and is not activated by Phase 12.
+- Direct OpenAI credentials remain encrypted under their existing record and are never reinterpreted as GapGPT
+  credentials. GapGPT gets a separate provider credential association and explicit provider/model settings.
+- No account creation, purchase, top-up, provider message, live generation or prior budget reuse is authorized.
+  Live validation/evaluation requires a locally configured GapGPT credential, explicit spending authorization and
+  a dated USD→toman rate with margin and hard total cap.
+
 ## Phase 11.1 — contextual assistant closure
 
 - T071–T077 are authorized for bounded contextual assembly, typed answer validation, meaningful safe streaming,

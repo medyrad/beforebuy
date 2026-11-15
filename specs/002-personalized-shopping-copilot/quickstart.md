@@ -1,5 +1,24 @@
 # Quickstart — Milestone A/B/C offline and fixture stack
 
+## Phase 12 — provider-neutral local configuration (no live call by default)
+
+Keep `COPILOT_AI_MODE=mock`, `COPILOT_PHASE12_SPENDING_AUTHORIZED=0` and
+`BEFOREBUY_RESEARCH_MODE=OFFLINE`. Apply migration `0016`, mount the existing master-key overlay only if you need to
+exercise encrypted storage, then open «تنظیمات دستیار». GapGPT and exact model
+`gapgpt-deepseek-v4.1-flash` are selected by default; the historical OpenAI credential remains separate and direct
+OpenAI is still region-blocked. Saving, reading, deleting or switching provider makes zero provider calls.
+
+The explicit «بررسی صریح مدل‌های حساب» button is fail-closed until a new Phase 12 spending authorization, dated
+USD→toman rate, proposed hard total and all micro-USD caps are configured. It is billable after authorization because
+GapGPT documents no free authentication/model-list probe. Never place a provider key in `.env`, Git, Vite variables,
+chat or screenshots. Exact post-approval steps and the 50,000-toman **proposal** are in `provider-readiness.md`; previous
+AvalAI/OpenAI allowances do not count. No live validation or generation was executed in Phase 12 delivery.
+
+Synthetic conversation scenarios remain on the normal `/copilot` UI and accept arbitrary Persian prose. A model plan
+may acknowledge the user, ask one consequential question and propose user-reported brief changes for confirmation;
+it cannot apply those changes, invent price/specification/rank, or publish factual blocks outside current deterministic
+IDs and evidence. Current-market questions remain unknown while research is OFFLINE.
+
 ## Phase 10 — Choice Desk without tokens or public sources
 
 از root، با `.env` محلی موجود و `BEFOREBUY_AI_MODE=mock`، policyهای عمومی غیرفعال بمانند:

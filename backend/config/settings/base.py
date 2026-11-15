@@ -1,5 +1,6 @@
 import os
 from decimal import Decimal
+from decimal import Decimal
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -21,6 +22,10 @@ COPILOT_CONTEXT_TOTAL_BYTES = 49152
 COPILOT_OPERATION_CAP_MICROUSD = int(os.environ.get("COPILOT_OPERATION_CAP_MICROUSD", "0"))
 COPILOT_SESSION_CAP_MICROUSD = int(os.environ.get("COPILOT_SESSION_CAP_MICROUSD", "0"))
 COPILOT_DAILY_CAP_MICROUSD = int(os.environ.get("COPILOT_DAILY_CAP_MICROUSD", "0"))
+COPILOT_PHASE12_SPENDING_AUTHORIZED = os.environ.get("COPILOT_PHASE12_SPENDING_AUTHORIZED", "0") == "1"
+COPILOT_USD_TO_TOMAN_RATE = int(os.environ.get("COPILOT_USD_TO_TOMAN_RATE", "0"))
+COPILOT_PHASE12_TOTAL_CAP_TOMAN = int(os.environ.get("COPILOT_PHASE12_TOTAL_CAP_TOMAN", "0"))
+COPILOT_EXCHANGE_MARGIN_RATIO = Decimal(os.environ.get("COPILOT_EXCHANGE_MARGIN_RATIO", "0.15"))
 BEFOREBUY_AI_MODE = os.environ.get("BEFOREBUY_AI_MODE", "mock")
 # Retained only as a fail-closed legacy direct-OpenAI flag. It is never used to select the Iran live adapter.
 BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED = os.environ.get("BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED", "0") == "1"

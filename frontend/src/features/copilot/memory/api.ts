@@ -3,17 +3,17 @@ import type { Brief } from '../conversation/types'
 export type Criterion = NonNullable<NonNullable<Brief['comparison']>['criteria']>[number]
 export interface Memory { id: string; category: string; criterion: Criterion; state: string; revision: number; expires_at: string }
 export interface ModelCatalog { source: string; saved_status: string; items: { id: string }[] }
-export interface Settings { memory_enabled: boolean; model: string; revision: number; catalog: ModelCatalog }
-export interface Credential { state: string; revision: string | null; encryption_available: boolean; masked: string | null; expires_at: string | null }
+export interface Settings { memory_enabled: boolean; provider: 'gapgpt' | 'openai'; model: string; revision: number; mode: string; connection: string; catalog: ModelCatalog }
+export interface Credential { provider: string; state: string; revision: string | null; encryption_available: boolean; masked: string | null; expires_at: string | null }
 const root = '/api/v1/copilot'
 const write = (method: string, data: unknown) => ({ method, body: JSON.stringify(data) })
 export const memoryApi = {
   settings: () => call<Settings>(`${root}/settings`),
   update: (data: unknown) => call<Settings>(`${root}/settings`, write('PATCH', data)),
   refreshModels: () => call<ModelCatalog>(`${root}/models/refresh`, write('POST', {})),
-  credential: () => call<Credential>(`${root}/credential`),
-  saveKey: (key: string, revision: string | null) => call<Credential>(`${root}/credential`, write('PUT', { key, expected_revision: revision })),
-  deleteKey: (revision: string | null) => call<void>(`${root}/credential`, write('DELETE', { expected_revision: revision })),
+  credential: (provider: string) => call<Credential>(`${root}/credential?provider=${encodeURIComponent(provider)}`),
+  saveKey: (provider: string, key: string, revision: string | null) => call<Credential>(`${root}/credential`, write('PUT', { provider, key, expected_revision: revision })),
+  deleteKey: (provider: string, revision: string | null) => call<void>(`${root}/credential`, write('DELETE', { provider, expected_revision: revision })),
   list: () => call<{ items: Memory[] }>(`${root}/memory`),
   edit: (id: string, data: unknown) => call<Memory>(`${root}/memory/${id}`, write('PATCH', data)),
   remove: (id?: string) => call<void>(`${root}/memory${id ? '/' + id : ''}`, { method: 'DELETE' }),

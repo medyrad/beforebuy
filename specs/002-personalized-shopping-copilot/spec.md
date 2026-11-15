@@ -4,9 +4,9 @@
 
 **Created**: 2026-11-15
 
-**Status**: Phase 11.1 contextual-assistant closure T071–T077 authorized for implementation and stubbed verification only; live AI and public sources remain disabled
+**Status**: Phase 12 provider-neutral conversational path T078–T085 authorized; independent/stubbed work proceeds while live generation remains separately gated
 
-**Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و کلید OpenAI متعلق به کاربر.
+**Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و credential مجزای provider متعلق به کاربر.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -91,7 +91,8 @@
 1. **Given** memory خاموش است، **When** preference در گفت‌وگو بیان می‌شود، **Then** خارج از retention گفت‌وگو به profile منتقل نمی‌شود.
 2. **Given** یک inferred candidate وجود دارد، **When** کاربر آن را تأیید نکرده، **Then** recommendation آینده آن را preference قطعی تلقی نمی‌کند.
 3. **Given** key ذخیره شده، **When** UI یا log نمایش می‌دهد، **Then** plaintext هرگز برنمی‌گردد و replace/delete ممکن است.
-4. **Given** کاربر/backend در ایران است، **When** فقط key وارد شده، **Then** live activation همچنان blocked می‌ماند تا region eligibility مستقل تأیید شود.
+4. **Given** کاربر/backend در ایران است، **When** فقط key وارد شده، **Then** live activation تا eligibility مستقل provider/model و مجوز هزینه blocked می‌ماند.
+5. **Given** کاربر می‌گوید «گوشی من شکسته می‌خواهم آیفون ده بخرم»، **When** provider منتخب و مجاز پاسخ می‌دهد، **Then** دستیار گفتهٔ کاربر را می‌فهمد، یک ابهام consequential را طبیعی می‌پرسد و ادعای قیمت/مشخصات جاری نمی‌سازد.
 
 ### Edge Cases
 
@@ -108,6 +109,26 @@
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
+- **FR-076**: OpenAI exclusivity is withdrawn. Runtime MUST select one explicit documented provider/model without
+  arbitrary base URLs, hidden fallback or provider-routing framework. OpenAI remains optional only where officially
+  eligible. OpenAI-compatible syntax alone MUST NOT establish Responses support, upstream authorization or regional eligibility.
+- **FR-077**: Phase 12 selected path MUST use GapGPT model `gapgpt-deepseek-v4.1-flash` through its documented fixed
+  Chat Completions streaming endpoint. Provider/model identity, endpoint, protocol and tariff MUST be pinned. Since
+  JSON Schema/tool output is not documented for this model, output MUST be bounded JSON text and MUST pass the existing
+  server-owned answer/evidence contract before publication; missing usage consumes the conservative reservation.
+- **FR-078**: Provider credentials MUST have an explicit provider association. Existing encrypted OpenAI credentials
+  MUST remain unchanged and MUST NOT be read as another provider's key. Settings MUST distinguish NOT_CONFIGURED,
+  STORED_UNVALIDATED, VALIDATION_FAILED/BLOCKED and VALIDATED; saving MUST make zero provider calls and authorize no spend.
+- **FR-079**: A live model MAY produce a bounded natural Persian acknowledgement and one useful free-form next question
+  from the current conversation. It MUST distinguish user-reported content, general guidance, validated evidence and
+  unknown/stale facts. Product facts/prices/ranks remain server-owned; unsupported factual content MUST be rejected or omitted.
+- **FR-080**: Conversational understanding MUST consume the bounded context/history and MUST NOT depend on fixed user
+  sentence keys or keyword routing. The assistant MAY propose validated structured brief changes for explicit confirmation;
+  it MUST NOT silently confirm or overwrite the brief. Market unavailability MUST still allow needs clarification with an explicit evidence limitation.
+- **FR-081**: Live validation/evaluation MUST remain blocked until a locally configured credential, provider eligibility
+  evidence, dated USD→toman conversion plus margin and an explicit hard total spending authorization are present. Prior
+  AvalAI/OpenAI budgets or keys MUST NOT be reused. Actual call/retry/token/latency/cost and human quality review are required before `live-verified` wording.
 
 - **FR-069**: Provider context MUST be assembled from the bounded recent conversation, current brief/confirmation/contradictions, current valid ChoiceSet and only its relevant provenance/freshness/unknown/cost fields, current message/eligible images and consented relevant confirmed memory. Temporary conversations MUST exclude memory; current explicit criteria override saved preferences. Raw source text and quoted instructions are untrusted data and MUST NOT control system instructions or ranking.
 - **FR-070**: Context assembly MUST use deterministic byte/item budgets. Critical hard constraints, contradictions and uncertainty MUST NOT be silently truncated; if they or the minimum current comparison cannot fit, generation MUST return an explicit limited response without a provider call. Optional history truncation MUST be oldest-first and visibly represented in the provider payload.
@@ -152,8 +173,8 @@
 - **FR-022**: cancellation MUST cooperative باشد و publication با operation token/revision guard جلوی late/stale result را بگیرد؛ state نهایی از API authoritative است.
 - **FR-023**: preference memory MUST default-off و opt-in باشد؛ explicit preference، inferred candidate و context موقت جدا و review/correct/delete/disable داشته باشند.
 - **FR-024**: conversation، message، upload، research snapshot، memory، credential و cost record MUST purpose، retention، deletion و owner جدا داشته باشند؛ حذف فوری backup فقط در صورت policy اثبات‌شده ادعا شود.
-- **FR-025**: user-owned OpenAI key MUST فقط backend-side، encrypted at rest، masked، replaceable/deletable و از log/frontend/URL/Git/merchant request دور بماند؛ encryption key جدا از database نگه‌داری شود.
-- **FR-026**: runtime AI feature جدید MUST direct OpenAI Responses API only باشد و هیچ fallback پنهان به AvalAI/provider دیگر نداشته باشد.
+- **FR-025**: user-owned provider key MUST فقط backend-side، encrypted at rest، masked، replaceable/deletable، provider-associated و از log/frontend/URL/Git/merchant request دور بماند؛ encryption key جدا از database نگه‌داری شود.
+- **FR-026**: runtime AI feature MUST یک provider/model صریح داشته باشد و هیچ fallback پنهان یا arbitrary base URL نداشته باشد؛ direct OpenAI دیگر انحصاری نیست.
 - **FR-027**: model MUST از allowlist capability catalog انتخاب شود؛ text/image input، structured output، streaming، tool support، context و pricing MUST برای model ID دقیق revalidate شوند و نام model به‌تنهایی capability نیست.
 - **FR-028**: OpenAI request MUST `store=false`، timeout/cancellation، bounded input/output، schema validation، request ID/usage و cost estimate/settlement داشته باشد؛ Responses streaming و eventهای application از هم تفکیک شوند.
 - **FR-029**: user key، credit یا subscription MUST region eligibility را ثابت نکند. با users/backend ایران live OpenAI MUST fail closed بماند تا policy رسمی و شرایط واقعی deployment پشتیبانی را تأیید کند.
@@ -211,7 +232,7 @@
 - **SC-005**: آزمون‌های privacy نشان می‌دهند memory خاموش چیزی persist نمی‌کند و raw API key در response، log، bundle، export یا repository ظاهر نمی‌شود.
 - **SC-006**: journey اصلی در viewportهای mobile/desktop با keyboard قابل تکمیل است، serious/critical accessibility finding صفر دارد و stream قابل توقف است.
 - **SC-007**: هر research job از limits مصوب عبور نمی‌کند و برای timeout/403/429/CAPTCHA/oversize وضعیت صریح ثبت می‌کند.
-- **SC-008**: Compose rehearsal با fixture و بدون OpenAI key بالا می‌آید؛ live mode برای region/config ناقص پیش از call واضح fail closed می‌شود.
+- **SC-008**: Compose rehearsal با fixture و بدون provider key بالا می‌آید؛ live mode برای credential/eligibility/budget ناقص پیش از call واضح fail closed می‌شود.
 
 ## Assumptions
 
@@ -219,14 +240,14 @@
 - سه category نماینده برای قرارداد و fixture عبارت‌اند از electronics، home appliance و sports/fashion؛ این انتخاب coverage بازار را ثابت نمی‌کند.
 - در milestone اولیه sourceهای manufacturer و merchant با policy صریح بر aggregator/reviewهای نامطمئن اولویت دارند.
 - SSE برای downstream server-to-browser کافی فرض شده و فقط با evidence implementation تغییر می‌کند.
-- eligibility مستقیم OpenAI برای users/backend ایران در تاریخ planning تأیید نشده و release blocker است.
+- eligibility مستقیم OpenAI برای users/backend ایران تأیید نشده است؛ GapGPT selected path نیز تا credential محلی، validation واقعی و مجوز هزینه live-verified نیست.
 - retention مصوب Milestone A برای conversation/message/current brief برابر 90 روز پس از eligible action و برای upload/event برابر 24 ساعت است؛ در Milestone B raw research حداکثر 24 ساعت و evidence خصوصی حداکثر تا expiry conversation است. retention memory/credential فقط در milestone مربوط تصمیم‌گیری می‌شود.
 
 ## Out of Scope
 
 - checkout، خرید خودکار، affiliate optimization، price alert و افزایش budget.
 - bypass کردن CAPTCHA/login/paywall/robots/anti-bot یا crawling انبوه.
-- self-hosted model/GPU، provider abstraction چندگانه یا fallback به AvalAI.
+- provision کردن GPU/model بزرگ روی Mac، provider-routing framework یا fallback پنهان. self-hosting فقط با feasibility و infrastructure authorization جدا مجاز است.
 - account اجباری، social/public conversation sharing و cross-device recovery در این feature.
 - تشخیص روان‌شناختی، پیش‌بینی علمی regret و استخراج ویژگی حساس.
 - ranking/Choice Desk کامل، personalized alternatives، memory، credential، live AI و public deployment در Phase 9.2 مجاز نیستند؛ offer panel حداقلی صراحتاً مجاز است.
