@@ -86,18 +86,31 @@ JSON-null empty GET, short-stream test synchronization, scoped RTL/zoom and moda
 
 ## Milestone D — Opt-in memory and OpenAI readiness
 
-- [ ] T032 [P] [US5] Write failing memory consent/candidate/confirmation/context/isolation/delete/export tests in `backend/tests/api/test_preference_memory.py`
-- [ ] T033 [US5] Implement default-off preference memory and review/correct/delete APIs in `backend/analysis/memory/`
-- [ ] T034 [D] Evaluate maintained encryption options against target-host key operations and record license/version/recovery decision in `docs/tooling.md` and `docs/decisions.md`; do not create custom crypto
-- [ ] T035 [P] [US5] Write failing credential write-only, encryption, masking, rotation, deletion, log/redaction and missing-master-key tests in `backend/tests/unit/test_user_credentials.py`
-- [ ] T036 [US5] Implement envelope-encrypted OpenAI credential storage with master key outside DB/image/Git in `backend/analysis/ai/credentials.py`
-- [ ] T037 [P] [US4] Revalidate official model IDs/capabilities/pricing/data policy and freeze an allowlist/schema/cost policy in `specs/002-personalized-shopping-copilot/openai-readiness.md`
-- [ ] T038 [P] [US4] Write stubbed Responses streaming adapter tests for structured output, image input, usage/request ID, timeout/retry/cancel/malformed/error in `backend/tests/unit/test_openai_copilot.py`
-- [ ] T039 [US4] Implement direct OpenAI-only adapter behind existing seam in `backend/analysis/ai/openai_copilot.py`; `store=false`, no AvalAI fallback and no live calls in unsupported region
-- [ ] T040 [US5] Write factory/settings tests proving offline default, missing configuration fail-closed, Iran eligibility blocked despite key and operation/session cost cap in `backend/tests/test_copilot_configuration.py`, then wire non-secret settings
-- [ ] T041 [P] [US5] Add masked key/memory controls and billing-vs-ChatGPT copy tests/UI in `frontend/src/features/copilot/memory/`
+Phase 11 authorizes T032–T041 only, including visible settings/profile navigation, temporary conversations,
+memory-only export, provisional configurable lifecycle, credential revision invalidation, documented catalog
+filtering, existing-ledger operation/session caps, PostgreSQL tests and real NGINX offline browser verification.
+FR-023/024/035/066/067 map to T032–T033/T041; FR-025/065/068 to T034–T036/T040/T041;
+FR-020/022/026–030/068 to T037–T040. Feature 001 T039 and Milestone E remain pending.
+
+- [x] T032 [P] [US5] Write failing memory consent/candidate/confirmation/context/isolation/delete/export tests in `backend/tests/api/test_preference_memory.py`
+- [x] T033 [US5] Implement default-off preference memory and review/correct/delete APIs in `backend/analysis/memory/`
+- [x] T034 [D] Evaluate maintained encryption options against target-host key operations and record license/version/recovery decision in `docs/tooling.md` and `docs/decisions.md`; do not create custom crypto
+- [x] T035 [P] [US5] Write failing credential write-only, encryption, masking, rotation, deletion, log/redaction and missing-master-key tests in `backend/tests/unit/test_user_credentials.py`
+- [x] T036 [US5] Implement envelope-encrypted OpenAI credential storage with master key outside DB/image/Git in `backend/analysis/ai/credentials.py`
+- [x] T037 [P] [US4] Revalidate official model IDs/capabilities/pricing/data policy and freeze an allowlist/schema/cost policy in `specs/002-personalized-shopping-copilot/openai-readiness.md`
+- [x] T038 [P] [US4] Write stubbed Responses streaming adapter tests for structured output, image input, usage/request ID, timeout/retry/cancel/malformed/error in `backend/tests/unit/test_openai_copilot.py`
+- [x] T039 [US4] Implement direct OpenAI-only adapter behind existing seam in `backend/analysis/ai/openai_copilot.py`; `store=false`, no AvalAI fallback and no live calls in unsupported region
+- [x] T040 [US5] Write factory/settings tests proving offline default, missing configuration fail-closed, Iran eligibility blocked despite key and operation/session cost cap in `backend/tests/test_copilot_configuration.py`, then wire non-secret settings
+- [x] T041 [P] [US5] Add masked key/memory controls and billing-vs-ChatGPT copy tests/UI in `frontend/src/features/copilot/memory/`
 
 **Checkpoint D**: stubbed integration only. Live OpenAI remains blocked until official region eligibility and separate spending authorization.
+
+Phase 11 evidence: final PostgreSQL suite 283/283; fresh-schema focused run 22/22; frontend 21/21, lint/typecheck/build;
+real NGINX settings + two-conversation journeys passed at 390 and 1440, including keyboard, 200% zoom and axe.
+Choice Desk regression found a one-pixel RTL skip-link overflow; explicit in-viewport positioning fixed it,
+and both viewport regressions passed without weakening assertions. Frontend tests/lint/build were rerun after CSS changed.
+Earlier browser failures (locator/readiness synchronization and a loaded-run timeout) are retained in the handoff,
+not counted as successes. No provider/source calls; feature001 T039, T042–T048/T050 and T066 remain pending.
 
 ## Milestone E — Operations rehearsal and controlled pilot gates
 

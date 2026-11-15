@@ -9,7 +9,7 @@ from typing import Protocol
 from django.db import transaction
 from django.utils import timezone
 
-from analysis.models import AIEvaluationAuthorization, AILiveBudgetWindow, AIInvocation
+from analysis.models import AIEvaluationAuthorization, AILiveBudgetWindow, AIInvocation, GuestContext
 
 from .contracts import ExplanationClaim, ExplanationRequest, ExplanationResponse
 from .pricing import estimate_request_cost, observed_usage_cost_microusd
@@ -222,11 +222,20 @@ class LiveBudgetLedger:
             microusd, toman_per_usd=self.toman_per_usd, margin_ratio=self.exchange_margin_ratio
         )
 
-    def reserve(self, *, guest_id, operation_id, model, schema_version, reserved_cost_microusd, now=None):
+    def reserve(self, *, guest_id, operation_id, model, schema_version, reserved_cost_microusd, now=None,
+                session_cap_microusd=None):
         now = now or timezone.now()
         day = now.astimezone(datetime_timezone.utc).date()
         day_start = datetime.combine(day, datetime_time.min, tzinfo=datetime_timezone.utc)
         with transaction.atomic():
+            session = None
+            if self.provider == 'openai-copilot':
+                session = GuestContext.objects.select_for_update().get(id=guest_id)
+                if (type(session_cap_microusd) is not int or session_cap_microusd <= 0
+                        or session.access_expires_at <= now):
+                    raise LiveBudgetRejected('session configuration or owner unavailable')
+                if session.copilot_spent_microusd + session.copilot_reserved_microusd + reserved_cost_microusd > session_cap_microusd:
+                    raise LiveBudgetRejected('SESSION_COST_LIMIT')
             window, _ = AILiveBudgetWindow.objects.select_for_update().get_or_create(day=day)
             if window.circuit_open_until and window.circuit_open_until > now:
                 raise LiveBudgetRejected("provider circuit is open")
@@ -269,6 +278,9 @@ class LiveBudgetLedger:
             )
             window.reserved_cost_microusd += reserved_cost_microusd
             window.save(update_fields=["reserved_cost_microusd", "updated_at"])
+            if session is not None:
+                session.copilot_reserved_microusd += reserved_cost_microusd
+                session.save(update_fields=['copilot_reserved_microusd'])
             if authorization:
                 authorization.reserved_toman += evaluation_reserved_toman
                 authorization.save(update_fields=["reserved_toman", "updated_at"])
@@ -278,6 +290,11 @@ class LiveBudgetLedger:
                per_attempt_reserved_microusd=None, usage=None, latency_ms, error_class=None,
                request_id=None, provider_estimated_cost_toman=None):
         with transaction.atomic():
+            # Same lock order as reservation: Guest -> daily window -> invocation.
+            snapshot = AIInvocation.objects.get(id=invocation_id)
+            session = None
+            if snapshot.provider == 'openai-copilot' and snapshot.guest_context_id is not None:
+                session = GuestContext.objects.select_for_update().filter(id=snapshot.guest_context_id).first()
             window = AILiveBudgetWindow.objects.select_for_update().get(day=day)
             invocation = AIInvocation.objects.select_for_update().get(id=invocation_id)
             if invocation.status != "reserved":
@@ -296,6 +313,12 @@ class LiveBudgetLedger:
             )
             unknown_cost = sum(item is None for item in attempt_usages) * allowance
             estimated = known_cost + unknown_cost
+            if session is not None:
+                if session.copilot_reserved_microusd < invocation.reserved_cost_microusd:
+                    raise BudgetStateInconsistent('session reserved cost underflow')
+                session.copilot_reserved_microusd -= invocation.reserved_cost_microusd
+                session.copilot_spent_microusd += estimated
+                session.save(update_fields=['copilot_reserved_microusd', 'copilot_spent_microusd'])
             if window.reserved_cost_microusd < invocation.reserved_cost_microusd:
                 raise BudgetStateInconsistent("deployment reserved cost underflow")
             authorization = None

@@ -9,6 +9,15 @@ ALLOWED_HOSTS = [x for x in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,12
 CSRF_TRUSTED_ORIGINS = [x for x in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(",") if x]
 BEFOREBUY_E2E_TEST_CONTROLS = os.environ.get("BEFOREBUY_E2E_TEST_CONTROLS", "0") == "1"
 BEFOREBUY_RESEARCH_MODE = os.environ.get("BEFOREBUY_RESEARCH_MODE", "OFFLINE")
+# Provisional development lifecycle; public activation needs product review.
+COPILOT_MEMORY_CANDIDATE_DAYS = int(os.environ.get("COPILOT_MEMORY_CANDIDATE_DAYS", "7"))
+COPILOT_MEMORY_CONFIRMED_DAYS = int(os.environ.get("COPILOT_MEMORY_CONFIRMED_DAYS", "90"))
+COPILOT_CREDENTIAL_DAYS = int(os.environ.get("COPILOT_CREDENTIAL_DAYS", "30"))
+COPILOT_MASTER_KEY_FILE = os.environ.get("COPILOT_MASTER_KEY_FILE", "")
+COPILOT_AI_MODE = os.environ.get("COPILOT_AI_MODE", "mock")
+COPILOT_OPERATION_CAP_MICROUSD = int(os.environ.get("COPILOT_OPERATION_CAP_MICROUSD", "0"))
+COPILOT_SESSION_CAP_MICROUSD = int(os.environ.get("COPILOT_SESSION_CAP_MICROUSD", "0"))
+COPILOT_DAILY_CAP_MICROUSD = int(os.environ.get("COPILOT_DAILY_CAP_MICROUSD", "0"))
 BEFOREBUY_AI_MODE = os.environ.get("BEFOREBUY_AI_MODE", "mock")
 # Retained only as a fail-closed legacy direct-OpenAI flag. It is never used to select the Iran live adapter.
 BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED = os.environ.get("BEFOREBUY_AI_SUPPORTED_REGION_CONFIRMED", "0") == "1"

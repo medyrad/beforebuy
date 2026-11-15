@@ -1,5 +1,23 @@
 # ثبت تصمیم‌ها
 
+## Phase 11 — authorized development and provisional lifecycle
+
+- Session spending uses durable guest aggregates in the existing LiveBudgetLedger; purging 90-day invocation
+  metadata or replacing a key does not renew the cap. Accounting money remains micro-USD, not purchase toman.
+- T032–T041 مجازند؛ هیچ provider/source call، deployment یا evaluation پولی مجاز نیست. تنظیمات و حافظه در
+  /copilot قابل دسترسی‌اند؛ legacy route حفظ می‌شود. ذخیرهٔ کلید validation نیست و ایران مستقل از key blocked است.
+- **پیشنهاد موقت توسعه، نیازمند review پیش از public/live activation:** candidate از ایجاد ۷ روز، confirmed از
+  تأیید ۹۰ روز و credential از save/replace سی روز؛ configurable، non-sliding و محدود به عمر دسترسی owner.
+  edit/read تمدید نمی‌کند. حذف/expiry گفت‌وگوی مبدأ همهٔ memory مشتق‌شده را cascade می‌کند.
+- disable حافظه فقط reuse/proposal را متوقف می‌کند؛ delete/clear حذف active rows است، نه erase فوری backup.
+  temporary conversation از ابتدا immutable است و memory نمی‌خواند/نمی‌نویسد. بازیابی cross-browser وجود ندارد.
+- استخراج فقط از criteria ساختاریافتهٔ brief تأییدشده، با action کاربر و وضعیت candidate است؛ NLP یا یادگیری
+  گسترده ادعا نمی‌شود. reuse جداگانه، قابل مشاهده و فقط روی brief تأییدنشده است؛ دستور صریح جاری مقدم است.
+- encryption: pyca cryptography 50.0.2 (Apache-2.0 OR BSD-3-Clause)، Fernet data key تصادفی per record و
+  wrap با MultiFernet master keyring بیرون DB/image/Git. PyNaCl SecretBox گزینهٔ معتبر ولی نیازمند عملیات rotation
+  بیشتر است؛ KMS سرویس اضافی نامتناسب با محیط محلی است. گم‌شدن master بدون نسخهٔ امن یعنی عدم بازیابی کلید؛
+  rotate فقط wrapped data key را تغییر می‌دهد و expiry/credential revision را تمدید نمی‌کند.
+
 ## Phase 9.3 — connectivity and review provenance
 
 - Local-only, no AI token/provider needed. At most 30 outbound attempts; one existing Torob URL first.

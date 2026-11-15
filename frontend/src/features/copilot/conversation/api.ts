@@ -26,7 +26,7 @@ export async function call<T>(path: string, init: RequestInit = {}): Promise<T> 
 export const copilotApi = {
   bootstrap: () => call<{ expires_at: string }>('/api/v1/session'),
   list: () => call<{ items: ConversationSummary[]; next_cursor: string | null }>('/api/v1/conversations?limit=50'),
-  create: () => call<Conversation>('/api/v1/conversations', { method: 'POST', body: '{}' }),
+  create: (temporary = false) => call<Conversation>('/api/v1/conversations', { method: 'POST', body: JSON.stringify({ temporary }) }),
   get: (id: string) => call<Conversation>(`/api/v1/conversations/${id}`),
   remove: (id: string) => call<void>(`/api/v1/conversations/${id}`, { method: 'DELETE' }),
   editBrief: (id: string, expectedRevision: number, changes: Record<string, unknown>) => call<Brief>(`/api/v1/conversations/${id}/brief`, {

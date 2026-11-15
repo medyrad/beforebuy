@@ -51,6 +51,7 @@ def serialize_conversation(conversation, *, detail=False):
         "id": str(conversation.id),
         "status": conversation.status,
         "title": conversation.title,
+        "temporary": conversation.temporary,
         "brief_revision": conversation.brief_revision,
         "created_at": conversation.created_at.isoformat(),
         "updated_at": conversation.updated_at.isoformat(),

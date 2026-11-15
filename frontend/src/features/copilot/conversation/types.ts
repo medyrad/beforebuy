@@ -37,6 +37,7 @@ export interface Operation {
 }
 
 export interface Conversation {
+  temporary?: boolean
   id: string
   status: 'ACTIVE'
   title: string

@@ -16,6 +16,19 @@ require successful SafeFetcher preflight; T066 remains pending until extraction/
 
 ## Technical Context
 
+Phase 11 supersedes the historical Phase 10 scope below only for T032–T041. Add guest-scoped CopilotSettings,
+PreferenceMemory and envelope-encrypted UserCredential; reuse AIInvocation/LiveBudgetLedger for reservation and
+settlement. Credential master keyring is a runtime file secret; offline starts without it. Documentation-based
+OpenAI catalog is not account validation; IR users/backend are blocked independently of configuration checkboxes.
+Memory is explicit structured criteria only, scoped by category and recipient; temporary conversation is immutable
+at creation. Proposals require confirmed source briefs; reuse requires unconfirmed target brief/CAS and cannot
+overwrite current criteria. Source deletion cascades derived preferences. FR-066 retention is provisional development
+configuration, not approved public policy. Tests use synthetic credentials and SDK/HTTP stubs only.
+Session reserved/spent micro-USD aggregates live on GuestContext and are maintained by the same LiveBudgetLedger,
+with Guest -> daily window -> invocation locking. Metadata purge and key replacement do not reset session spending.
+Migrations 0011–0014 are additive; back up non-empty development data before applying them. Production key-management,
+retention approval and live activation remain separate gates. Runtime Responses events never carry raw keys or JSON.
+
 Phase 10 authorizes T024–T031 only. Completed evidence models and controlled fixtures unblock offline Milestone C;
 T066/public-source success gates live coverage, not this implementation. Milestone B remains partial. Add a validated
 comparison profile to ShoppingBrief and an immutable ChoiceSet JSON result (items embedded, no redundant ChoiceItem

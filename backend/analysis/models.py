@@ -18,6 +18,8 @@ class GuestContext(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     access_expires_at = models.DateTimeField(db_index=True)
     generation_epoch = models.PositiveBigIntegerField(default=0)
+    copilot_reserved_microusd = models.PositiveBigIntegerField(default=0)
+    copilot_spent_microusd = models.PositiveBigIntegerField(default=0)
 
 
 class Analysis(models.Model):
@@ -186,6 +188,7 @@ class Conversation(models.Model):
     guest_context = models.ForeignKey(GuestContext, on_delete=models.CASCADE, related_name="conversations")
     status = models.CharField(max_length=16, default="ACTIVE")
     title = models.CharField(max_length=120, default="گفت‌وگوی خرید")
+    temporary = models.BooleanField(default=False)
     brief_revision = models.PositiveIntegerField(default=0)
     generation_epoch = models.PositiveBigIntegerField(default=0)
     last_eligible_activity_at = models.DateTimeField()
@@ -200,6 +203,37 @@ class Conversation(models.Model):
         constraints = [
             models.CheckConstraint(condition=models.Q(status="ACTIVE"), name="copilot_conversation_active_only"),
         ]
+
+
+class CopilotSettings(models.Model):
+    guest_context = models.OneToOneField(GuestContext, primary_key=True, on_delete=models.CASCADE)
+    memory_enabled = models.BooleanField(default=False)
+    model = models.CharField(max_length=64, default="gpt-6-luna")
+    revision = models.PositiveIntegerField(default=0)
+
+
+class UserCredential(models.Model):
+    guest_context = models.OneToOneField(GuestContext, primary_key=True, on_delete=models.CASCADE, related_name="credential")
+    ciphertext = models.TextField()
+    wrapped_key = models.TextField()
+    revision = models.UUIDField(default=uuid.uuid4, editable=False)
+    state = models.CharField(max_length=32, default="STORED_UNVALIDATED")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(db_index=True)
+
+
+class PreferenceMemory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    guest_context = models.ForeignKey(GuestContext, on_delete=models.CASCADE, related_name="preferences")
+    source_conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="derived_preferences")
+    source_revision = models.PositiveIntegerField()
+    category = models.CharField(max_length=120)
+    criterion = models.JSONField()
+    state = models.CharField(max_length=16, default="CANDIDATE", choices=[(s, s) for s in ("CANDIDATE", "CONFIRMED", "REJECTED")])
+    revision = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True)
+    expires_at = models.DateTimeField(db_index=True)
 
 
 class ShoppingBrief(models.Model):
@@ -260,6 +294,7 @@ class Message(models.Model):
 
 class StreamOperation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    credential_revision = models.UUIDField(null=True, editable=False)
     conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="operations")
     user_message = models.OneToOneField(
         Message, null=True, on_delete=models.CASCADE, related_name="stream_operation"

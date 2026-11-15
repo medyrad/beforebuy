@@ -20,8 +20,9 @@ Beforebuy اکنون به‌عنوان دستیار شخصی خرید چنددس
 Specification canonical این جهت در `specs/002-personalized-shopping-copilot/` است. feature 001 و داده/شواهد آن تا
 تصمیم cutover حفظ می‌شوند و `T039` آن همچنان pending است. Milestone A پیاده شده است. Phase 9 زیرساخت evidence و
 پژوهش محدود Milestone B را با حالت پیش‌فرض `OFFLINE`، fixtureهای صریح و safe-fetch مستقل پیاده کرد، اما هیچ منبع live
-به‌دلیل ابهام permission/retention/display فعال نیست و پوشش sports همچنان باز است. پیشنهاد/رتبه‌بندی Choice Desk،
-memory، credential و AI زنده هنوز پیاده نشده‌اند.
+به‌دلیل ابهام permission/retention/display فعال نیست و پوشش sports همچنان باز است. Phase 10 میز انتخاب قطعی را
+با evidence/fixture پیاده کرد. Phase 11 تنظیمات قابل‌مشاهده، کلید رمز‌شده و حافظهٔ opt-in را پیاده و با دادهٔ مصنوعی
+آزمود؛ adapter مستقیم OpenAI فقط stub-tested است. پوشش بازار زنده، فعال‌سازی AI و انتشار عمومی همچنان بازند.
 
 ## مسئله و ارزش پیشنهادی
 

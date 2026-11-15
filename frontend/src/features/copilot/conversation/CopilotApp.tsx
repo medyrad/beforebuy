@@ -6,6 +6,10 @@ import { Icon } from './Icons'
 import type { Conversation, ConversationSummary, OperationStatus, ResearchJob, Upload } from './types'
 import { ChoiceDesk } from '../choice-desk/ChoiceDesk'
 import { ComparisonProfile } from '../choice-desk/ComparisonProfile'
+import { AssistantSettings } from '../memory/AssistantSettings'
+import { MemoryPanel } from '../memory/MemoryPanel'
+import { MemorySuggestions } from '../memory/MemorySuggestions'
+import '../memory/memory.css'
 
 type MobilePane = 'conversation' | 'desk'
 
@@ -62,6 +66,7 @@ function BriefEditor({ conversation, onSaved }: { conversation: Conversation; on
 }
 
 export function CopilotApp() {
+  const [view, setView] = useState<'desk' | 'settings' | 'memory'>('desk')
   const [items, setItems] = useState<ConversationSummary[]>([])
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [text, setText] = useState('')
@@ -99,7 +104,7 @@ export function CopilotApp() {
     }
   }, [])
 
-  const create = async () => { if (loading) return; const item = await copilotApi.create(); await refreshList(); await open(item.id) }
+  const create = async (temporary = false) => { if (loading) return; const item = await copilotApi.create(temporary); await refreshList(); await open(item.id) }
   const follow = (url: string, followedOperationId: string) => {
     sourceRef.current?.close(); seenRef.current.clear(); setDraftReply('')
     if (reconcileTimerRef.current !== null) window.clearTimeout(reconcileTimerRef.current)
@@ -207,13 +212,21 @@ export function CopilotApp() {
     }
   }
 
-  return <div className="copilot-shell" dir="rtl">
+  return <><nav className="copilot-utility" aria-label="تنظیمات و شناخت شخصی">
+    <button aria-pressed={view === 'desk'} onClick={() => setView('desk')}>میز خرید</button>
+    <button aria-pressed={view === 'settings'} onClick={() => setView('settings')}>تنظیمات دستیار</button>
+    <button aria-pressed={view === 'memory'} onClick={() => setView('memory')}>شناخت من</button>
+    <span>نمایش محلی؛ اتصال زنده تأیید نشده</span>
+  </nav>
+  {view !== 'desk' && <main className="personal-page">{view === 'settings' ? <AssistantSettings /> : <MemoryPanel />}</main>}
+  <div className="copilot-shell" dir="rtl" style={view !== 'desk' ? { display: 'none' } : undefined}>
     <a className="skip-link" href="#copilot-main">رفتن به محتوای اصلی</a>
     <nav className="copilot-nav" aria-label="ناوبری دستیار خرید"><a className="copilot-logo" href="/" aria-label="قبل از خرید"><span>ب</span></a><button aria-label="گفت‌وگوی تازه" disabled={loading} onClick={() => void create()}><Icon name="plus" /></button><a href="/" aria-label="تحلیل قبلی"><Icon name="desk" /></a></nav>
     <aside className={`conversation-pane ${pane === 'conversation' ? 'mobile-active' : ''}`} aria-label="گفت‌وگو">
       <header className="copilot-heading"><div><p className="overline">حالت توسعه / fixture</p><h1>همراه خرید</h1></div><span className="fixture-badge">بدون AI زنده</span></header>
       <div className="conversation-history" aria-label="تاریخچه گفت‌وگوها">
         <button className="new-conversation" disabled={loading} onClick={() => void create()}><Icon name="plus" /> گفت‌وگوی تازه</button>
+        <button disabled={loading} onClick={() => void create(true)}>گفت‌وگوی بدون حافظه</button>
         {items.map((item) => <button key={item.id} className={conversation?.id === item.id ? 'active' : ''} onClick={() => void open(item.id)}>{item.title}</button>)}
       </div>
       <div className="thread" aria-live="off">
@@ -233,6 +246,7 @@ export function CopilotApp() {
     </aside>
     <main id="copilot-main" className={`choice-desk ${pane === 'desk' ? 'mobile-active' : ''}`} tabIndex={-1}>
       {conversation && <BriefEditor key={`${conversation.id}:${conversation.brief_revision}`} conversation={conversation} onSaved={refresh} />}
+      {conversation && view === 'desk' && <MemorySuggestions key={`memory:${conversation.id}:${conversation.brief_revision}`} conversation={conversation} onSaved={refresh} />}
       {conversation && <ChoiceDesk key={conversation.id} conversation={conversation} evidenceRevision={`${researchJob?.id ?? ''}:${researchJob?.completed ?? ''}`} />}
       <details className="research-ledger"><summary>پژوهش منابع و پیشنهادهای فروش</summary>
       <section className="research-panel" aria-labelledby="desk-title">
@@ -246,5 +260,5 @@ export function CopilotApp() {
       </details>
     </main>
     <nav className="mobile-switcher" aria-label="نمای موبایل"><button className={pane === 'conversation' ? 'active' : ''} onClick={() => setPane('conversation')}><Icon name="chat" />گفت‌وگو</button><button className={pane === 'desk' ? 'active' : ''} onClick={() => setPane('desk')}><Icon name="desk" />میز انتخاب</button></nav>
-  </div>
+  </div></>
 }

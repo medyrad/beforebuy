@@ -8,6 +8,8 @@ from analysis.models import (
     Analysis,
     Conversation,
     GuestContext,
+    PreferenceMemory,
+    UserCredential,
     Product,
     SourceSnapshot,
     StreamEvent,
@@ -22,6 +24,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         now = timezone.now()
         with transaction.atomic():
+            PreferenceMemory.objects.filter(expires_at__lte=now).delete()
+            UserCredential.objects.filter(expires_at__lte=now).delete()
             raw_snapshots_cleared = SourceSnapshot.objects.filter(
                 raw_expires_at__lte=now, raw_content__isnull=False
             ).update(raw_content=None)

@@ -72,7 +72,8 @@ describe('Copilot milestone A shell', () => {
     render(<CopilotApp />)
     expect(await screen.findByRole('button', { name: 'ویرایش brief' })).toBeInTheDocument()
     expect(screen.getByLabelText('افزودن تصویر')).toBeInTheDocument()
-    expect(screen.queryByText(/حافظه/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'شناخت من' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'تنظیمات دستیار' })).toBeInTheDocument()
   })
 
   it('validates upload size and exposes stop while fixture streaming', async () => {

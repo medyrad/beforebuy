@@ -1,104 +1,117 @@
-# تحویل Phase 10 — Milestone C / Choice Desk
+# تحویل Phase 11 — تنظیمات دستیار و شناخت من
 
-تاریخ: 2026-11-15؛ baseline: `ccb90adf5d5270175111e963d39a46fe12da352b`؛ branch: `002-personalized-shopping-copilot`.
+**Milestone D settings and opt-in memory implemented and verified;
+OpenAI adapter stub-tested — live activation remains pending.**
 
-**Milestone C Choice Desk implemented and verified with labelled fixtures — live market coverage and live AI remain pending.**
-پوشش بازار زنده و AI زنده همچنان pending؛ Milestone D اجرا نشده است.
+تاریخ: 2026-11-15؛ branch: `002-personalized-shopping-copilot`؛ baseline:
+`686a3e4d1135ff72e4c6a193c7b192e7895b0e94`. تماس provider/public source و هزینهٔ واقعی: **صفر**.
+AI روی `mock` و research روی `OFFLINE` است؛ انتشار عمومی یا خرید انجام نشد.
 
 ## دامنه و workflow
 
-- Spec Kit تنها workflow owner است؛ prerequisites، analyze و implement برای T024–T031 اجرا شدند. checklist
-  requirements برابر 16/16 بود و تغییر نکرد؛ extensions.yml/hook ثبت‌شده وجود ندارد.
-  T024–T031 تکمیل و علامت‌گذاری شدند؛ شماره یا وضعیت taskهای تاریخی نامرتبط تغییر نکرد.
-- تحلیل محدود ۱۰ نیاز مرتبط (FR-012/013/015/016/017/018/019/031/063/064) را به ۸ task نگاشت؛ coverage در این scope
-  100%، task بدون نگاشت صفر، critical صفر. ناسازگاری سقف قدیمی ۲۰ گزینه، وضعیت planned قرارداد ChoiceSet و
-  attributionهای fixture در اسناد اصلاح شد. این تحلیل ادعای convergence کل feature نیست.
-- مهارت‌های project، Django/DRF، frontend-design، TDD، debugging، verification و playwright-cli از catalog موجود
-  و فایل‌های نصب‌شده استفاده شدند؛ هیچ ابزار، framework، dependency یا subagent تازه‌ای اضافه نشد.
-- evidence models و controlled fixtures اجازهٔ توسعهٔ offline Milestone C می‌دهند؛ موفقیت public extraction فقط
-  gate پوشش live است. T066 و T013/T018/T019 باز مانده‌اند؛ T039 هر دو feature و milestoneهای بعدی کامل نشده‌اند.
+T032–T041 feature002 تکمیل شدند. feature001 T039، T042–T048/T050 feature002، T066 و gateهای باز قبلی pending
+هستند؛ full-product convergence و Milestone E ادعا نمی‌شوند. مهارت‌های موجود project، Spec Kit analyze/implement،
+backend، AI، TDD/debugging، frontend، verification و Playwright استفاده شدند؛ subagent یا toolchain جدید نداریم.
+Checklist برابر 16/16 و extension hook موجود نیست. Analyze محدود: ۱۵ FR و سه SC به ۱۰ task نگاشت شدند؛
+پوشش دامنهٔ مجاز ۱۰۰٪، task نامرتبط و مانع بحرانی باز صفر. FR-035 اینجا فقط memory-only export است، نه T050.
+handoff قبلی عیناً در `docs/archive/phase-10-handoff.md` حفظ و hash آن با baseline مقایسه شد.
 
-## پیاده‌سازی و قواعد
+## تجربهٔ قابل نمایش
 
-- migration افزایشی `0010_shoppingbrief_comparison_choiceset`، پروفایل صریح comparison و ChoiceSet immutable با
-  revision/epoch/rule version/snapshot/freshness اضافه شد. آیتم‌ها JSON داخلی‌اند؛ جدول تکراری ChoiceItem ساخته نشد.
-  داده/volume توسعه حذف یا reset نشد. retention/delete از conversation ارث می‌رسد؛ read/compare/demo تمدید نمی‌کنند.
-- COPILOT-RANK-v0.1 بدون وزن یا امتیاز ۰–۱۰۰: شرط قطعی و ترجیح؛ satisfied/failed/unknown جدا؛ STRICT پیش‌فرض،
-  FLEXIBLE فقط با تأیید؛ ارسال و هزینهٔ اجباری نامعلوم هرگز صفر نیستند. known total از قیمت کالا جداست.
-- دسته‌ها: سازگار، حل‌نشده، ناسازگار. coverage سپس ترجیح‌های مستند، و فقط در صورت ترجیح صریح هزینهٔ نهایی کمتر.
-  UUID صرفاً ترتیب نمایش tie را پایدار می‌کند. شواهد stale/conflicting/unsupported و variant mismatch امتیاز مثبت ندارند.
-  تناقض brief و شرط متنی حل‌نشده winner قطعی نمی‌سازند. هدیه از معیار گیرنده استفاده می‌کند؛ لذت هدف معتبری است.
-- یک محصول موردنظر + حداکثر سه محصول جایگزین؛ merchant offerها جدا و متعلق به همان variant هستند.
-  پیشنهاد کاملِ گران، پیشنهاد ارزان‌تر با ارسال نامعلوم را «قطعاً بالای بودجه» نمی‌کند؛ این حالت حل‌نشده می‌ماند.
-  گزینهٔ ناموجود جایگزین نمی‌شود؛ نبود جایگزین پشتیبانی‌شده صریح است. unknownها، tradeoff، coverage و شرایط تغییر
-  نتیجه قابل مشاهده‌اند. متن توضیح deterministic template است، نه پاسخ LLM.
-- API جدید `/conversations/{id}/choices`، `/choices/candidates` و `/choices/demo` با مالکیت/CSRF/expiry و validation.
-  publication زیر lock تغییر revision/epoch را دوباره بررسی می‌کند؛ نتیجهٔ دیررس رد می‌شود.
-- سه نمونهٔ صریح در Product/Variant/Offer/Claim عادی ذخیره می‌شوند و همان engine/API/UI آینده را مصرف می‌کنند؛
-  SYNTHETIC/CAPTURED_FIXTURE هرگز VERIFIED_SOURCE یا قیمت بازار فعلی نامیده نمی‌شوند.
-- Concept 2 حفظ شد: conversation rail، brief ribbon، جدول دسکتاپ/کارت‌های responsive، disclosure و کشوی منابع،
-  RTL/Vazirmatn، focus/keyboard و ناوبری موبایل با state حفظ‌شده. تغییر brief نتیجهٔ قبلی را فوراً پنهان/نامعتبر می‌کند.
-  rail در راست و میز در چپ است؛ پنل پژوهش پیش‌فرض بسته است و با بازشدن، درخواست شبکه اجرا نمی‌کند.
-  routing پیش‌فرض legacy، streaming و cancellation حفظ شدند؛ memory/API-key settings وجود ندارند.
+در `http://127.0.0.1:58080/copilot`، بالای صفحه «تنظیمات دستیار» و «شناخت من» را باز کنید؛ `/` legacy است.
+کلید password-style وارد، backend-side رمز و masked می‌شود؛ save/replace/delete هیچ درخواست بیرونی ندارد.
+ورودی بعد از submit پاک می‌شود. unconfigured، stored/unvalidated، failed و blocked جدا هستند؛ validated برای آینده
+تعریف شده و هیچ کلید واقعی اعتبارسنجی نشده است. catalog مستندات account-unverified است.
 
-## سه مقایسهٔ قابل تکرار
+دموی دو گفت‌وگو: حافظه را روشن کنید؛ در اولی electronics/SELF و ترجیح «قابل‌حمل بودن: بله» را ذخیره و نیاز را
+تأیید کنید؛ «پیشنهاد ترجیح برای شناخت من» و «تأیید ترجیح» را بزنید. در گفت‌وگوی تازهٔ هم‌دسته، «استفاده در این خرید»
+ترجیح را صریحاً وارد brief تأییدنشده می‌کند. آن را برای این خرید به «خیر» تغییر دهید؛ ترجیح ذخیره‌شدهٔ «بله» مستقل
+باقی می‌ماند و قابل حذف است. brief تأییدشده یا مقایسه خودکار بازنویسی نمی‌شود. هدیه/خانه/خودم جدا هستند؛ گفت‌وگوی
+بدون حافظه از ترجیحات پایدار نمی‌خواند/نمی‌نویسد. استخراج فقط ساختاریافته است، نه یادگیری آزاد زبان یا ویژگی حساس.
 
-همهٔ محصولات و قیمت‌های این جدول مصنوعی‌اند، نه دادهٔ بازار:
+## امنیت، adapter و lifecycle
 
-| نیاز تأییدشده | نتیجه |
-|---|---|
-| electronics، SELF، ENJOYMENT، سقف۱۰ میلیون، portable=true قطعی | آ۸ میلیون و پ۹ میلیون tie؛ ب۷ میلیون portable=false و ارسال نامعلوم ناسازگار. سقف۸ میلیون فقط آ را سازگار می‌گذارد. |
-| home، HOUSEHOLD، سقف۶ میلیون، dishwasher_safe=true قطعی | آ۶ میلیون سازگار؛ ب۴ میلیون شرط شست‌وشو را نقض می‌کند؛ پ۷ میلیون بالای سقف و شست‌وشو/ارسال نامعلوم. |
-| sports، GIFT، سقف۲ میلیون، size_eu=42 برای RECIPIENT | آ۲ میلیون سازگار؛ ب سایز۴۰ ناسازگار؛ پ سایز۴۲ و قیمت۱٫۸ میلیون با ارسال نامعلوم حل‌نشده. |
+- migrations افزایشی 0011–0014: settings/memory، credential envelope، revision کلید و aggregate هزینهٔ نشست.
+- dependency مستقیم `cryptography==50.0.2`؛ lock شامل `cffi==2.1.1` و `pycparser==3.12`؛ مجوز cryptography:
+  Apache-2.0 OR BSD-3-Clause. Fernet/MultiFernet استاندارد با PyNaCl/KMS مقایسه شد؛ SDK موجود OpenAI 3.49.0 و
+  httpx2 2.16.0 reuse شدند. رمزنگاری سفارشی یا framework تازه نداریم؛ شواهد در `docs/tooling.md` است.
+- master بیرون Git/DB/image است؛ offline بدون master شروع می‌شود و write بدون آن 503 است. replace/delete عملیات
+  queued/running وابسته را باطل می‌کند؛ expiry/revision پیش از final publication بازبینی می‌شود. درخواست قبلاً
+  ارسال‌شده قابل پس‌گرفتن نیست؛ secret/provider error پیام امن دارد.
+- Responses adapter پشت generator موجود با schema محدود clarification، stream، timeout، حداکثر دو attempt،
+  cancellation، usage/request ID و `store=false` stub-tested است؛ rank/price/fact قطعی و evidence-bound می‌ماند.
+  `store=false` تضمین zero retention نیست؛ AvalAI fallback نداریم. worker واقعی هم با transport ساختگی آزموده شد.
+- LiveBudgetLedger موجود reservation/settlement را مالک است؛ aggregateهای GuestContext با purge metadata یا
+  تعویض کلید reset نمی‌شوند. missing usage محافظه‌کارانه حساب می‌شود. capهای operation/session/daily پیش‌فرض صفر؛
+  خرید با تومان و AI با micro-USD جدا هستند. برآورد ضمانت invoice نیست.
+- مدل مستند `gpt-6-luna`: input استاندارد $0.10/M، output $0.50/M؛ cache-write $0.25/M مبنای محافظه‌کارانهٔ input.
+  account availability و کیفیت زنده تأیید نشده‌اند. ایران مستقل از key/checkbox blocked است. منابع رسمی در
+  `specs/002-personalized-shopping-copilot/openai-readiness.md` ثبت شده‌اند.
+- **سیاست موقت توسعه، نیازمند review پیش از انتشار:** candidate هفت روز، confirmed نود روز از اولین تأیید،
+  credential سی روز از save/replace؛ configurable، non-sliding و محدود به owner/source expiry. disable با delete
+  متفاوت است. حذف source حافظهٔ مشتق‌شده را cascade می‌کند؛ ترجیح اعمال‌شده در brief مقصد مستقل است. cross-browser
+  recovery، حذف فوری backup یا بازیابی کلید با master گم‌شده وعده داده نمی‌شود. rotation در operations توضیح دارد.
 
-PRACTICAL نیز با همان قواعد بودجه/شرط بررسی می‌شود، بدون تشخیص impulsivity یا hardship.
+## بازیابی محیط و داده
 
-## verification
+پس از آزادشدن 7 GiB، Docker پاسخ داد. PostgreSQL موجود با همان volume
+`beforebuy_beforebuy_pgdata_v18:/var/lib/postgresql` شروع شد؛ crash recovery/checkpoint عادی و readiness موفق شدند.
+خطای write تازه در بازه‌های بررسی‌شدهٔ DB log دیده نشد؛ repair/reset یا حذف volume انجام نشد.
+پیش از migration با API متوقف، backup زیر ساخته شد؛ `pg_restore --list` موفق بود (۲۱۷ خط)، نه restore کامل:
 
-- REDهای اولیه: نبود engine/API/UI؛ سپس unknown offer attribution و تناقض brief. اصلاح و GREEN مشاهده شد.
-- canonical PostgreSQL: `./scripts/test-backend.sh --keepdb --verbosity 1` → **260 discovered/run، 260 passed**،
-  صفر skipped/failed/errors در 58.735s. تست migration تاریخی schema را روی 0007 باقی می‌گذاشت؛ cleanup به graph
-  leaf اضافه شد. اجرای نخست 258 passed/1 error بود و موفق گزارش نمی‌شود.
-- focused ranking/API/invariants بعد از اصلاح JSON null و provenance: 17/17؛ race با دو connection PostgreSQL
-  و Event/row lock رد انتشار دیررس را بررسی کرد. hand-authored موارد بودجه، enjoyment، هدیه، variant mismatch،
-  stale/conflict، missing shipping، tie و sparse evidence همراه invariantهای ترتیب/prose اجرا شدند.
-- migrationها روی دیتابیس تستِ تازه `test_beforebuy_phase10_migrations_20261115` اعمال شدند؛ نبود آن پیش از اجرا
-  بررسی شد، سپس 6/6 تست API/هم‌زمانی با DiscoverRunner و keepdb موفق بود. این دیتابیس مصنوعی جدا حفظ شده است.
-  مورد چندفروشنده‌ای ابتدا RED و بعد همراه 12/12 تست pure و مجموعهٔ نهایی 260تایی GREEN شد.
-- frontend: آخرین مجموعهٔ بررسی‌شده 19/19؛ خطای قبلی تایپ پیش از enabled شدن ورودی در تست‌های stream با
-  انتظار صریح و act اصلاح شد. typecheck، lint و build موفق؛ build واقعی Compose/NGINX نیز انجام شد.
-- مرورگر واقعی پشت NGINX: `copilot-choice-desk.spec.ts` → **2/2 passed** در 390/1440، keyboard/focus و
-  Escape، 200% zoom بدون overflow ضروری، منابع، brief-edit/recompute، حفظ draft و لغو واقعی سرور با status=CANCELLED.
-  axe در هر دو عرض و zoom برابر صفر serious/critical؛ route legacy نیز موفق بود. هیچ API/SSE/cancel این دو تست mock نشده است.
-  REDهای مرورگر: selector/انتظار bootstrap، JSON-null خالی، focus dialog، min-width legacy در zoom و race پنجرهٔ کوتاه stream.
-  اصلاح‌ها: پاسخ null معتبر، trap Tab/Shift-Tab، width/RTL محدود به Copilot، reduced-motion و کلیک stop در اولین DOM update.
-  screenshotهای `artifacts/screenshots/copilot-phase10-1440.png` و `copilot-phase10-390.png` باز و بازبینی شدند.
-- رگرسیون browserِ گفت‌وگو/brief و پنل captured offer در `copilot-milestone-a.spec.ts`: **2/2 passed**؛
-  screenshotهای این رگرسیون فقط در `.runtime/phase10-legacy-browser-results` نوشته شدند و چهار تصویر قبلی دست‌نخورده‌اند.
-- Django check و migration drift موفق؛ runtime مؤثر: `research_mode=OFFLINE`، `ai_mode=mock`،
-  `enabled_policies=0`. هیچ درخواست public-source یا LLM، تغییر سقف هزینه، deployment عمومی یا volume reset انجام نشد.
-
-## راه‌اندازی و نمایش محلی
-
-با .env موجود و AI mock، از root:
-
-```sh
-docker compose up -d db
-docker compose run --rm --no-deps api python backend/manage.py migrate --noinput
-BEFOREBUY_RESEARCH_MODE=OFFLINE docker compose up -d --build api web
+```text
+/Users/mehdi/Backups/beforebuy/phase-11-20261115/pre-memory-credentials.dump
+mode0600; parent0700; 200133 bytes
+SHA-256: 3833d10d45612a82bc5a328498bfbd9af54070e31bdbb997cc8ee7bc2a29f7c2
 ```
 
-بازکردن `http://127.0.0.1:58080/copilot` → گفت‌وگوی تازه → در موبایل میز انتخاب → ویرایش brief.
-category دقیق electronics/home/sports، مخاطب، بودجه و معیار اختیاری را ذخیره و تأیید کنید؛ در انتخاب محصولات،
-همان دستهٔ آموزشی را بارگذاری و «ساخت مقایسه» را بزنید. هر دسته را در گفت‌وگوی تازه امتحان کنید.
-منابع عمومی را فعال نکنید؛ token لازم نیست. جزئیات و تست‌ها در quickstart feature ثبت شده‌اند.
+backup و source volume حفظ می‌شوند؛ rollback باید به volume تازه restore کند، نه overwrite دادهٔ موجود.
+تمام migrations توسعه اعمال و consistency تأیید شد. master محلی mode0600 در
+`/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key` است؛ این فایل API credential نیست.
+overlay اختیاری `compose.copilot-secrets.yaml` آن را mount می‌کند؛ خواندن توسط API non-root UID100 این محیط تأیید شد.
+مالکیت Linux، ساخت فایل، rotation و بازیابی در `docs/backend-operations.md` توضیح داده شده‌اند.
 
-## gateها و Git
+## verification واقعی
 
-T066/public-source repeatable extraction، T013/T018/T019، T039 و live AI/region/cost/human review بازند.
-هیچ ادعای آمادگی انتشار عمومی یا convergence کل محصول وجود ندارد. توقف پیش از Milestone D.
+- canonical: `PGCONNECT_TIMEOUT=5 ./scripts/test-backend.sh --keepdb --verbosity 0`:
+  **۲۸۳ اجرا/موفق، صفر skipped/failure/error**؛ system check بدون issue.
+- دیتابیس آزمون تازه و مجزا: **۲۲/۲۲** تست memory/credential/adapter/config با migrations کامل موفق؛ runner فقط
+  همان DB synthetic را حذف کرد. دیتابیس توسعه و backup حفظ شدند.
+- RED→GREEN: فراموش‌شدن هزینه پس از purge، snapshot کلید، expiry publication، JSON غیر-object و برچسب worker.
+  queued replacement/deletion، no-log key save و SDK timeout نیز آزموده شدند. HTTP 200/401 تست SDK از MockTransport
+  است، نه provider. مجموعهٔ متمرکز آخر کلید/adapter ۱۵/۱۵ و worker/concurrency برابر ۱۳/۱۳ موفق بود.
+- پس از اصلاح جای‌گذاری skip-link، frontend مجدداً اجرا شد: **۲۱/۲۱ در ۷ فایل** و lint/typecheck/build موفق.
+  Docker API/web build موفق، سه سرویس healthy و runtime دوباره mock/OFFLINE تأیید شد.
+- Playwright پشت NGINX: journey تنظیمات و دو گفت‌وگو در **390 و 1440 موفق**؛ keyboard، 200% zoom، نبود overflow
+  و axe serious/critical صفر. trace/video و screenshot خودکار credential خاموش؛ تصاویر بعد از حذف کلید گرفته شدند.
+  اجرای نهایی مشترک با Choice Desk و `--workers=1`: **۴/۴ موفق در 1.7m**؛ تنظیمات 16.1s/17.0s.
+- اجراهای اولیهٔ browser شکست داشتند: selector select و انتظار state جدید اصلاح شدند؛ دسکتاپ هم‌زمان با
+  build/regression به 75s رسید. rerun همان تست بدون افزایش timeout در 21s موفق شد؛ شکست‌ها موفق شمرده نشدند.
+- regression مرتبط Choice Desk ابتدا در هر دو عرض یک پیکسل overflow پیدا کرد: skip-link با margin منفی بیرون
+  صفحه قرار داشت. با جای‌گذاری صریح و بدون پنهان‌کردن overflow یا ضعیف‌کردن assertion اصلاح شد؛ rerun در 1440 و
+  390 موفق بود (38.0s و 20.3s)، شامل source dialog، keyboard و axe.
+- `git diff --check` و `makemigrations --check --dry-run` موفق؛ screenshotهای
+  `artifacts/screenshots/copilot-phase11-{settings,memory}-{1440,390}.png` بازبینی شدند.
 
-handoff قبلی بدون تغییر در `docs/archive/phase-9.3-handoff.md` آرشیو شد.
-مسیر Git: همین branch روی `origin` پروژهٔ `medyrad/beforebuy`، بدون merge یا force-push.
-حذف نامرتبط `test.txt` و چهار screenshot قدیمی خارج stage باقی می‌مانند؛ hash و نتیجهٔ push در گزارش نهایی ارائه می‌شود.
-اسرار، .env، database، runtime trace و دادهٔ حساس وارد Git نمی‌شوند.
+## اجرای مجدد و gateها
+
+```sh
+./scripts/test-backend.sh --keepdb --verbosity 1
+export COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key
+docker compose -f compose.yaml -f compose.copilot-secrets.yaml up -d --no-build api web
+```
+
+Browser runner موجود: `beforebuy-e2e:phase81` با `--network host`،
+`PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080`، `PLAYWRIGHT_USE_BUNDLED=1`، `NODE_PATH=/app/frontend/node_modules`؛
+`tests/e2e` و `frontend/playwright.config.ts` را read-only در مسیرهای متناظر `/app` mount کنید؛ screenshot directory
+در `/app/artifacts/screenshots` و `.runtime/phase11-browser-results` در `/app/frontend/test-results` mount شود؛
+فرمان: `npx playwright test --config=playwright.config.ts copilot-settings-memory.spec.ts --reporter=list`.
+
+Gateهای باز: eligibility رسمی OpenAI، validation کلید/مدل حساب، مجوز مستقل هزینه و live evaluation، review سیاست
+retention/key operations، source coverage و target-host/public-release rehearsal. feature001 T039 همچنان pending است.
+
+## Git
+
+این handoff همراه تغییرات مرتبط Phase11 برای origin موجود `medyrad/beforebuy` آماده شده؛ hash و نتیجهٔ push در گزارش
+نهایی اعلام می‌شود. حذف نامرتبط `test.txt` و چهار screenshot قدیمی Phase8/9.2 خارج commit می‌مانند.
+secret، backup، runtime DB/log/trace و محیط‌های محلی وارد Git نمی‌شوند.

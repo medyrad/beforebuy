@@ -23,6 +23,18 @@ performance عمومی نیست. dependency برنامه‌ای نصب نشد.
 
 ## Inventory
 
+Phase 11 addition: project runtime now pins `cryptography==50.0.2` with `cffi==2.1.1` and `pycparser==3.12` in
+`uv.lock`. Official [Fernet/MultiFernet documentation](https://cryptography.io/en/50.0.2/fernet/) and package metadata
+were reviewed for Python 3.12 compatibility and Apache-2.0 OR BSD-3-Clause licensing. [PyNaCl SecretBox](https://pynacl.readthedocs.io/en/latest/secret/)
+was a compatible alternative but needs more project-specific key rotation bookkeeping; external KMS adds an
+unauthorized service. No speed/security superiority is claimed. Actual evidence: locked host install, PostgreSQL
+encryption/rotation tests and Docker runtime file-read check; no live-provider evidence. Existing OpenAI SDK 3.49.0
+and its httpx2 2.16.0 transport are reused, not replaced. No new agent skill or tooling framework was installed.
+
+| Need | Selected tool/skill | Alternatives | Evidence | Version | Install phase | Verification | Reason for deferral |
+|---|---|---|---|---|---|---|---|
+| Credential envelope encryption | pyca cryptography / Fernet + MultiFernet | PyNaCl SecretBox; external KMS | Official APIs/license/Python metadata; no benchmark claim | 50.0.2 | Phase 11 | Encryption, wrong-master, replacement, rotation tests | Public key-management/retention approval remains a release gate |
+
 | Need | Selected tool/skill | Alternatives | Evidence | Version/commit | Local path | License | Install phase | Verification | Reason for deferral |
 |---|---|---|---|---|---|---|---|---|---|
 | SDD workflow | GitHub Spec Kit + Codex integration | ابزار برنامه‌ریزی موازی انتخاب نشد | مستندات رسمی نصب و integration؛ release رسمی. Phase 4 همان feature canonical را analyze و implement کرد و اجرا فقط به پنج task M2 محدود شد. | `v1.4.0`, `14ddec8cb22db2a3b50e5ae6861b31053f132bfa`; workflows `1.0.1` | `.tools/` (ignored), `.specify/`, `.agents/skills/speckit-*` | MIT | Phase 0 تا Phase 4 M2 | analyze: ۴۴ requirement، پوشش ۱۰۰٪، critical صفر؛ checklistها 30/30 و 25/25 | M3–M4 deferred |

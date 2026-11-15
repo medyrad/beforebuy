@@ -1,0 +1,118 @@
+# Path items referenced by openapi.yaml. All paths are same-origin, guest-owned;
+# unsafe methods require CSRF and JSON object bodies (non-object: 422).
+settings:
+  get:
+    responses:
+      '200': {description: 'memory_enabled, model, revision, mode (DEMONSTRATION/BLOCKED), connection BLOCKED, catalog with account-unverified metadata'}
+  patch:
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [expected_revision]
+            properties:
+              expected_revision: {type: integer, minimum: 0}
+              memory_enabled: {type: boolean}
+              model: {type: string, description: Exact documentation allowlist ID; never validates account}
+    responses:
+      '200': {description: Updated settings; revision incremented}
+      '403': {description: CSRF rejected}
+      '409': {description: STALE_SETTINGS}
+      '422': {description: Invalid value or MODEL_UNAVAILABLE}
+credential:
+  get:
+    responses:
+      '200': {description: 'Private no-store; state, fixed masked indicator, revision, expires_at, encryption_available, validation UNAVAILABLE_BLOCKED. Never plaintext.'}
+  put:
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [key]
+            properties:
+              key: {type: string, minLength: 16, maxLength: 512, writeOnly: true, description: ASCII without whitespace; saving makes no external request}
+              expected_revision: {type: [string, 'null'], format: uuid, description: Current revision or null for unconfigured state}
+    responses:
+      '200': {description: Same masked state as GET; STORED_UNVALIDATED; old queued revisions cancelled}
+      '403': {description: CSRF rejected}
+      '409': {description: STALE_CREDENTIAL}
+      '422': {description: INVALID_CREDENTIAL}
+      '503': {description: ENCRYPTION_UNAVAILABLE; plaintext never persisted}
+  delete:
+    requestBody:
+      content: {application/json: {schema: {type: object, properties: {expected_revision: {type: [string, 'null'], format: uuid}}}}}
+    responses:
+      '204': {description: Active credential deleted and dependent queued/running operations cancelled; transmitted requests cannot be recalled}
+      '403': {description: CSRF rejected}
+      '409': {description: STALE_CREDENTIAL}
+memory:
+  get:
+    responses:
+      '200': {description: 'Private no-store items: id, category, criterion, state, revision, source_conversation_id, source_revision, provenance, expires_at; active owned records only'}
+  delete:
+    responses:
+      '204': {description: Clear all owner preferences; does not disable consent or erase backups}
+      '403': {description: CSRF rejected}
+export:
+  get:
+    responses:
+      '200': {description: Same memory-only items as list; private no-store attachment beforebuy-preferences.json; no credentials or conversations}
+memoryDetail:
+  parameters: [{name: memoryId, in: path, required: true, schema: {type: string, format: uuid}}]
+  patch:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [expected_revision]
+            properties:
+              expected_revision: {type: integer, minimum: 0}
+              state: {type: string, enum: [CANDIDATE, CONFIRMED, REJECTED]}
+              criterion: {type: object, description: Whitelisted field/expected/kind/scope; field and scope cannot change}
+    responses:
+      '200': {description: Updated record; confirmation starts non-sliding confirmed retention once}
+      '400': {description: Structured criterion validation error}
+      '403': {description: CSRF rejected}
+      '404': {description: Missing/foreign/expired resource indistinguishable}
+      '409': {description: STALE_MEMORY or MEMORY_DISABLED}
+      '422': {description: Invalid criterion/state; confirmed cannot revert to candidate}
+  delete:
+    responses:
+      '204': {description: Delete owned preference; explicitly applied destination brief remains independent}
+      '403': {description: CSRF rejected}
+      '404': {description: Missing/foreign/expired resource indistinguishable}
+conversationMemory:
+  parameters: [{name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}]
+  get:
+    responses:
+      '200': {description: Confirmed suggestions matching category and SELF/RECIPIENT/HOUSEHOLD; empty when disabled or temporary; no automatic application}
+      '404': {description: Conversation unavailable}
+  post:
+    requestBody:
+      content: {application/json: {schema: {type: object, required: [expected_revision], properties: {expected_revision: {type: integer, minimum: 0}}}}}
+    responses:
+      '201': {description: Candidates from explicit structured confirmed brief only; not broad natural-language learning}
+      '403': {description: CSRF rejected}
+      '404': {description: Conversation unavailable}
+      '409': {description: MEMORY_DISABLED or STALE_BRIEF_REVISION}
+  patch:
+    requestBody:
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [expected_revision, memory_id, memory_revision]
+            properties:
+              expected_revision: {type: integer, minimum: 0}
+              memory_id: {type: string, format: uuid}
+              memory_revision: {type: integer, minimum: 0}
+    responses:
+      '200': {description: Explicit reuse on unconfirmed brief only; existing field wins; new criterion increments revision but does not confirm/recompute; provenance is an application receipt not a memory pointer}
+      '403': {description: CSRF rejected}
+      '404': {description: Conversation/preference/context unavailable}
+      '409': {description: MEMORY_DISABLED or stale/confirmed brief or STALE_MEMORY}

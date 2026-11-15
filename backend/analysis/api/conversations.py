@@ -60,9 +60,14 @@ class ConversationListCreateView(CsrfProtectedAPIView):
     def post(self, request):
         guest = get_or_create_guest(request)
         title = str(request.data.get("title", "گفت‌وگوی خرید")).strip()
+        temporary = request.data.get("temporary", False)
+        if type(temporary) is not bool:
+            return error("VALIDATION_ERROR", "حالت بدون حافظه نامعتبر است.", 422)
         if not title or len(title) > 120:
             return error("VALIDATION_ERROR", "عنوان باید ۱ تا ۱۲۰ نویسه باشد.", 422)
         item = Conversation.objects.create_for_guest(guest, title=title)
+        item.temporary = temporary
+        item.save(update_fields=["temporary"])
         return Response(serialize_conversation(item, detail=True), status=status.HTTP_201_CREATED)
 
 
@@ -154,6 +159,13 @@ class BriefConfirmView(CsrfProtectedAPIView):
 
 class MessageSubmitView(CsrfProtectedAPIView):
     def post(self, request, conversation_id):
+        from django.conf import settings
+        from analysis.ai.openai_copilot import ensure_live_eligible, CopilotProviderError
+        if settings.COPILOT_AI_MODE != 'mock':
+            try:
+                ensure_live_eligible()
+            except CopilotProviderError:
+                return error('REGION_BLOCKED', 'اتصال مستقیم در منطقهٔ فعلی فعال نیست؛ ذخیرهٔ کلید این محدودیت را رفع نمی‌کند.', 409)
         guest = get_or_create_guest(request)
         key = request.headers.get("Idempotency-Key", "")
         text = str(request.data.get("text", "")).strip()

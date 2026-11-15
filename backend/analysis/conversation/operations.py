@@ -48,6 +48,16 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
     ))
     if len(uploads) != len(set(upload_ids)):
         raise OperationConflict("UPLOAD_UNAVAILABLE", "یک یا چند تصویر در دسترس نیست.")
+    credential_revision = None
+    from django.conf import settings
+    if settings.COPILOT_AI_MODE != 'mock':
+        from analysis.ai.openai_copilot import ensure_live_eligible
+        from analysis.ai.credentials import active_credential
+        ensure_live_eligible()
+        credential = active_credential(guest.id)
+        if credential is None or credential.state != 'VALIDATED':
+            raise OperationConflict('CREDENTIAL_UNVALIDATED', 'اتصال تأیید نشده است.')
+        credential_revision = credential.revision
     message = Message.objects.create(conversation=conversation, role="USER", state="ACCEPTED", text=text)
     UploadedImage.objects.filter(id__in=[item.id for item in uploads]).update(message=message)
     operation = StreamOperation.objects.create(
@@ -56,6 +66,7 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
         idempotency_key=idempotency_key,
         request_hash=request_hash,
         expected_brief_revision=expected_revision,
+        credential_revision=credential_revision,
     )
     expiry = now + timedelta(days=90)
     conversation.last_eligible_activity_at = now

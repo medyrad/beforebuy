@@ -371,3 +371,69 @@ orphan صفر و همهٔ ۱۵۴ session به owner موجود decode شدند. 
 - logging پیکربندی‌شده answer، session/CSRF و raw AI payload را ثبت نمی‌کند.
 - انتشار عمومی همچنان نیازمند certificate/secret واقعی target host، activation زمان‌بندی‌شده cleanup، monitoring و
   تصمیم صریح release است؛ migration توسعه هیچ‌یک از این gateها یا `T039` را تغییر نمی‌دهد.
+# Phase 11 local settings and memory
+
+Default remains `COPILOT_AI_MODE=mock` and `BEFOREBUY_RESEARCH_MODE=OFFLINE`. No real API key is required to explore
+`http://127.0.0.1:58080/copilot`. The top navigation exposes «تنظیمات دستیار» and «شناخت من». Saving credentials is
+local encrypted storage only: no validation, discovery or provider request. Direct OpenAI remains region-blocked.
+
+For local **synthetic** credential controls, create a protected directory outside the repository and a new keyring:
+
+```sh
+uv run python backend/manage.py create_copilot_keyring /absolute/private/path/copilot.key
+export COPILOT_MASTER_KEYRING_PATH=/absolute/private/path/copilot.key
+docker compose -f compose.yaml -f compose.copilot-secrets.yaml up -d --no-build api web
+```
+
+The creation command requires an existing parent, refuses paths inside the repository and never overwrites a file.
+Use parent mode 0700 and keyring mode 0600; verify runtime read permission without printing the content. The optional
+overlay mounts `/run/secrets/copilot_master_keyring`. On this Docker Desktop host the non-root API UID 100 could read
+the protected file. Do not assume identical Linux bind-mount ownership: provision ownership for the deployed runtime
+user without making the secret world-readable. Default Compose starts without any master; writes then return 503.
+
+Current restricted local keyring: `/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key`.
+It is not an OpenAI credential. Never put either kind of key in Vite variables, Git, logs or screenshots.
+
+Rotation: provision the new master first in the keyring, retain old masters on following lines, run
+`python backend/manage.py rotate_copilot_credentials` inside the API runtime, verify successful rewrapping, then
+retire old masters only after backup/restore compatibility review. Expiry and credential revisions are not extended.
+Lost master without a secure backup means stored API credentials cannot be recovered; users must replace them.
+Replace/delete cancels dependent queued/running operations, but cannot recall a provider request already transmitted.
+Historical backups are not instantly erased. Browser/session loss has no cross-browser credential/memory recovery.
+
+Non-secret settings: `COPILOT_MEMORY_CANDIDATE_DAYS=7`, `COPILOT_MEMORY_CONFIRMED_DAYS=90`,
+`COPILOT_CREDENTIAL_DAYS=30`; these are provisional development defaults, not approved public retention.
+`COPILOT_OPERATION_CAP_MICROUSD`, `COPILOT_SESSION_CAP_MICROUSD`, `COPILOT_DAILY_CAP_MICROUSD` default to zero and
+must be positive before any future live use; neither nonzero values nor keys bypass eligibility. Development Compose
+passes its existing `.env` into the API container. A future production activation requires explicit production wiring
+and eligibility review; this phase does not activate it. Do not reset spending aggregates during credential rotation,
+memory deletion, purge or backup restoration. Account for retained estimates before authorizing future requests.
+
+Candidate/confirmed memory expiry is non-sliding and bounded by owner/source expiry. Disable stops proposals and
+reuse; delete/clear removes active rows. Source conversation deletion cascades derived memory. Explicitly reused
+preferences become independent destination brief data with an application receipt. Export is owner-scoped memory
+only, not the broader T050 export. Existing expiry command removes expired records; public scheduler remains a gate.
+
+## Phase 11 storage recovery and migration evidence
+
+After space recovery, Docker `_ping` returned OK with 7.0 GiB free. Existing `beforebuy-db-1` was started, not
+reinitialized. PostgreSQL completed normal crash recovery/checkpoint and accepted connections; no manual filesystem
+repair, reset, volume deletion or evaluation-authorization reset was performed. Named volume remains
+`beforebuy_beforebuy_pgdata_v18` mounted at `/var/lib/postgresql`. New write errors were not observed in the checked
+post-start DB log interval. This is not a forensic certification of every historical row.
+
+Before development migrations, the API was stopped and a custom-format logical backup was created:
+
+```text
+/Users/mehdi/Backups/beforebuy/phase-11-20261115/pre-memory-credentials.dump
+mode 0600; parent 0700; 200133 bytes
+SHA-256 3833d10d45612a82bc5a328498bfbd9af54070e31bdbb997cc8ee7bc2a29f7c2
+```
+
+`pg_restore --list` succeeded (217 lines). This confirms archive readability, not a full restoration rehearsal.
+Migrations 0011–0014 applied successfully; `makemigrations --check --dry-run` reported no changes. A separately named
+fresh test database applied all migrations and passed 22 focused tests before the runner removed only that test DB.
+Keep the backup outside Git and out of Trash. Rollback: stop application writes, retain current/source volumes and
+restore into a **new** named volume using the documented restore procedure; review accounting before opening access.
+Do not assume reverting application code alone reverses schema or restores cryptographic keys. Full production
+restoration/release rehearsal remains Milestone E, not completed by this phase.

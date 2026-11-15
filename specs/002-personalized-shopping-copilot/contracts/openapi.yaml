@@ -1,13 +1,25 @@
 openapi: 3.1.0
 info:
   title: Beforebuy Shopping Copilot API
-  version: 0.4.0-milestone-c
+  version: 0.5.0-milestone-d
   description: |
     Same-origin guest-owned Milestone A/B contract. Unsafe requests require the
     existing csrftoken cookie and matching X-CSRFToken header. Missing, foreign,
     deleted and expired resources all return RESOURCE_UNAVAILABLE.
 servers: [{url: /api/v1}]
 paths:
+  /copilot/settings:
+    $ref: './personalization.yaml#/settings'
+  /copilot/credential:
+    $ref: './personalization.yaml#/credential'
+  /copilot/memory:
+    $ref: './personalization.yaml#/memory'
+  /copilot/memory/export:
+    $ref: './personalization.yaml#/export'
+  /copilot/memory/{memoryId}:
+    $ref: './personalization.yaml#/memoryDetail'
+  /conversations/{conversationId}/memory:
+    $ref: './personalization.yaml#/conversationMemory'
   /conversations/{conversationId}/choices:
     parameters: [{$ref: '#/components/parameters/ConversationId'}]
     get:
@@ -407,7 +419,9 @@ components:
     CreateConversationRequest:
       type: object
       additionalProperties: false
-      properties: {title: {type: string, minLength: 1, maxLength: 120}}
+      properties:
+        title: {type: string, minLength: 1, maxLength: 120}
+        temporary: {type: boolean, default: false, description: Immutable; no persistent preference reads or writes}
     ConversationSummary:
       type: object
       additionalProperties: false
@@ -415,6 +429,7 @@ components:
       properties:
         id: {type: string, format: uuid}
         status: {type: string, enum: [ACTIVE]}
+        temporary: {type: boolean}
         title: {type: string, maxLength: 120}
         brief_revision: {type: integer, minimum: 0}
         created_at: {type: string, format: date-time}
@@ -665,4 +680,4 @@ components:
         job: {$ref: '#/components/schemas/ResearchJob'}
         operation: {$ref: '#/components/schemas/Operation'}
 
-# Memory, credentials and export remain planned later-milestone contracts.
+# Memory-only export is implemented; whole-feature export T050 remains deferred.

@@ -23,6 +23,7 @@ _worker_identity = f"{os.getpid()}-{id(_executor):x}"
 
 class FixtureGenerator:
     """Honest deterministic development generator; it performs no network or NLP inference."""
+    kind = 'DEVELOPMENT_FIXTURE'
 
     chunks = (
         "پیام شما ثبت شد. ",
@@ -178,6 +179,13 @@ def finalize_operation(operation_id, lease_owner, text):
     conversation, operation = _lock_operation(operation_id)
     if operation is None or operation.status != "RUNNING":
         return False
+    if operation.credential_revision is not None:
+        from analysis.ai.credentials import active_credential
+        credential = active_credential(conversation.guest_context_id)
+        if credential is None or credential.revision != operation.credential_revision:
+            _terminalize_locked(operation, conversation, 'operation.failed', {'code': 'CREDENTIAL_UNAVAILABLE'},
+                                'INTERRUPTED', 'CREDENTIAL_UNAVAILABLE', now)
+            return False
     if conversation.expires_at <= now:
         _terminalize_locked(
             operation, conversation, "operation.failed", {"code": "CONVERSATION_EXPIRED"},
@@ -285,16 +293,19 @@ def fail_unstarted_operation(operation_id, code="SUBMISSION_FAILED"):
 
 def _execute(operation_id):
     close_old_connections()
+    generator = None
     try:
         if not claim_operation(operation_id, _worker_identity):
             return
+        from analysis.ai.openai_copilot import configured_copilot_generator
+        generator = configured_copilot_generator(operation_id)
         if not _publish(
-            operation_id, "operation.started", {"kind": "DEVELOPMENT_FIXTURE"},
+            operation_id, "operation.started", {"kind": generator.kind},
             lease_owner=_worker_identity,
         ):
             return
         text = ""
-        for chunk in FixtureGenerator().generate():
+        for chunk in generator.generate():
             time.sleep(0.12)
             if len(chunk.encode("utf-8")) > 1024:
                 raise ValueError("fixture delta exceeds contract")
@@ -304,9 +315,10 @@ def _execute(operation_id):
             ):
                 return
             text += chunk
-        finalize_operation(operation_id, _worker_identity, text)
+        finalize_operation(operation_id, _worker_identity, getattr(generator, 'final_text', None) or text)
     except Exception:
-        fail_owned_operation(operation_id, _worker_identity, "FIXTURE_FAILED")
+        fail_owned_operation(operation_id, _worker_identity,
+                             "FIXTURE_FAILED" if isinstance(generator, FixtureGenerator) else "GENERATION_FAILED")
     finally:
         close_old_connections()
         _capacity.release()

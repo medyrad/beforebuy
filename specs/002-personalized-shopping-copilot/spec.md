@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Phase 10 Milestone C offline Choice Desk authorized; Milestone B live-source coverage remains partial; Milestone D not authorized
+**Status**: Phase 11 Milestone D T032–T041 authorized for implementation and stubbed verification only; live AI and public sources remain disabled
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و کلید OpenAI متعلق به کاربر.
 
@@ -105,6 +105,11 @@
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
+- **FR-065**: Assistant settings and «شناخت من» MUST be discoverable on desktop/mobile. Credential writes never validate or list models over the network; stored/unvalidated, failed, blocked and validated states are separate. Documentation catalog is explicitly account-unverified; disappearing models fail closed without substitution.
+- **FR-066**: Development-only provisional retention MUST be configurable: candidates 7 days from creation, confirmed preferences 90 days from confirmation, credentials 30 days from save/replace; reads/edits do not renew these anchors. Source conversation deletion/expiry deletes derived memories. Disable stops reuse/proposals without deleting; clear/delete removes active records, not historical backups. Owner access expiry remains an upper bound. Public activation requires product review.
+- **FR-067**: Temporary conversations MUST neither read nor write persistent preferences. Only explicit structured confirmed comparison criteria may become labelled candidates. Reuse requires an explicit action on an unconfirmed brief with revision checks, never overwrites a current criterion, and keeps self/recipient/household separate. Owner-scoped memory-only export does not complete T050.
+- **FR-068**: Credential replacement/deletion MUST invalidate queued credential revisions. Runtime gates MUST reject unsupported deployment independently of stored keys or browser inputs. Existing AIInvocation/budget reservation infrastructure MUST enforce finite operation/session caps across retries, including unknown usage; no new accounting framework.
 
 - **FR-063**: Milestone C MUST use confirmed structured comparison criteria and categorical COPILOT-RANK-v0.1 rules, compare one intended variant with at most three evidenced product alternatives, preserve unresolved/tied outcomes and expose criterion/evidence/tradeoff/unknown/coverage/would-change reasoning. Explicit enjoyment is valid and gift criteria belong to the recipient.
 - **FR-064**: ChoiceSet MUST be owner-scoped, revision/epoch guarded and visibly invalidated by brief edits or stale evidence. Three labelled synthetic category demonstrations MUST use the same persisted evidence, ranking/API/UI path as future live evidence, without source/LLM calls or upgrading attribution.
