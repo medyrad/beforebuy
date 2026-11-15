@@ -3,6 +3,43 @@
 `compose.yaml` فقط stack توسعه است. بستهٔ production در `compose.production.yaml` سه service `web → api → db`
 دارد؛ تکمیل rehearsal محلی به‌معنای مجوز انتشار عمومی یا آمادگی live AI نیست.
 
+## Phase 9.3 — local research diagnostics
+
+No AI token is required. From repository root, inspect one reviewed Torob URL with fresh, proxy-free connections:
+
+```sh
+uv run python scripts/diagnose-research.py --layer direct
+uv run python scripts/diagnose-research.py --layer safe
+docker compose exec -T api python scripts/diagnose-research.py --layer direct
+docker compose exec -T api python scripts/diagnose-research.py --layer safe
+```
+
+Direct records DNS/family/TCP/TLS/HTTP; safe runs the actual SafeFetcher/extractor. No body/cookie/credential is printed
+or retained. Phase 9.3 charges 12/30 attempts (10 inspected + 2 conservative reservations). Do not rerun indefinitely.
+The following single pilot invocation reserves at most 16 attempts (4 preflight + at most 6 per one-target API job).
+It submits zero API jobs unless preflight extracts offers, then creates two fresh conversations to avoid cache reuse.
+Its successful branch has **not** been executed; only the failed-preflight stop was verified. After success, verify
+PostgreSQL and the offer journey at `http://127.0.0.1:58080/copilot`; browser research also consumes the remaining cap.
+Another network is not assumed to resolve HTTP 490. No machine is provisioned or deployed.
+
+```sh
+docker compose exec -T api python backend/manage.py configure_market_sources --enable
+BEFOREBUY_RESEARCH_MODE=LIVE docker compose up -d --no-build --force-recreate api
+docker compose exec -T api python scripts/pilot-reviewed-offer.py
+```
+
+Always restore explicitly after success or failure:
+
+```sh
+docker compose exec -T api python backend/manage.py configure_market_sources --disable
+BEFOREBUY_RESEARCH_MODE=OFFLINE docker compose up -d --no-build --force-recreate api
+docker compose exec -T api python backend/manage.py shell -c 'from django.conf import settings; from analysis.models import SourcePolicy; print(settings.BEFOREBUY_RESEARCH_MODE, SourcePolicy.objects.filter(live_enabled=True).count())'
+```
+
+Expected effective output: `OFFLINE 0`. Toggles preserve observation timestamps/readiness. Exact timestamps created by
+the old command are configuration evidence, not new review; consult the dated source register. Regression command:
+`./scripts/test-backend.sh --keepdb --verbosity 1`.
+
 ## راه‌اندازی
 
 ```bash

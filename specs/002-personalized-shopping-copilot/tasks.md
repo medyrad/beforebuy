@@ -4,6 +4,13 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 # Tasks: دستیار شخصی خرید
 
+## Phase 9.3 — authorized corrective scope
+
+- [X] T067 [B] Diagnose one reviewed exact URL across host, API container, SafeFetcher and API; record stages/proxy presence under 30 outbound attempts; no bypass or new infrastructure.
+- [X] T068 [B] Test and implement at most two validated-address connection attempts with shared deadlines, TLS/Host preservation, conservative request-budget accounting and socket/capacity release.
+- [X] T069 [B] Test source toggles preserving actual review timestamps; separate configuration/readiness from review evidence and reconcile historical source register.
+- [X] T070 [B] Provide reproducible diagnostics; retry API/publication/fresh-fetch/browser only after successful preflight; run PostgreSQL regressions, archive handoff, restore explicit OFFLINE/disabled policies, commit/push. Keep T066 open without its live evidence. — Preflight blocked at HTTP 490; successful live branch remains T066, not claimed complete.
+
 **Input**: artifacts in `/specs/002-personalized-shopping-copilot/`  
 **Authorization**: Phase 9/9.1 authorizes Milestone B tasks `T013–T023` and `T055–T059`. Phase 9.2 authorizes only `T060–T066` for a real-source offer pilot and minimal offer panel؛ the rest of Milestones C–E remains pending.  
 **TDD**: behavioral tests MUST fail for the intended missing behavior before paired implementation.
@@ -32,7 +39,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 ## Milestone B — Evidence foundation
 
-- [ ] T013 [B] Complete domain terms/robots review and approve an initial allowlist in `specs/002-personalized-shopping-copilot/source-feasibility.md`; unavailable domains stay disabled — **Partial:** reviewed register complete، but no source has sufficient permission/retention/display evidence for live enablement
+- [ ] T013 [B] Complete domain terms/robots review and approve an initial allowlist in `specs/002-personalized-shopping-copilot/source-feasibility.md`; unavailable domains stay disabled — **Partial:** reviewed register and narrow Phase 9.2 pilot decision exist; general integration/reuse/retention/display uncertainties remain. Written permission is not a universal prerequisite for that bounded pilot.
 - [X] T014 [P] [US2] Write failing SourcePolicy/ResearchJob/Snapshot/Product/Variant/Offer/Claim constraints and migration tests in `backend/tests/integration/test_research_models.py`
 - [X] T015 [US2] Implement relational evidence entities and non-destructive migrations in `backend/analysis/models.py` and `backend/analysis/migrations/`
 - [X] T016 [P] [US2] Write failing URL/SSRF/redirect/private-address/DNS-rebinding/content-type/size/time/concurrency tests in `backend/tests/unit/test_safe_fetch.py`
@@ -99,7 +106,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 ## Dependencies
 
-`A → B → C`; T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 blocks public live source access. T034 blocks credential implementation. T037/T040 and official region support block any live call. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
+`A → B → C`; T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 gates general source integration; FR-055 separately authorizes the narrow factual pilot. T034 blocks credential implementation. T037/T040 and official region support block live AI calls. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
 
 ## Implementation strategy
 

@@ -6,6 +6,14 @@
 
 Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A conversation/brief، upload و streaming fixture را پیاده کرده و Milestone B pipeline کنترل‌شده را متصل کرده است. Phase 9.2 فقط Torob و direct merchantهای محدود را از همان pipeline فعال، offer normalization/dedup را اضافه و یک offer panel حداقلی در Choice Desk نشان می‌دهد؛ ranking محصول، memory و provider همچنان milestoneهای بعدی‌اند.
 
+## Phase 9.3 corrective boundary
+
+Only T067–T070 are authorized. Diagnose an existing reviewed URL before attributing failure to address selection.
+Try at most two distinct prevalidated addresses before HTTP send, with a shared deadline and a bounded share of
+remaining connection time per address. Every fallback consumes the existing request/domain budget; no extra retry
+budget or proxy is introduced. Preserve actual source review dates independently from policy toggles. Live retries
+require successful SafeFetcher preflight; T066 remains pending until extraction/publication/fresh-repeat evidence exists.
+
 ## Technical Context
 
 **Language/Version**: Python `3.12.x`، TypeScript `5.9.x`  

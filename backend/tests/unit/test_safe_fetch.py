@@ -1,5 +1,6 @@
 import gzip
 import http.client
+import ssl
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -41,6 +42,9 @@ class FakeConnection:
     def request(self, method, path, headers=None):
         self.request_data = (method, path, headers)
 
+    def connect(self):
+        pass
+
     def getresponse(self):
         return self.response
 
@@ -49,6 +53,98 @@ class FakeConnection:
 
 
 class SafeFetchTests(TestCase):
+    def test_pinned_tls_preserves_sni_and_closes_raw_socket_on_failure(self):
+        from analysis.research.fetch import _PinnedHTTPSConnection
+        from unittest.mock import Mock
+        raw = Mock()
+        context = Mock()
+        context.wrap_socket.side_effect = ssl.SSLError('certificate failure')
+        with patch('analysis.research.fetch.ssl.create_default_context', return_value=context), \
+                patch('analysis.research.fetch._connect_numeric', return_value=raw):
+            connection = _PinnedHTTPSConnection('products.example', 443, '1.1.1.1', 1)
+            with self.assertRaises(ssl.SSLError):
+                connection.connect()
+        context.wrap_socket.assert_called_once_with(raw, server_hostname='products.example')
+        raw.close.assert_called_once()
+
+    def test_fallback_cannot_exceed_request_budget(self):
+        class Broken(FakeConnection):
+            def connect(inner):
+                raise OSError('unreachable')
+        calls = []
+        budget = FetchBudget(max_requests=1)
+        with self.assertRaisesRegex(FetchError, 'REQUEST_BUDGET_EXHAUSTED'):
+            SafeFetcher(resolver=lambda *_: ['93.184.216.34', '1.1.1.1'],
+                        connector=lambda *args: calls.append(args) or Broken(None)).fetch(
+                'https://products.example/p/item', self.policy(), budget)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(budget.request_count, 1)
+
+    def test_unreachable_first_address_falls_back_and_accounts_both_attempts(self):
+        calls, closed = [], []
+        class Connection(FakeConnection):
+            def connect(inner):
+                if len(calls) == 1:
+                    raise OSError('unreachable')
+            def close(inner):
+                closed.append(inner)
+        def connector(scheme, host, port, address, timeout):
+            calls.append((scheme, host, port, address, timeout))
+            return Connection(FakeResponse(headers={'Content-Type': 'text/plain'}))
+        budget = FetchBudget()
+        result = SafeFetcher(resolver=lambda *_: ['93.184.216.34', '1.1.1.1'], connector=connector).fetch(
+            'https://products.example/p/item', self.policy(), budget)
+        self.assertEqual(result.approved_ip, '1.1.1.1')
+        self.assertEqual(result.body, b'ok')
+        self.assertEqual(budget.request_count, 2)
+        self.assertEqual(len(closed), 2)
+        self.assertEqual([c[:4] for c in calls], [
+            ('https', 'products.example', 443, '93.184.216.34'),
+            ('https', 'products.example', 443, '1.1.1.1')])
+        self.assertEqual(closed[-1].request_data[2]['Host'], 'products.example')
+
+    def test_connection_fallback_is_capped_and_releases_capacity(self):
+        closed = []
+        class Broken(FakeConnection):
+            def connect(inner):
+                raise OSError('unreachable')
+            def close(inner):
+                closed.append(inner)
+        from analysis.research.fetch import _outbound_capacity
+        for _ in range(3):
+            budget = FetchBudget()
+            with self.assertRaisesRegex(FetchError, 'TRANSPORT_ERROR'):
+                SafeFetcher(resolver=lambda *_: ['93.184.216.34', '1.1.1.1', '8.8.8.8'],
+                            connector=lambda *_: Broken(FakeResponse(headers={'Content-Type': 'text/plain'}))).fetch(
+                    'https://products.example/p/item', self.policy(), budget)
+            self.assertEqual(budget.request_count, 2)
+        self.assertEqual(len(closed), 6)
+        self.assertTrue(_outbound_capacity.acquire(blocking=False))
+        _outbound_capacity.release()
+
+    def test_expired_shared_deadline_prevents_second_connection(self):
+        clock = [100.0]
+        calls = []
+        class Broken(FakeConnection):
+            def connect(inner):
+                clock[0] = 121.0
+                raise TimeoutError()
+        with patch('analysis.research.fetch.time.monotonic', side_effect=lambda: clock[0]):
+            budget = FetchBudget(deadline_monotonic=120.0)
+            with self.assertRaisesRegex(FetchError, 'JOB_DEADLINE_EXCEEDED'):
+                SafeFetcher(resolver=lambda *_: ['93.184.216.34', '1.1.1.1'],
+                            connector=lambda *args: calls.append(args) or Broken(FakeResponse(headers={'Content-Type': 'text/plain'}))).fetch(
+                    'https://products.example/p/item', self.policy(), budget)
+        self.assertEqual(len(calls), 1)
+
+    def test_http_rejection_never_retries_another_address(self):
+        budget = FetchBudget()
+        with self.assertRaisesRegex(FetchError, 'HTTP_STATUS'):
+            SafeFetcher(resolver=lambda *_: ['93.184.216.34', '1.1.1.1'],
+                        connector=lambda *_: FakeConnection(FakeResponse(status=490))).fetch(
+                'https://products.example/p/item', self.policy(), budget)
+        self.assertEqual(budget.request_count, 1)
+
     def policy(self, **changes):
         values = dict(
             hostname="products.example",

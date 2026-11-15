@@ -1,5 +1,5 @@
-from django.core.management.base import BaseCommand
-from django.utils import timezone
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
 from analysis.models import SourcePolicy
 
@@ -37,19 +37,28 @@ class Command(BaseCommand):
         parser.add_argument("--enable", action="store_true", help="Enable the narrow live pilot policies.")
         parser.add_argument("--disable", action="store_true", help="Disable the narrow live pilot policies.")
 
+    @transaction.atomic
     def handle(self, *args, **options):
         if options["enable"] == options["disable"]:
-            raise ValueError("Choose exactly one of --enable or --disable")
+            raise CommandError("Choose exactly one of --enable or --disable")
         enabled = options["enable"]
-        observed = timezone.now()
         for hostname, values in POLICIES.items():
             defaults = {
                 **values, "allowed_ports": [443], "redirect_rules": {},
-                "readiness": "ENABLED" if enabled else "LIVE_PROBE", "live_enabled": enabled,
-                "robots_observed_at": observed, "terms_observed_at": observed if values["terms_url"] else None,
+                "live_enabled": enabled,
+                "access_notes": values["access_notes"] + " Review evidence dated 2026-11-15: "
+                    "specs/002-personalized-shopping-copilot/source-feasibility.md; exact review time unknown. "
+                    "Configuration toggle does not fetch/review documents or prove technical readiness.",
                 "retention_notes": "Raw response <=24h; normalized evidence expires with owning conversation.",
                 "display_constraints": "Minimal factual fields with source and merchant attribution; no market-wide claim.",
                 "freshness_seconds": 21600, "min_interval_ms": 2000,
             }
-            SourcePolicy.objects.update_or_create(hostname=hostname, defaults=defaults)
+            source, created = SourcePolicy.objects.select_for_update().get_or_create(
+                hostname=hostname, defaults={**defaults, "readiness": "DISABLED"})
+            if not created:
+                for evidence_field in ("access_notes", "robots_url", "terms_url"):
+                    defaults.pop(evidence_field)
+            for key, value in defaults.items():
+                setattr(source, key, value)
+            source.save(update_fields=list(defaults))
             self.stdout.write(f"{hostname}: {'ENABLED' if enabled else 'DISABLED'}")

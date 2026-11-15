@@ -23,6 +23,10 @@ Conversation 1─* StreamOperation 1─* StreamEvent
 - **UserCredential**: fixed OPENAI provider، ciphertext/envelope/key version/masked hint/timestamps; master key external.
 - **StreamOperation/Event**: revision/token/kind/status/cancel، idempotency key/request hash، lease owner/expiry و terminal reason؛ eventها sequence یکتا و expiry 24 ساعته دارند. operation/message authoritative تا conversation expiry باقی می‌ماند.
 
+Phase 9.3: `request_count` conservatively includes each connection fallback in the existing request/domain cap.
+Source review timestamps are observation evidence, never refreshed by toggles; unknown exact times stay null with
+date-precision evidence in access notes. `live_enabled` is independent of `readiness`.
+
 ## Approved Milestone A/B retention
 
 مصوب Milestone A: Conversation، Message و current Brief revision برابر 90 روز پس از آخرین user message پذیرفته‌شده یا

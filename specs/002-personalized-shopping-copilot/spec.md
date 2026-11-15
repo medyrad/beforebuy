@@ -106,6 +106,9 @@
 
 ### Functional Requirements
 
+- **FR-061**: Phase 9.3 connection fallback MUST use at most two distinct addresses from one fully public-validated DNS result, retain hostname TLS/SNI/Host, share request/job deadlines, close failed sockets and count each additional connection against existing request/domain budgets. Fallback is only before HTTP send; policy, HTTP and parser failures are not retried.
+- **FR-062**: Source enable/disable MUST preserve real review timestamps; configuration changes are not observations. Diagnostics MUST distinguish fresh host/container/application responses from captured/tool content, use at most 30 outbound attempts, and restore explicit OFFLINE/disabled policies. T066 requires real extraction/publication and a fresh repeat.
+
 - **FR-001**: محصول MUST تجربهٔ فارسی، RTL، responsive و accessible گفت‌وگومحور برای تصمیم خرید چند category ارائه کند؛ پوشش UI MUST NOT به معنی آمادگی data source هر category باشد.
 - **FR-002**: کاربر MUST بتواند بدون account اجباری conversation بسازد، ادامه دهد و حذف کند؛ ownership با session server-side موجود یا مرز معادل اثبات‌شده enforce شود.
 - **FR-003**: message ورودی MUST text و MAY یک یا چند image محدود باشد؛ type، size، count، metadata و retention فایل باید validation و disclosure صریح داشته باشند.

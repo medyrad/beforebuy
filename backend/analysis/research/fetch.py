@@ -80,7 +80,20 @@ class _PinnedHTTPConnection(http.client.HTTPConnection):
         super().__init__(host, port=port, timeout=timeout)
 
     def connect(self):
-        self.sock = socket.create_connection((self.approved_ip, self.port), self.timeout)
+        self.sock = _connect_numeric(self.approved_ip, self.port, self.timeout)
+
+
+def _connect_numeric(address, port, timeout):
+    # Numeric socket address: no second DNS lookup after public-address validation.
+    family = socket.AF_INET6 if ipaddress.ip_address(address).version == 6 else socket.AF_INET
+    raw = socket.socket(family, socket.SOCK_STREAM)
+    try:
+        raw.settimeout(timeout)
+        raw.connect((address, port))
+        return raw
+    except BaseException:
+        raw.close()
+        raise
 
 
 class _PinnedHTTPSConnection(http.client.HTTPSConnection):
@@ -89,8 +102,14 @@ class _PinnedHTTPSConnection(http.client.HTTPSConnection):
         super().__init__(host, port=port, timeout=timeout, context=ssl.create_default_context())
 
     def connect(self):
-        raw = socket.create_connection((self.approved_ip, self.port), self.timeout)
-        self.sock = self._context.wrap_socket(raw, server_hostname=self.host)
+        deadline = time.monotonic() + self.timeout
+        raw = _connect_numeric(self.approved_ip, self.port, self.timeout)
+        try:
+            raw.settimeout(SafeFetcher._remaining(deadline))
+            self.sock = self._context.wrap_socket(raw, server_hostname=self.host)
+        except BaseException:
+            raw.close()
+            raise
 
 
 def default_resolver(hostname, port):
@@ -223,8 +242,26 @@ class SafeFetcher:
                 raise FetchError("OUTBOUND_CAPACITY")
             connection = None
             try:
-                approved_ip = addresses[0]
-                connection = self.connector(parts.scheme, hostname, port, approved_ip, self._remaining(request_deadline))
+                candidates = list(dict.fromkeys(addresses))[:2]
+                for index, approved_ip in enumerate(candidates):
+                    if index:
+                        # Conservative accounting: failed connection attempts consume the
+                        # same request/domain limits as HTTP requests, not a new retry pool.
+                        budget.consume_request(hostname)
+                    timeout = self._remaining(request_deadline) / (len(candidates) - index)
+                    try:
+                        connection = self.connector(parts.scheme, hostname, port, approved_ip, timeout)
+                        connection.connect()
+                        break
+                    except (OSError, http.client.HTTPException):
+                        if connection is not None:
+                            connection.close()
+                            connection = None
+                        self._remaining(request_deadline)
+                        if index + 1 == len(candidates):
+                            raise
+                if getattr(connection, "sock", None) is not None:
+                    connection.sock.settimeout(self._remaining(request_deadline))
                 path = parts.path or "/"
                 if parts.query:
                     path += "?" + parts.query

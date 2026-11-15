@@ -513,7 +513,7 @@ components:
         stage: {type: string, maxLength: 32}
         completed: {type: integer, minimum: 0}
         total: {type: integer, minimum: 0, maximum: 3}
-        request_count: {type: integer, minimum: 0, maximum: 20}
+        request_count: {type: integer, minimum: 0, maximum: 20, description: "Conservative request budget usage including failed connection attempts and validated-address fallback; not a count of successful HTTP responses."}
         decoded_bytes: {type: integer, minimum: 0}
         wire_bytes: {type: integer, minimum: 0}
         redirect_count: {type: integer, minimum: 0}

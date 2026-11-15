@@ -1,5 +1,15 @@
 # ثبت تصمیم‌ها
 
+## Phase 9.3 — connectivity and review provenance
+
+- Local-only, no AI token/provider needed. At most 30 outbound attempts; one existing Torob URL first.
+- SafeFetcher may attempt at most two distinct fully validated public IPs before sending HTTP, using shared
+  request/job deadlines and the existing request/domain budget. No fallback on HTTP/parser/policy failure.
+- Source toggles preserve review timestamps/readiness. New rows use null exact timestamps with dated review evidence.
+- Fresh host/container TLS succeeded and HTTP 490 prevented extraction. Its remote cause is unresolved; neither
+  first-address selection nor missing AI credentials explains this observation. Captured data is not live proof.
+- T066 remains open; default OFFLINE/disabled policies restored. No network relocation or later milestone approved.
+
 این سند چهار وضعیت را جدا نگه می‌دارد. جابه‌جایی هر مورد بین بخش‌ها باید با تصمیم صریح و به‌روزرسانی specificationهای متاثر انجام شود.
 
 ## تصمیم‌های تاییدشده توسط کاربر

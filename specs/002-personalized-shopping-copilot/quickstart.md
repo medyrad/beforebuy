@@ -1,5 +1,9 @@
 # Quickstart — Milestone A/B offline and fixture stack
 
+Phase 9.3 diagnostics/pilot/reset commands: [backend operations](../../docs/backend-operations.md#phase-93--local-research-diagnostics).
+The diagnostic scripts need no AI token. Current source preflight returns HTTP 490; successful live pilot is pending.
+Reset with explicit `BEFOREBUY_RESEARCH_MODE=OFFLINE`, never an ambient default.
+
 1. After reviewing `.env`, run `docker compose up -d db`, then `docker compose run --rm api python backend/manage.py
    migrate --noinput`, then `docker compose up --build -d`. Compose builds React, starts Django/PostgreSQL and exposes
    the complete offline stack through NGINX; no host npm process is required and no volume is reset.

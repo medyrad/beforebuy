@@ -9,7 +9,11 @@
 `SYNTHETIC_FIXTURE` ≠ `CAPTURED_REAL_FIXTURE` ≠ `LIVE_PROBE` ≠ `REPEATABLE_LIVE_EXTRACTION` ≠ `ENABLED`.
 HTTP 200 extraction نیست؛ extraction permission/license نیست؛ robots جامع نیست؛ timeout منع دائمی نیست. default runtime `OFFLINE` است و live failure به fixture fallback نمی‌کند.
 
-## Register
+## Historical source review register (Phases 9–9.2)
+
+The table records prior observations, not fresh Phase 9.3 network responses. `ENABLED_NARROW_PILOT` below is a
+historical policy decision, not current runtime or proof of a working adapter. Current runtime is OFFLINE with zero
+enabled policies. Prior captured/tool-provided content is not evidence of today's host/container connectivity.
 
 | Domain / exact paths | Role/category | Policy evidence (URL, observed) | Direct observation | Identity / extracted fields | Retention/display/rate | Decision |
 |---|---|---|---|---|---|---|
@@ -26,11 +30,49 @@ HTTP 200 extraction نیست؛ extraction permission/license نیست؛ robots �
 
 ## Coverage and allowlist decision
 
-- **Enabled live source integration after Phase 9.2 implementation:** only the narrow exact-product policies above، installed explicitly by an operator command and still gated by `BEFOREBUY_RESEARCH_MODE=LIVE`. Default runtime remains `OFFLINE`; fixtures are never fallback. Apple/adidas/Decathlon and every excluded/search/account path remain disabled.
+- **Narrow pilot policy approval:** the reviewed exact-product policies may be installed explicitly; runtime enablement is a separate `live_enabled` flag and `BEFOREBUY_RESEARCH_MODE=LIVE` gate. Current runtime is OFFLINE with zero enabled policies. Apple/adidas/Decathlon and excluded paths remain disabled.
 - **Captured real fixture verified:** Philips appliance identity and Technolife electronics merchant identity/out-of-stock state. Both are minimal, checksummed and labelled historical/non-current in `backend/tests/fixtures/research/manifest.json`.
-- **Iranian offer feasibility:** Technolife page was directly reachable/extractable but contained no current price and was out of stock. Torob policy pages were reachable but exact offer extraction was not performed. No cheapest-in-Iran or current availability claim is supported.
+- **Historical Phase 9 only:** the earlier Technolife fixture was out of stock and Torob extraction had not yet been performed. Phase 9.2 subsequently extracted captured Torob offers and merchant JSON-LD; neither establishes repeatable live application extraction. Technolife's conflicting currency representation still needs a validated source-specific adapter; enabling its row does not resolve that gap.
 - **Sports/fashion:** blocked. Nike permission is unresolved and adidas/Decathlon terms disallow the required automated access without permission. `T018` and `T019` remain incomplete for sports coverage.
-- **Required clarification:** ask Philips and Technolife whether low-volume automated retrieval for attributed comparison is permitted, which fields/excerpts may be displayed, maximum retention, required attribution/contact and rate policy. Ask Torob whether a documented public feed/API or licensed terms exist for offer reuse.
+- **Unresolved reuse questions:** permitted fields, retention, display and rate limits remain source-specific uncertainties. No message was sent. Written permission is not a universal prerequisite for the separately authorized narrow factual pilot.
+
+## Phase 9.3 connectivity and current readiness (2026-11-15)
+
+Exact target: `https://torob.com/p/bb037069-fba8-4964-a758-6adcec22898f/q60d/`.
+Fresh observations at 08:03:36–08:09:30 UTC resolve only IPv4 `81.12.31.29`, not an IPv6/public-address ordering case.
+
+| Layer | DNS/TCP/TLS | HTTP / extraction / publication |
+|---|---|---|
+| Host direct | DNS public IPv4; TCP OK; TLS verified with torob.com SNI | HTTP 490; status probe only, body not retained |
+| API container direct | Same IPv4; TCP OK; TLS verified | HTTP 490; status probe only |
+| Host and container SafeFetcher | Same pinned public IP; proxies not inherited | HTTP 490 → HTTP_STATUS; body/extraction correctly not reached |
+| Real NGINX research API | One outbound attempt | NO_SUPPORTED_SOURCES; PostgreSQL FAILED/HTTP_STATUS snapshot; zero offers |
+
+Job `deccf843-4d5f-401c-80d5-35e50ccb60de` started at 08:07:33 UTC. This was the single diagnostic API comparison;
+no subsequent API pilot retry was made after failed preflight. The reproducible pilot command was run once at 08:09:30;
+it failed preflight with 490 and submitted zero API jobs. No browser rerun: UI unchanged and real-data success absent.
+
+No HTTP(S)/ALL proxy environment variables or system proxy types were present in host/container diagnostics. The
+established boundary is a non-success HTTP response after verified TLS, not unavailable TCP connectivity or a missing
+AI token. The reason the remote HTTP endpoint issues 490 (edge/origin policy or another cause) is unknown. Older
+timeouts and captured/tool observations cannot establish today's root cause; another server/network is not assumed
+to fix it. No anti-bot/SSRF/proxy bypass was attempted.
+
+Accounting: 10 outbound attempts have inspected results (2 host, 2 container, 1 API, 4 reproducible layer checks,
+1 pilot preflight). An initial two-attempt diagnostic process had no retained completion output and is conservatively
+charged two more: **12/30 reserved/consumed ceiling, 10 observed**. No hidden retry/redirect was observed; no provider calls.
+
+| Source | Adapter | Technical evidence | Narrow policy | Runtime | Repeatable live app |
+|---|---|---|---|---|---|
+| Torob | implemented | captured offers; fresh 490 | approved | disabled | no |
+| Bkalaa/Takkalaban | generic JSON-LD implemented | historical captured offers; not re-probed | approved | disabled | no |
+| Technolife | generic JSON-LD only; currency-conflict gap | historical body, no validated current offer | narrow review recorded, adapter gate unresolved | disabled | no |
+| Digikala | no stable offer adapter | historical routing shell | no activation | disabled | no |
+
+Review provenance: source review is documented only to date precision (2026-11-15). New configuration rows keep exact
+observation timestamps null and cite that evidence date. Repeated toggles preserve existing timestamps/readiness.
+Existing values generated by the old command (for example torob.com 05:49:25 UTC) are configuration timestamps, not
+new document observations; they are preserved for audit and must not be interpreted as renewed review age.
 
 ## Approved runtime policy
 
