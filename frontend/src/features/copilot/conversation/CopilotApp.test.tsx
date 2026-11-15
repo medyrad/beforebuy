@@ -43,7 +43,8 @@ describe('Copilot milestone A shell', () => {
     render(<CopilotApp />)
     expect(await screen.findByRole('heading', { name: 'همراه خرید' })).toBeInTheDocument()
     expect(screen.getByText('بدون AI زنده')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'هنوز گزینه‌ای برای مقایسه نداریم.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'پیشنهادهای واقعی و منبع‌دار' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'هنوز پیشنهادی بررسی نشده است.' })).toBeInTheDocument()
     expect(screen.queryByText(/قیمت بازار:/)).not.toBeInTheDocument()
   })
 
@@ -113,5 +114,35 @@ describe('Copilot milestone A shell', () => {
     FakeEventSource.current?.emit('stream.replay_gap', JSON.stringify({ reconcile_url: '/api/v1/operations/op' }))
     await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/operations/op'))).toBe(true))
     expect(FakeEventSource.current?.closed).toBe(true)
+  })
+
+  it('starts exact-url research and renders scoped attributed offers with unknown totals', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const job = {
+        id: 'job-1', conversation_id: conversation.id, operation_id: 'research-op', mode: 'LIVE', fixture_labeled: false,
+        status: 'SUCCESS', stage: 'COMPLETED', completed: 1, total: 1, request_count: 1, decoded_bytes: 1000, wire_bytes: 800, redirect_count: 0,
+        targets: [{ source_id: 'takkalaban.com', url: 'https://takkalaban.com/product/philips-na230/' }], brief_revision: 0, current_for_brief: true,
+        coverage: { extracted: ['takkalaban.com'], blocked: [], failed: [], mode: 'LIVE' }, limits: {}, snapshots: [],
+        offers: [{ id: 'offer-1', variant_id: 'variant-1', product_name: 'Philips NA230', seller: 'Takkalaban', source_name: 'takkalaban.com',
+          source_url: 'https://takkalaban.com/product/philips-na230/', merchant_url: 'https://takkalaban.com/product/philips-na230/', item_price: 239900000,
+          source_currency: 'IRR', price_toman: 23990000, shipping_toman: null, mandatory_charges_toman: null, total_payable_toman: null,
+          availability: 'IN_STOCK', observation_kind: 'MERCHANT_PAGE_VERIFIED', evidence_state: 'LIVE', observed_at: '2026-11-15T10:00:00Z',
+          fresh_until: '2026-11-15T16:00:00Z' }], created_at: '2026-11-15T10:00:00Z', started_at: '2026-11-15T10:00:00Z', completed_at: '2026-11-15T10:00:01Z',
+      }
+      const data = url.endsWith('/session') ? { expires_at: conversation.expires_at }
+        : url.endsWith('/research') && init?.method === 'POST' ? { job, operation: { id: 'research-op', status: 'COMPLETED' }, idempotent_replay: false, events_url: '/events' }
+        : url.endsWith('/research-jobs/job-1') ? job : url.includes('/conversations/') ? conversation : { items: [conversation], next_cursor: null }
+      return new Response(JSON.stringify(data), { status: url.endsWith('/research') ? 202 : 200, headers: { 'Content-Type': 'application/json' } })
+    })
+    render(<CopilotApp />)
+    const input = await screen.findByRole('textbox', { name: 'لینک‌های دقیق محصول' })
+    await user.type(input, 'https://takkalaban.com/product/philips-na230/')
+    await user.click(screen.getByRole('button', { name: 'بررسی پیشنهادها' }))
+    expect(await screen.findByText('کمترین قیمت بین منابع بررسی‌شده')).toBeInTheDocument()
+    expect(screen.getByText('۲۳٬۹۹۰٬۰۰۰ تومان')).toBeInTheDocument()
+    expect(screen.getByText(/هزینهٔ ارسال و مبلغ نهایی نامعلوم/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'مشاهده منبع' })).toHaveAttribute('href', 'https://takkalaban.com/product/philips-na230/')
   })
 })

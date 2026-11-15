@@ -22,7 +22,8 @@ class IdentityResult:
 
 
 def reconcile_variant(left, right):
-    common = set(left.identifiers) & set(right.identifiers)
+    strong_identifiers = {"mpn", "gtin", "gtin13", "model_code"}
+    common = set(left.identifiers) & set(right.identifiers) & strong_identifiers
     for key in common:
         if str(left.identifiers[key]).casefold() != str(right.identifiers[key]).casefold():
             raise IdentityConflict(f"identifier:{key}")

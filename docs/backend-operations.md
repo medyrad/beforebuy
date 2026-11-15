@@ -262,6 +262,28 @@ docker compose --project-name beforebuy-prod --env-file /etc/beforebuy/productio
 
 ## محدودیت‌های فعلی
 
+### پایلوت منبع واقعی Phase 9.2
+
+حالت امن Compose همچنان `BEFOREBUY_RESEARCH_MODE=OFFLINE` است. policyهای exact-product فقط با فرمان operator نصب
+می‌شوند؛ search/account/cart pathها allowlist نیستند:
+
+```bash
+docker compose exec api python backend/manage.py configure_market_sources --enable
+BEFOREBUY_RESEARCH_MODE=LIVE docker compose up --build -d api web
+```
+
+هر job حداکثر سه domain، ۲۰ request، دو redirect/request، ۲MiB wire/decoded/page و ۶۰ ثانیه deadline دارد؛ policyهای
+پایلوت pace حداقل ۲ ثانیه و freshness شش ساعت دارند. Phase ceiling عملیاتی جداگانه ۱۰۰ request است و operator باید
+مصرف across jobs/diagnostics را ثبت کند. در اجرای 2026-11-15 مصرف کنترل‌شده 29 بود؛ direct pinned access این workspace
+به Torob/Technolife/Takkalaban timeout و DNS Bkalaa fail شد. proxy، SSRF bypass یا fixture fallback مجاز نیست.
+
+پس از rehearsal policyها و runtime را به default برگردانید:
+
+```bash
+docker compose exec api python backend/manage.py configure_market_sources --disable
+docker compose up -d --force-recreate api
+```
+
 ### volume توسعه و rollback Phase 6.2
 
 PostgreSQL توسعه با image دقیق `postgres@sha256:aa6eb304ddb6dd26df23d05db4e5cb05af8951cda3e0dc57731b771e0ef4ab29`

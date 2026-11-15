@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from django.test import Client, TestCase, override_settings
 
-from analysis.models import ResearchJob, StreamOperation
+from analysis.models import Offer, ResearchJob, StreamOperation
 from analysis.research.jobs import perform_research
 
 
@@ -74,6 +74,22 @@ class ResearchApiTests(TestCase):
         claim = completed.json()["snapshots"][0]["claims"][0]
         self.assertEqual(claim["variant"]["canonical_identifier"], "SYN-A1")
         self.assertEqual(claim["variant"]["model_name"], "قهوه‌ساز آزمایشی A1")
+
+        snapshot = job.snapshots.get()
+        variant = snapshot.claims.order_by("created_at").first().variant
+        Offer.objects.create(snapshot=snapshot, variant=variant, item_price_minor=12_000_000, currency="IRT",
+                             price_toman=12_000_000, seller="فروشگاه ب", availability="IN_STOCK",
+                             observation_kind="COMPARISON_OBSERVED", observed_at=snapshot.retrieval_time)
+        Offer.objects.create(snapshot=snapshot, variant=variant, item_price_minor=12_000_000, currency="IRT",
+                             price_toman=12_000_000, seller="فروشگاه ب", availability="IN_STOCK",
+                             observation_kind="MERCHANT_PAGE_VERIFIED", observed_at=snapshot.retrieval_time)
+        Offer.objects.create(snapshot=snapshot, variant=variant, item_price_minor=11_000_000, currency="IRT",
+                             price_toman=11_000_000, seller="فروشگاه الف", availability="IN_STOCK",
+                             observation_kind="COMPARISON_OBSERVED", observed_at=snapshot.retrieval_time)
+        offer_view = self.client.get(f"/api/v1/research-jobs/{job.id}").json()["offers"]
+        self.assertEqual([item["price_toman"] for item in offer_view], [11_000_000, 12_000_000])
+        self.assertEqual(offer_view[1]["observation_kind"], "MERCHANT_PAGE_VERIFIED")
+        self.assertIsNone(offer_view[0]["total_payable_toman"])
 
     @patch("analysis.api.research.submit_research_reserved", return_value=True)
     @patch("analysis.api.research.release_research_slot")

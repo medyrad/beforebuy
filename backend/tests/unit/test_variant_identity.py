@@ -27,3 +27,8 @@ class VariantIdentityTests(TestCase):
         left = VariantIdentity("Nike", "Run Swift 3", {}, {"size": "42"}, False, "NEW")
         right = VariantIdentity("Nike", "Run Swift III", {}, {"size": "42"}, False, "NEW")
         self.assertEqual(reconcile_variant(left, right).status, "AMBIGUOUS")
+
+    def test_model_code_matches_across_merchants_without_treating_sku_as_universal(self):
+        left = VariantIdentity("Philips", "Philips NA230", {"model_code": "NA230", "sku": "shop-a"}, {}, False, "NEW")
+        right = VariantIdentity("Philips", "سرخ کن فیلیپس NA230", {"model_code": "NA230", "sku": "shop-b"}, {}, False, "NEW")
+        self.assertEqual(reconcile_variant(left, right).status, "MATCH")

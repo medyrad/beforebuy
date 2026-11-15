@@ -56,3 +56,19 @@ export interface Upload {
   height: number
   expires_at: string
 }
+
+export interface ResearchOffer {
+  id: string; variant_id: string; product_name: string; seller: string | null; source_name: string
+  source_url: string | null; merchant_url: string | null; item_price: number | null; source_currency: string | null
+  price_toman: number | null; shipping_toman: number | null; mandatory_charges_toman: number | null
+  total_payable_toman: number | null; warranty: string | null
+  availability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'PREORDER' | 'UNKNOWN'
+  observation_kind: 'COMPARISON_OBSERVED' | 'MERCHANT_PAGE_VERIFIED'
+  evidence_state: 'LIVE' | 'CACHE' | 'STALE' | 'CAPTURED_FIXTURE' | 'SYNTHETIC'; observed_at: string; fresh_until: string
+}
+
+export interface ResearchJob {
+  id: string; status: string; stage: string; completed: number; total: number; request_count: number
+  coverage: { extracted?: string[]; blocked?: { source_id: string; code: string }[]; failed?: { source_id: string; code: string }[]; mode?: string }
+  offers: ResearchOffer[]
+}

@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Milestone B implementation authorized for T013–T023; later milestones remain planned
+**Status**: Milestone B Phase 9.2 real-source offer pilot authorized; full Choice Desk and later milestones remain planned
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و کلید OpenAI متعلق به کاربر.
 
@@ -160,6 +160,12 @@
 - **FR-052**: fetch/extraction candidate خارج lock ساخته شود، ولی snapshot، product/variant/offer/claims، counters و `evidence.published`/progress MUST به‌صورت یک per-source transaction پس از revalidation conversation/operation/job/policy ذخیره شوند. stale/cancel/delete/expiry/lease loss یا rollback MUST هیچ evidence unit یا orphan identity باقی نگذارد؛ cache reuse همین guard را دارد.
 - **FR-053**: SafeFetcher MUST DNS resolution، pacing/capacity، connect/TLS/header/body و کل request/job را با remaining deadline محدود کند؛ compressed wire و decoded bytes، malformed/truncated/composite gzip و normalized path/redirect destination policy را enforce کند. test-only connector MAY controlled localhost server را استفاده کند، ولی production SSRF policy تغییر نکند.
 - **FR-054**: persisted job limits MUST execution budget واقعی را بسازند و request/redirect/wire/decoded counters و coverage failure codeها را ثبت کنند. هر job فقط یک sequential lease owner دارد؛ process-local outbound semaphore global نیست. ResearchJob و StreamOperation در submission failure، cancel، exception، stale lease/brief/expiry و completion MUST در یک transition یا reconciliation authoritative همگرا شوند و network خودکار restart نشود.
+- **FR-055**: Phase 9.2 MAY فقط sourceهای عمومی بدون منع صریح در material بررسی‌شده را برای pilot خواندنی، با exact product path، attribution، field minimization، raw retention حداکثر 24h، evidence owner-scoped، freshness حداکثر 6h و pace حداقل 2s فعال کند. `robots` allowance یا HTTP 200 مجوز عمومی نیست و terms/robots/extraction باید statusهای جدا بمانند.
+- **FR-056**: LIVE extractor MUST برای هر offer، exact variant identity، merchant identity، product/source URL، merchant URL در صورت وجود، original numeric price/currency، normalized `price_toman`، availability، shipping/mandatory-charge unknown، warranty/condition، observation time، freshness و `COMPARISON_OBSERVED|MERCHANT_PAGE_VERIFIED` را جدا نگه دارد. Rial فقط با rule صریح `10 IRR = 1 TOMAN` normalize می‌شود؛ unit از magnitude حدس زده نمی‌شود.
+- **FR-057**: offer comparison MUST فقط variantهای compatible را گروه کند، same merchant/offer را در sourceها deduplicate کند و discrepancy میان comparison observation و merchant verification را حفظ کند. Merchant SKU به‌تنهایی cross-store identifier نیست.
+- **FR-058**: research API MUST offer view منبع‌دار و deterministic ارائه کند. sort اول lowest observed item price میان comparable offerهاست؛ lowest total payable فقط وقتی shipping و mandatory componentها معلوم‌اند. unknown total MUST جدا بماند.
+- **FR-059**: copilot route MUST exact product URL list محدود، action صریح research، progress، partial/source failure و offer panel فارسی/RTL را نشان دهد. برچسب محدوده قیمت باید «کمترین قیمت بین منابع بررسی‌شده» باشد و MUST NOT پوشش بازار یا delivered-price کامل را ادعا کند. LIVE، cache، stale، captured fixture و synthetic جدا نشان داده شوند.
+- **FR-060**: Phase 9.2 live pilot MUST حداکثر 100 outbound HTTP request شامل policy check، redirect و retry داشته باشد، actual usage را ثبت کند و public-source observation را از deterministic regression suite جدا نگه دارد. fixture fallback، provider call، account، purchase و bypass ممنوع است.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -201,4 +207,4 @@
 - self-hosted model/GPU، provider abstraction چندگانه یا fallback به AvalAI.
 - account اجباری، social/public conversation sharing و cross-device recovery در این feature.
 - تشخیص روان‌شناختی، پیش‌بینی علمی regret و استخراج ویژگی حساس.
-- ranking/Choice Desk کامل، memory، credential، live AI و public deployment در Phase 9 مجاز نیستند.
+- ranking/Choice Desk کامل، personalized alternatives، memory، credential، live AI و public deployment در Phase 9.2 مجاز نیستند؛ offer panel حداقلی صراحتاً مجاز است.

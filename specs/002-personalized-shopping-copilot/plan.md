@@ -4,7 +4,7 @@
 
 ## Summary
 
-Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A conversation/brief، upload محافظت‌شده و streaming واقعی fixture را پیاده کرده است؛ Milestone B فقط policy/fetch/extract/identity/job evidence را اضافه می‌کند و ranking، memory و provider همچنان milestoneهای بعدی‌اند.
+Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A conversation/brief، upload و streaming fixture را پیاده کرده و Milestone B pipeline کنترل‌شده را متصل کرده است. Phase 9.2 فقط Torob و direct merchantهای محدود را از همان pipeline فعال، offer normalization/dedup را اضافه و یک offer panel حداقلی در Choice Desk نشان می‌دهد؛ ranking محصول، memory و provider همچنان milestoneهای بعدی‌اند.
 
 ## Technical Context
 
@@ -81,6 +81,7 @@ NGINX web ── /api/ ──> Django/DRF
 |---|---|---|
 | A — Conversation foundation | conversation/message/brief، guest ownership، bounded fixture executor، upload boundary و fixture streaming | contract + ownership + reconnect/cancel/interruption tests |
 | B — Evidence foundation | policy/fetch/extract/variant/offer برای سه fixture category | extraction + SSRF/limit/failure tests |
+| B.2 — Real offer pilot | exact URL، Torob/direct merchant adapters، normalized offers و minimal in-app panel | stubbed adapter/regression tests + bounded five-product live observation + NGINX browser evidence |
 | C — Choice Desk | ranking deterministic، total cost، comparison responsive | invariant/component/browser tests |
 | D — Personalization & OpenAI readiness | memory opt-in، encrypted key، adapter stub و gates | secret/memory/model tests؛ live calls zero |
 | E — Production rehearsal & pilot gate | SSE proxy/restart/backup/retention و allowlist review | Compose rehearsal؛ approvals جدا |
@@ -129,6 +130,7 @@ tests/e2e/copilot-milestone-a.spec.ts
 ## Release Gates
 
 1. هر source فقط پس از policy review و extraction fixture وارد allowlist می‌شود.
+   Phase 9.2 narrow pilot برای `/p/` ترب و exact product pathهای direct merchant با pace حداقل 2s، freshness 6h، raw 24h و attribution مجاز است؛ این تصمیم blanket license یا full-market coverage نیست.
 2. OpenAI برای ایران تا پشتیبانی رسمی/قابل اتکا fail closed است؛ user key bypass نیست. Milestone A هیچ provider call ندارد.
 3. retention Milestone A و raw/evidence Milestone B مصوب است؛ retention مربوط به memory/credential، backup-erasure operations، encryption-key operations و target host پیش از pilot بسته می‌شوند.
 4. هیچ milestone این feature، `T039` feature 001 را کامل نمی‌کند.

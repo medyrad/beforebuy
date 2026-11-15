@@ -5,7 +5,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 # Tasks: دستیار شخصی خرید
 
 **Input**: artifacts in `/specs/002-personalized-shopping-copilot/`  
-**Authorization**: Phase 9/9.1 authorizes Milestone B tasks `T013–T023` and focused corrective tasks `T055–T059`؛ Milestones C–E remain pending.  
+**Authorization**: Phase 9/9.1 authorizes Milestone B tasks `T013–T023` and `T055–T059`. Phase 9.2 authorizes only `T060–T066` for a real-source offer pilot and minimal offer panel؛ the rest of Milestones C–E remains pending.  
 **TDD**: behavioral tests MUST fail for the intended missing behavior before paired implementation.
 
 ## Milestone A — Conversation foundation
@@ -48,6 +48,13 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 - [X] T057 [P] [US2] Write failing production-path controlled-source tests for fetch→extract→identity→offer/claims→events، rollback، cache/cancel، mixed outcomes and lifecycle reconciliation in `backend/tests/integration/test_research_pipeline.py`
 - [X] T058 [US2] Connect validated targets to SourcePolicy، shared job budgets، SafeFetcher، deterministic extraction and guarded atomic evidence publication; synchronize ResearchJob/StreamOperation terminal transitions without enabling a public source
 - [X] T059 [US2] Reassess T020–T023، run focused/full PostgreSQL and NGINX/browser verification، archive Phase 9 handoff and update contracts/tooling/quickstart/handoff with controlled-versus-public readiness truth
+- [X] T060 [B] Reassess current Torob، Digikala and at most three direct Iranian merchant policies/extraction; record prohibition، documented permission، no explicit rule، access failure and technical failure separately in `source-feasibility.md`
+- [X] T061 [P] [US2] Write failing adapter/normalization tests for Torob embedded offers and direct JSON-LD merchant offers، explicit IRR/IRT conversion، missing/invalid price، stock، layout drift، freshness، variant identity، seller dedup and unknown-total sorting in `backend/tests/unit/`
+- [X] T062 [US2] Add the minimum offer provenance fields/migration and source-specific extraction registry، then narrowly configure reviewed exact product paths through the existing policy/fetch/publication pipeline
+- [X] T063 [P] [US2] Write failing PostgreSQL/API tests for multiple offers، partial source failure، deterministic comparable-offer view، ownership/cancel/expiry/stale publication and existing request budgets، then expose the attributed offer view in research status
+- [X] T064 [P] [US2] Write failing React tests for exact URL input، explicit research action، progress، live/cache/stale labels، Persian offer copy، unknown shipping/total and partial failures
+- [X] T065 [US2] Implement the minimal existing-route Choice Desk offer panel and API client without implementing product ranking، alternatives، memory or AI; add mobile/desktop NGINX browser coverage
+- [ ] T066 [B] Execute the bounded five-product/three-category live pilot under the 100-request phase ceiling، repeat one successful source، record actual offers/timestamps/URLs and screenshot evidence، run affected/full verification، update handoff، commit and push without staging `test.txt` — **partial:** five-product attempt and UI evidence complete; direct workspace transport yielded no successful source، so successful-source repeat and ≥3 live offers remain pending
 
 **Checkpoint B**: only approved fixture domains yield citations; access failures remain explicit.
 

@@ -341,6 +341,7 @@ class SourcePolicy(models.Model):
         choices=[
             ("MANUFACTURER", "Manufacturer"),
             ("MERCHANT", "Merchant"),
+            ("COMPARISON", "Comparison"),
             ("EXPERT", "Expert"),
             ("CUSTOMER_REVIEW", "Customer review"),
         ],
@@ -488,9 +489,17 @@ class Offer(models.Model):
     variant = models.ForeignKey(Variant, on_delete=models.PROTECT, related_name="offers")
     item_price_minor = models.BigIntegerField(null=True)
     currency = models.CharField(max_length=12, null=True)
+    price_toman = models.BigIntegerField(null=True)
     shipping_minor = models.BigIntegerField(null=True)
+    mandatory_charges_minor = models.BigIntegerField(null=True)
     total_payable_minor = models.BigIntegerField(null=True)
     seller = models.CharField(max_length=200, null=True)
+    merchant_url = models.URLField(max_length=1000, null=True)
+    observation_kind = models.CharField(
+        max_length=32,
+        choices=[("COMPARISON_OBSERVED", "Comparison observed"), ("MERCHANT_PAGE_VERIFIED", "Merchant page verified")],
+        default="MERCHANT_PAGE_VERIFIED",
+    )
     warranty = models.CharField(max_length=200, null=True)
     registration = models.CharField(max_length=200, null=True)
     availability = models.CharField(
@@ -512,8 +521,16 @@ class Offer(models.Model):
                 name="copilot_offer_item_price_nonnegative",
             ),
             models.CheckConstraint(
+                condition=models.Q(price_toman__isnull=True) | models.Q(price_toman__gte=0),
+                name="copilot_offer_price_toman_nonnegative",
+            ),
+            models.CheckConstraint(
                 condition=models.Q(shipping_minor__isnull=True) | models.Q(shipping_minor__gte=0),
                 name="copilot_offer_shipping_nonnegative",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(mandatory_charges_minor__isnull=True) | models.Q(mandatory_charges_minor__gte=0),
+                name="copilot_offer_mandatory_charges_nonnegative",
             ),
             models.CheckConstraint(
                 condition=models.Q(total_payable_minor__isnull=True) | models.Q(total_payable_minor__gte=0),

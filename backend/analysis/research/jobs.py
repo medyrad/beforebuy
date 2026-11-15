@@ -182,9 +182,10 @@ def _identity_for(extraction):
     brand = extraction.product.brand or "UNKNOWN"
     incoming = VariantIdentity(brand, extraction.product.model_name, extraction.variant.identifiers,
                                extraction.variant.attributes, False, "NEW")
-    for variant in Variant.objects.select_related("product").filter(
-        product__brand__iexact=brand, product__model_name__iexact=extraction.product.model_name
-    ):
+    candidates = Variant.objects.select_related("product").filter(product__brand__iexact=brand)
+    if not any(key in extraction.variant.identifiers for key in {"mpn", "gtin", "gtin13", "model_code"}):
+        candidates = candidates.filter(product__model_name__iexact=extraction.product.model_name)
+    for variant in candidates:
         existing = VariantIdentity(variant.product.brand, variant.product.model_name, variant.identifiers,
                                    variant.attributes, variant.bundle, variant.condition)
         try:
@@ -207,11 +208,14 @@ def _persist_extraction(job, policy, candidate, now):
         fingerprint=hashlib.sha256(candidate["body"]).hexdigest(), extractor_version=EXTRACTOR_VERSION,
         raw_content=candidate["body"], raw_expires_at=now + timedelta(hours=24))
     variant = _identity_for(result)
-    if result.offer:
-        Offer.objects.create(snapshot=snapshot, variant=variant, item_price_minor=result.offer.item_price_minor,
-                             currency=result.offer.currency, shipping_minor=result.offer.shipping_minor,
-                             total_payable_minor=result.offer.total_payable_minor, seller=result.offer.seller,
-                             availability=result.offer.availability, observed_at=candidate["retrieved_at"])
+    for offer in result.offers:
+        Offer.objects.create(snapshot=snapshot, variant=variant, item_price_minor=offer.item_price_minor,
+                             currency=offer.currency, price_toman=offer.price_toman,
+                             shipping_minor=offer.shipping_minor, mandatory_charges_minor=offer.mandatory_charges_minor,
+                             total_payable_minor=offer.total_payable_minor, seller=offer.seller,
+                             merchant_url=offer.merchant_url, observation_kind=offer.observation_kind,
+                             warranty=offer.warranty, availability=offer.availability,
+                             observed_at=candidate["retrieved_at"])
     for claim in result.claims:
         EvidenceClaim.objects.create(snapshot=snapshot, variant=variant, field=claim.field,
                                      normalized_value={"value": claim.value}, source_location=claim.source_location,
@@ -245,8 +249,10 @@ def _persist_cache(job, cached):
         raw_content=cached.raw_content, raw_expires_at=cached.raw_expires_at)
     for offer in cached.offers.all():
         Offer.objects.create(snapshot=clone, variant=offer.variant, item_price_minor=offer.item_price_minor,
-                             currency=offer.currency, shipping_minor=offer.shipping_minor,
+                             currency=offer.currency, price_toman=offer.price_toman, shipping_minor=offer.shipping_minor,
+                             mandatory_charges_minor=offer.mandatory_charges_minor,
                              total_payable_minor=offer.total_payable_minor, seller=offer.seller,
+                             merchant_url=offer.merchant_url, observation_kind=offer.observation_kind,
                              warranty=offer.warranty, registration=offer.registration,
                              availability=offer.availability, observed_at=offer.observed_at)
     for claim in cached.claims.all():

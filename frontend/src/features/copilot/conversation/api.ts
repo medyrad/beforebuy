@@ -1,4 +1,4 @@
-import type { Brief, Conversation, ConversationSummary, Operation, Upload } from './types'
+import type { Brief, Conversation, ConversationSummary, Operation, ResearchJob, Upload } from './types'
 
 export class CopilotApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message) }
@@ -41,6 +41,12 @@ export const copilotApi = {
   }),
   cancel: (id: string) => call<Operation>(`/api/v1/operations/${id}/cancel`, { method: 'POST', body: '{}' }),
   operation: (id: string) => call<Operation>(`/api/v1/operations/${id}`),
+  startResearch: (id: string, revision: number, targets: { source_id: string; url: string }[], key: string) =>
+    call<{ job: ResearchJob; operation: Operation; events_url: string }>(`/api/v1/conversations/${id}/research`, {
+      method: 'POST', headers: { 'Idempotency-Key': key }, body: JSON.stringify({ expected_brief_revision: revision, targets }),
+    }),
+  research: (id: string) => call<ResearchJob>(`/api/v1/research-jobs/${id}`),
+  cancelResearch: (id: string) => call<{ job: ResearchJob; operation: Operation }>(`/api/v1/research-jobs/${id}/cancel`, { method: 'POST', body: '{}' }),
   upload: (conversationId: string, image: File) => {
     const body = new FormData(); body.set('conversation_id', conversationId); body.set('image', image)
     return call<Upload>('/api/v1/uploads', { method: 'POST', body })

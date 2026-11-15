@@ -17,3 +17,10 @@ Pipeline `COPILOT-RANK-v0.1`: `normalize → resolve_variant → hard_filters �
 | `UNKNOWN` | no contribution; lowers coverage |
 
 Review/editorial/merchant rating types remain separate and retain source/sample/date/scale/limits. Every rank exposes rules، components، evidence IDs، missing fields، cost status، tradeoffs و `would_change_if`. Cases cover boundaries، unknown shipping، variant mismatch، gift context، conflicting sources، ties، stale offer and missing review.
+
+## Phase 9.2 offer-view ordering (not product ranking)
+
+- فقط offerهای یک `Variant` compatible در یک گروه قابل مقایسه‌اند؛ merchant SKU شناسهٔ cross-store نیست.
+- ترتیب پیش‌فرض: `price_toman` معلوم صعودی، سپس seller normalized، observation time و UUID. قیمت نامعلوم بعد از قیمت معلوم است.
+- same variant + normalized seller + same `price_toman` در view یکی می‌شود و `MERCHANT_PAGE_VERIFIED` بر `COMPARISON_OBSERVED` ترجیح نمایشی دارد؛ observation خام و اختلاف قیمت حذف نمی‌شود.
+- `total_payable_toman` فقط وقتی item، shipping و mandatory charge معلوم‌اند معتبر است. unknown shipping/fee صفر نیست و «کمترین قیمت بین منابع بررسی‌شده» فقط item-price scope را توصیف می‌کند.

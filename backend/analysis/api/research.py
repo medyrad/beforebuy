@@ -1,4 +1,5 @@
 import re
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -28,6 +29,39 @@ from .errors import CopilotUnavailable
 
 def serialize_research_job(job):
     snapshots = job.snapshots.order_by("created_at")
+    now = timezone.now()
+    visible_offers = {}
+    for snapshot in snapshots.select_related("source_policy").prefetch_related("offers__variant__product"):
+        fresh_until = snapshot.retrieval_time + timedelta(seconds=snapshot.source_policy.freshness_seconds)
+        state = ("SYNTHETIC" if snapshot.fixture_label and snapshot.extractor_version == "SYNTHETIC-v1"
+                 else "CAPTURED_FIXTURE" if snapshot.fixture_label else "CACHE" if snapshot.status == "CACHE_HIT" else "LIVE")
+        if state not in {"SYNTHETIC"} and fresh_until <= now:
+            state = "STALE"
+        for offer in snapshot.offers.all():
+            seller_key = re.sub(r"\s+", " ", (offer.seller or "").strip()).casefold()
+            key = (str(offer.variant_id), seller_key, offer.price_toman)
+            item = {
+                "id": str(offer.id), "variant_id": str(offer.variant_id),
+                "product_name": offer.variant.product.model_name, "seller": offer.seller,
+                "source_name": snapshot.source_policy.hostname, "source_url": snapshot.canonical_url,
+                "merchant_url": offer.merchant_url, "item_price": offer.item_price_minor,
+                "source_currency": offer.currency, "price_toman": offer.price_toman,
+                "shipping_toman": offer.shipping_minor,
+                "mandatory_charges_toman": offer.mandatory_charges_minor,
+                "total_payable_toman": offer.total_payable_minor,
+                "warranty": offer.warranty, "availability": offer.availability,
+                "observation_kind": offer.observation_kind, "evidence_state": state,
+                "observed_at": offer.observed_at.isoformat(), "fresh_until": fresh_until.isoformat(),
+            }
+            previous = visible_offers.get(key)
+            if previous is None or (previous["observation_kind"] == "COMPARISON_OBSERVED"
+                                    and item["observation_kind"] == "MERCHANT_PAGE_VERIFIED"):
+                visible_offers[key] = item
+    offers = sorted(
+        visible_offers.values(),
+        key=lambda item: (item["price_toman"] is None, item["price_toman"] or 0,
+                          (item["seller"] or "").casefold(), item["observed_at"], item["id"]),
+    )
     return {
         "id": str(job.id),
         "conversation_id": str(job.conversation_id),
@@ -47,6 +81,7 @@ def serialize_research_job(job):
         "current_for_brief": job.conversation.brief_revision == job.brief_revision,
         "coverage": job.coverage,
         "limits": job.limits,
+        "offers": offers,
         "snapshots": [
             {
                 "id": str(item.id),
@@ -62,9 +97,13 @@ def serialize_research_job(job):
                     {
                         "item_price_minor": offer.item_price_minor,
                         "currency": offer.currency,
+                        "price_toman": offer.price_toman,
                         "shipping_minor": offer.shipping_minor,
+                        "mandatory_charges_minor": offer.mandatory_charges_minor,
                         "total_payable_minor": offer.total_payable_minor,
                         "seller": offer.seller,
+                        "merchant_url": offer.merchant_url,
+                        "observation_kind": offer.observation_kind,
                         "warranty": offer.warranty,
                         "registration": offer.registration,
                         "availability": offer.availability,

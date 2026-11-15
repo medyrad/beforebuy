@@ -255,3 +255,11 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
   حفظ می‌شوند؛ حذف volume یا restore روی volume فعال مجاز نیست.
 - فرمان canonical backend از ریشه `scripts/test-backend.sh` است و label `tests` را از working directory backend
   اجرا می‌کند تا با `tests/e2e` collision نداشته باشد. live AI، public release و `T039` با این اصلاح تغییری نمی‌کنند.
+
+## Phase 9.2 — narrow real-offer pilot
+
+- تصمیم narrow pilot با مجوز عمومی یا پوشش بازار یکی نیست: exact `/p/` ترب و exact product path سه direct merchant فقط با اقدام صریح کاربر، attribution، field minimization، raw retention حداکثر 24h، freshness 6h و pace حداقل 2s قابل فعال‌سازی‌اند. robots allowance/HTTP 200 به‌تنهایی permission نیست.
+- دیجی‌کالا به‌خاطر شکست extraction پایدار خاموش می‌ماند، نه به ادعای منع حقوقی. sourceهای دارای منع صریح و همه search/account/cart pathها خاموش‌اند.
+- قیمت original/currency از `price_toman` جداست؛ IRR فقط با `10 IRR = 1 TOMAN` تبدیل می‌شود و تعارض واحد fail closed است. shipping و mandatory charges نامعلوم صفر نیستند و total payable فقط با اجزای کامل ساخته می‌شود.
+- مقایسه فقط variantهای compatible است؛ merchant SKU شناسهٔ بین‌فروشگاهی نیست. duplicate observation حذف نمایشی می‌شود ولی provenance/discrepancy خام باقی می‌ماند.
+- default runtime همچنان `OFFLINE` است. فعال‌سازی policy و اجرای pilot commandهای صریح operator می‌خواهد؛ هیچ fixture، AI/provider، account، purchase یا public deployment در این تصمیم مجاز نیست.

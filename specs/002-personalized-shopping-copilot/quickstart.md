@@ -47,8 +47,28 @@ does not start work. To cancel, `POST /api/v1/research-jobs/{job_id}/cancel` wit
 docker compose up -d --force-recreate api
 ```
 
-with `BEFOREBUY_RESEARCH_MODE` unset/`OFFLINE`. `LIVE` currently has zero enabled source policy and must report
-`NO_SUPPORTED_SOURCES`; it must not silently emit fixture evidence.
+with `BEFOREBUY_RESEARCH_MODE` unset/`OFFLINE`. It must not silently emit fixture evidence.
+
+## Explicit Phase 9.2 local real-offer pilot
+
+Default Compose remains `OFFLINE`. After reading `source-feasibility.md` and without changing public deployment، apply
+migrations and explicitly install the reviewed exact-product policies:
+
+```sh
+docker compose exec api python backend/manage.py migrate --noinput
+docker compose exec api python backend/manage.py configure_market_sources --enable
+BEFOREBUY_RESEARCH_MODE=LIVE docker compose up --build -d api web
+```
+
+Open `http://127.0.0.1:58080/copilot`، edit/confirm a brief، enter one to three exact HTTPS product URLs and select
+«بررسی پیشنهادها». Only Torob `/p/`، the two reviewed Technolife product IDs، and exact `/product/` paths at Bkalaa/
+Takkalaban are configured. Search/query/fragment URLs remain rejected. Network/policy/extraction failures are shown and
+never fall back to fixture. To restore the safe default and disable policies:
+
+```sh
+docker compose exec api python backend/manage.py configure_market_sources --disable
+docker compose up -d --force-recreate api
+```
 
 ## Controlled LIVE pipeline verification
 
