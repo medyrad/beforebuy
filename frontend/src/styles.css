@@ -17,7 +17,15 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; min-width: 320px; min-height: 100vh; line-height: 1.75; }
-button, input, textarea { font: inherit; }
+button, input, textarea, select, option { font: inherit; }
+/* Native popup rendering still belongs to the browser/OS. Keep the closed
+   controls aligned with adjacent Persian fields, not the UA's Arial default. */
+:is(.personal-panel, .personal-choice, .brief-form) :is(input, select, textarea, .button) {
+  font-family: Vazirmatn, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.75;
+}
 button { cursor: pointer; }
 button:disabled { cursor: wait; opacity: .65; }
 :focus-visible { outline: 3px solid #e49445; outline-offset: 3px; }

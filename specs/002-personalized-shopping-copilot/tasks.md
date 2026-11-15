@@ -174,6 +174,12 @@ quality, account model access and live market coverage remain unevaluated.
 - [x] T095 [US4] Compare OpenRouter/Groq official free API terms/quotas/eligibility, record blockers and onboarding requirements; verify affected UI and update handoff (FR-089). Live integration stays pending without an eligible contract.
 - [ ] T096 [US4] After documented Iran eligibility and a fixed free-model/privacy contract, implement the requested provider-bound connection/settings and stubbed adapter tests. Blocked on `free-provider-readiness.md` questions; external sign-in links do not complete integration (FR-089).
 
+## Bounded free-route feasibility and native typography (2026-11-16)
+
+- [x] T098 [US4] Review at most two exact OpenRouter free text routes, their upstream terms, Iran eligibility, privacy, unfunded access and zero-price evidence in `free-provider-readiness.md`; do not implement a blocked integration (FR-090).
+- [x] T099 [US5] Reproduce native select font mismatch with computed-style and before screenshots; fix existing Vazirmatn inheritance/bidi and verify provider/model/category, keyboard and mobile layout through NGINX in `tests/e2e/copilot-typography.spec.ts` (FR-091).
+- [x] T100 [US5] Record verified results, native-popup limitations and precise free-route prerequisites in operations/handoff; prepare related-only Git delivery (FR-090/091; observed remote hash reported in final delivery). T096 remains conditional on route eligibility, not on merely supplying a key.
+
 ## Dependencies
 
 `A → B evidence models/controlled fixtures → offline C`; public extraction and T066 gate live coverage, not offline C. T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 gates general source integration; FR-055 separately authorizes the narrow factual pilot. T034 blocks credential implementation. T037/T040 and official region support block live AI calls. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.

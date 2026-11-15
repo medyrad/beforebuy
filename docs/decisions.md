@@ -350,6 +350,14 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
 
 ## Settings correction and free API review — 2026-11-16
 
+Bounded follow-up supersedes the previous no-new-provider scope only conditionally: examine at most two exact
+OpenRouter free routes, then integrate only if suitability is established. Current review of NVIDIA Lightning
+and Baidu ERNIE endpoints did not establish the Iranian account/upstream contract and informed retention consent;
+this is not a claim of prohibition. No route selected or key form added. T096 remains open. Ten-attempt free-only
+policy is specified but not implemented/activated; paid authorization remains off. See updated
+`specs/002-personalized-shopping-copilot/free-provider-readiness.md` for exact source evidence and support questions.
+Native Vazirmatn select inheritance and bounded form typography are independently authorized (FR-091).
+
 - Confirmed: existing local credential saving was unavailable because the API container lacked the original keyring mount; restore it without rotation. Provider selection must never retain the previous provider's editable credential on partial failure.
 - Approved scope: bug fixes, existing local mount restoration, synthetic verification and primary-source free API research. AI stays mock, research OFFLINE; no live authorization inferred.
 - Delivery refinement: synchronously serialize settings mutations and discard obsolete lifecycle continuations; verify rapid changes/double submission explicitly. Current request authorizes related commit/push, not another provider or live calls.

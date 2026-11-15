@@ -459,6 +459,29 @@ server-rendered from current deterministic values. Raw Responses JSON is never e
 disabled; no restart, migration or fixture demonstration authorizes a provider/source call.
 # Phase 11 local settings and memory
 
+## Bounded OpenRouter follow-up — 2026-11-16
+
+No OpenRouter runtime route has been enabled. The exact two reviewed routes, current free-account documentation,
+upstream terms and unresolved Iran/retention questions are in
+[`free-provider-readiness.md`](../specs/002-personalized-shopping-copilot/free-provider-readiness.md).
+Do not enter an OpenRouter key into OpenAI or GapGPT fields. There is no actionable OpenRouter credential form
+until T096's eligibility/contract gate closes. Published zero prompt/completion prices are not invoice evidence.
+No account privacy change, purchase or provider-generation request occurred. Keep mock/OFFLINE and paid caps zero.
+The future free-only action must reserve at most ten total attempts including validation/retries, independently
+of paid authorization, and reject unknown/nonzero route charges; those controls are not yet implemented.
+
+Canonical secret-aware local startup remains unchanged (uses the existing key; never generate/replace it):
+
+```sh
+COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
+```
+
+Offline startup without credential storage remains `docker compose up -d`. Do not use that base-only command
+to recreate an API which needs the existing secret overlay. This typography delivery rebuilds/recreates **web
+only** with `--no-deps`; no API, database, master key or volume replacement is needed.
+Native closed controls use self-hosted Vazirmatn; native popup appearance can remain OS-controlled. Browser touch
+emulation is not physical-device validation. Model identifiers use bidi isolates and an untruncated wrapped label.
+
 Default remains `COPILOT_AI_MODE=mock` and `BEFOREBUY_RESEARCH_MODE=OFFLINE`. No real API key is required to explore
 `http://127.0.0.1:58080/copilot`. The top navigation exposes «تنظیمات دستیار» and «شناخت من». Saving credentials is
 local encrypted storage only: no validation, discovery or provider request. Direct OpenAI remains region-blocked.

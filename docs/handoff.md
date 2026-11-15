@@ -1,3 +1,66 @@
+# بررسی محدود OpenRouter و اصلاح فونت منوها — 2026-11-16
+
+Baseline: `8cb7c12c7a542c5c5fb894cc49d0388cca79915b`؛ شاخه `002-personalized-shopping-copilot`.
+نتیجهٔ این تحویل: اصلاح typography مستقل انجام شد؛ **اتصال رایگان OpenRouter پیاده/فعال نشده است**.
+طبق شرط درخواست، integration مسدود دیگری ساخته نشد. T096 و feature001 T039 باز هستند.
+
+## نتیجهٔ امکان‌سنجی
+
+- فقط `nvidia/nemotron-3.5-lightning:free` با `nvidia/nvfp4` و
+  `baidu/ernie-5.5-flash-preview:free` با `baidu` بررسی شدند. API عمومی هر دو قیمت ورودی/خروجی صفر نشان داد؛
+  این مشاهده نه تأیید حساب است و نه صورتحساب. مدل انتخاب‌شده برای runtime: **هیچ‌کدام**.
+- NVIDIA قرارداد trial، ثبت داده و الزامات export/sanctions دارد؛ پارامتر structured-output در endpoint بررسی‌شده
+  فهرست نشده بود. Baidu structured-output را فهرست کرده، اما قرارداد regional access را مشروط و نگهداری/استفاده
+  از محتوا را مجاز می‌کند. انطباق مسیر دقیق با کاربران/backend ایران و رضایت آگاهانهٔ داده هنوز احراز نشده است.
+  «احراز نشدن» به معنی «ممنوعیت قطعی ایران» نیست. کیفیت فارسی هیچ‌کدام اندازه‌گیری نشد.
+- منابع رسمی، قراردادهای upstream، quota تاریخ‌دار، شرایط حساب بدون شارژ و متن دقیق سؤال پشتیبانی در
+  [free-provider-readiness.md](../specs/002-personalized-shopping-copilot/free-provider-readiness.md) ثبت شده است.
+  هیچ پیام پشتیبانی از طرف کاربر ارسال نشده است.
+- OpenRouter هنوز informational است. کلید آن را در فرم OpenAI/GapGPT وارد نکنید؛ فرم اختصاصی تا بسته‌شدن gate و
+  اجرای T096 وجود ندارد. سپس pilot باید با اقدام محلی صریح «آزمایش رایگان»، حداکثر ۱۰ تلاش کل شامل retry/validation،
+  سقف پولی صفر و بدون fallback/ابزار پولی پیاده شود. این کنترل‌ها requirement هستند، نه قابلیت تحویل‌شده.
+- تماس generation واقعی: **۰**؛ usage/صورتحساب/ارزیابی مکالمهٔ واقعی: **وجود ندارد**. تنظیمات حریم خصوصی تغییر نکرد.
+
+## اصلاح رابط و شواهد
+
+- علت تأییدشده: `select` در reset فونت نبود؛ provider/model با Arial 13.33px مقابل ورودی Vazirmatn 16px دیده شد.
+  دستهٔ نمونه Vazirmatn 13.6px داشت. reset بومی و typography کنترل‌های فرم اصلاح شد؛ framework جدید نصب نشد.
+- پس از اصلاح provider/model/category و ورودی/دکمهٔ کنارشان Vazirmatn 16px/weight400 دارند؛ کلید LTR می‌ماند و
+  فرم/منو RTL است. شناسهٔ مدل در option با Unicode isolate و زیر منو با `bdi` کامل و قابل شکستن نمایش داده می‌شود.
+- Chromium برای select تک‌خطی با وجود CSS line-height، مقدار computed `normal` برمی‌گرداند؛ کنترل native حفظ شد.
+  ارتفاع واقعی provider/model حدود51.4px و دسته45px است؛ ورودی/دکمه line-height28px دارند. popup سیستم‌عامل را
+  نمی‌توان در همهٔ پلتفرم‌ها با CSS یکسان کرد؛ دستگاه فیزیکی iOS/Android آزموده نشده است.
+- تصاویر قبل: `artifacts/screenshots/typography-before-settings-{390,1440}.png` و
+  `typography-before-category-390.png`. تصاویر بعد: `typography-after-{settings,model,category}-{390,1440}.png`.
+  تصاویر موبایل مدل/دسته و تنظیمات دسکتاپ بازبینی بصری شدند؛ فقط مالک و متن مصنوعی و فرم کلید خالی دارند.
+- آزمون RED واقعی Arial/اندازهٔ ناهماهنگ را ثبت کرد. در توسعهٔ harness، timeout بارگذاری، فرض نادرست وجود مدل دوم
+  OpenAI و نیاز به تأیید brief قبل از دسته اصلاح شدند؛ آن اجراها موفق محسوب نشدند. انتظار line-height بومی نیز
+  پس از مشاهدهٔ computed style به کنترل اندازه/ارتفاع واقعی اصلاح شد؛ رگرسیون خانواده/اندازهٔ فونت حفظ شده است.
+
+## بررسی‌های اجراشده و عملیات
+
+- `AssistantSettings.test.tsx`: **7/7** موفق، شامل خطای load، switching و duplicate/stale mutations.
+- ESLint فایل تغییرکرده موفق؛ یک build تصویر web با TypeScript/Vite موفق. قبل از build فضای آزاد میزبان 1.7GiB،
+  Docker پاسخ‌گو، فایل‌سیستم داخل کانتینر 918GiB آزاد و PostgreSQL ready بود. هیچ cleanup/volume operation انجام نشد.
+- Backend: `docker compose exec -T -w /app/backend api python manage.py test tests.unit.test_provider_credentials tests.unit.test_gapgpt_copilot --settings=config.settings.test --keepdb --verbosity 1`
+  نتیجه **9/9**، صفر failure/error/skip؛ transport ساختگی (از جمله SDK با MockTransport)، نه تماس GapGPT واقعی.
+- NGINX واقعی در `http://127.0.0.1:58080`: credential-switch **2/2** موفق با مالک تازه و کلید مصنوعی/حذف همان کلید؛
+  typography **2/2** موفق در 390 و1440، computed font، انتخاب keyboard/type-ahead، Escape/focus، مدل بلند و viewport.
+  بازاجرای نهایی با tap روی خود select و Escape/focus در هر دو اندازه **2/2** موفق در1.5دقیقه بود؛
+  touch فقط شبیه‌سازی مرورگر است. نتایج نامرتبط قبلی مجدداً اجرا نشدند.
+- فقط web با `up -d --no-deps web` از overlay فعلی بازسازی شد. API/DB و keyring قبلی حفظ شدند؛ mount موجود و
+  مقادیر مؤثر Django `mock / OFFLINE` بررسی شد. دستور canonical بدون تغییر:
+
+```sh
+COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
+```
+
+Spec Kit: FR-090/091 و T098–T100 اضافه شدند؛ analyze محدود پوشش2/2 الزام با3task، صفر مسئلهٔ بحرانی/تعارض قانون،
+و gate صریح eligibility داشت. checklist موجود16/16، بدون hook ثبت‌شده. scoped implement فقط همین اصلاحات؛ نه
+full-product convergence. hash نهایی commit و hash مشاهده‌شدهٔ remote در پاسخ تحویل گزارش می‌شود.
+
+---
+
 # اصلاح تنظیمات ارائه‌دهنده — 2026-11-16
 
 مبنای این اصلاح: `9f9e254fdfa1342ccbe19bbbf536bc09f51ba10d`، شاخهٔ `002-personalized-shopping-copilot`.

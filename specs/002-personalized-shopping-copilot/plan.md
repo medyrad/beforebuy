@@ -4,6 +4,12 @@
 
 ## Summary
 
+Current bounded follow-up: T098–T100, FR-090/091. Research two exact OpenRouter free routes before any adapter.
+If eligibility/privacy cannot be established, document the precise unresolved question and leave T096 pending;
+do not build another unusable provider. Independently fix native select typography in existing CSS, isolate Latin
+model IDs, and use real NGINX computed-style/keyboard/mobile regression tests and screenshots. Preserve existing
+secret-aware startup, credentials, database volumes and mock/OFFLINE runtime. No new framework or paid usage.
+
 Current settings correction scope: T093–T095 and T097 (FR-088/089); T096 is deferred. Clear credential state on every provider transition,
 provide recoverable reload on partial failures, guard save/delete by provider identity and serialize updates.
 Use a synchronous ref lock for same-render events and a lifecycle generation for every asynchronous continuation;

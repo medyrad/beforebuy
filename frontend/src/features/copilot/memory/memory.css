@@ -8,6 +8,7 @@
 .personal-panel p { line-height:1.9; }.personal-panel label { display:grid; gap:.5rem; margin:1rem 0; }
 .personal-panel input,.personal-panel select { width:100%; min-width:0; padding:.7rem; border:1px solid #98a2b3; border-radius:7px; }
 .personal-actions { display:flex; flex-wrap:wrap; gap:.8rem; align-items:center; margin:1rem 0; }
+.selected-model-label { font-size:.875rem; overflow-wrap:anywhere; }
 .personal-panel .button.primary { background:#4f46e5; box-shadow:none; }.personal-panel .text-button { color:#3730a3; }
 .readiness-notice { padding:1rem; background:#eef2ff; border-inline-start:3px solid #4f46e5; }
 .memory-item { border-top:1px solid #d8dde6; padding:1rem 0; }.memory-item h2 { margin:0; }

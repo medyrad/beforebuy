@@ -94,7 +94,8 @@ export function AssistantSettings() {
         if (current()) setCredential(loaded)
       })
     }}>{settings.catalog.saved_status === 'UNAVAILABLE' && <option value={settings.model}>مدل ذخیره‌شده دیگر در فهرست نیست</option>}
-      {settings.catalog.items.map(m => <option key={m.id} value={m.id}>{m.id} — تأییدنشده برای حساب</option>)}</select></label>}
+      {settings.catalog.items.map(m => <option key={m.id} value={m.id}>{'\u2066'}{m.id}{'\u2069'} — تأییدنشده برای حساب</option>)}</select></label>}
+    {settings && <p className="selected-model-label">شناسهٔ مدل انتخاب‌شده: <bdi>{settings.model}</bdi></p>}
     <button className="button ghost" type="button" disabled={busy || !settings} onClick={() => void run(async current => {
         const catalog = await memoryApi.refreshModels()
         if (current()) setSettings(value => value ? { ...value, catalog } : value)
