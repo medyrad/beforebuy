@@ -1,6 +1,9 @@
 import uuid
+from datetime import timedelta
 
 from django.db import models
+from django.db import transaction
+from django.utils import timezone
 
 
 REPORT_MODES = [
@@ -146,4 +149,174 @@ class AIInvocation(models.Model):
         indexes = [models.Index(fields=["guest_context", "created_at"])]
         constraints = [
             models.CheckConstraint(condition=models.Q(attempt_count__lte=2), name="ai_attempt_count_at_most_two"),
+        ]
+
+
+COPILOT_RETENTION_DAYS = 90
+
+
+def copilot_event_expiry():
+    return timezone.now() + timedelta(hours=24)
+
+
+def copilot_upload_expiry():
+    return timezone.now() + timedelta(hours=24)
+
+
+def copilot_brief_unknowns():
+    return ["مخاطب خرید", "دستهٔ محصول", "بودجه", "کاربرد اصلی"]
+
+
+class ConversationManager(models.Manager):
+    @transaction.atomic
+    def create_for_guest(self, guest_context, *, title="گفت‌وگوی خرید"):
+        now = timezone.now()
+        conversation = self.create(
+            guest_context=guest_context,
+            title=title,
+            last_eligible_activity_at=now,
+            expires_at=now + timedelta(days=COPILOT_RETENTION_DAYS),
+        )
+        ShoppingBrief.objects.create(conversation=conversation)
+        return conversation
+
+
+class Conversation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    guest_context = models.ForeignKey(GuestContext, on_delete=models.CASCADE, related_name="conversations")
+    status = models.CharField(max_length=16, default="ACTIVE")
+    title = models.CharField(max_length=120, default="گفت‌وگوی خرید")
+    brief_revision = models.PositiveIntegerField(default=0)
+    generation_epoch = models.PositiveBigIntegerField(default=0)
+    last_eligible_activity_at = models.DateTimeField()
+    expires_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = ConversationManager()
+
+    class Meta:
+        indexes = [models.Index(fields=["guest_context", "-updated_at"])]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(status="ACTIVE"), name="copilot_conversation_active_only"),
+        ]
+
+
+class ShoppingBrief(models.Model):
+    conversation = models.OneToOneField(
+        Conversation, primary_key=True, on_delete=models.CASCADE, related_name="brief"
+    )
+    revision = models.PositiveIntegerField(default=0)
+    recipient_context = models.CharField(
+        max_length=16, null=True, choices=[("SELF", "Self"), ("GIFT", "Gift"), ("HOUSEHOLD", "Household")]
+    )
+    category = models.CharField(max_length=120, null=True)
+    selected_product_label = models.CharField(max_length=160, null=True)
+    budget_toman = models.BigIntegerField(null=True)
+    use_cases = models.JSONField(default=list)
+    hard_constraints = models.JSONField(default=list)
+    unknowns = models.JSONField(default=copilot_brief_unknowns)
+    contradictions = models.JSONField(default=list)
+    provenance = models.JSONField(default=list)
+    confirmed = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(budget_toman__isnull=True) | models.Q(budget_toman__gte=0),
+                name="copilot_brief_budget_null_or_nonnegative",
+            ),
+        ]
+
+
+class Message(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="messages")
+    role = models.CharField(max_length=16, choices=[("USER", "User"), ("ASSISTANT", "Assistant")])
+    state = models.CharField(
+        max_length=16,
+        choices=[("ACCEPTED", "Accepted"), ("FINAL", "Final"), ("FAILED", "Failed"), ("CANCELLED", "Cancelled")],
+    )
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["conversation", "created_at"])]
+
+
+class StreamOperation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="operations")
+    user_message = models.OneToOneField(
+        Message, null=True, on_delete=models.CASCADE, related_name="stream_operation"
+    )
+    final_message = models.OneToOneField(
+        Message, null=True, blank=True, on_delete=models.SET_NULL, related_name="final_for_operation"
+    )
+    status = models.CharField(
+        max_length=16,
+        default="PENDING",
+        choices=[
+            ("PENDING", "Pending"), ("RUNNING", "Running"), ("COMPLETED", "Completed"),
+            ("FAILED", "Failed"), ("CANCELLED", "Cancelled"), ("INTERRUPTED", "Interrupted"),
+        ],
+    )
+    idempotency_key = models.CharField(max_length=128)
+    request_hash = models.CharField(max_length=64)
+    operation_token = models.UUIDField(default=uuid.uuid4, editable=False)
+    expected_brief_revision = models.PositiveIntegerField()
+    next_sequence = models.PositiveIntegerField(default=1)
+    lease_owner = models.CharField(max_length=96, null=True)
+    lease_expires_at = models.DateTimeField(null=True)
+    cancel_requested_at = models.DateTimeField(null=True)
+    terminal_code = models.CharField(max_length=64, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    started_at = models.DateTimeField(null=True)
+    completed_at = models.DateTimeField(null=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["conversation", "status", "created_at"])]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conversation", "idempotency_key"], name="copilot_operation_idempotency_unique"
+            ),
+        ]
+
+
+class StreamEvent(models.Model):
+    operation = models.ForeignKey(StreamOperation, on_delete=models.CASCADE, related_name="events")
+    sequence = models.PositiveIntegerField()
+    event_type = models.CharField(max_length=64)
+    payload = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=copilot_event_expiry, db_index=True)
+
+    class Meta:
+        ordering = ["sequence"]
+        constraints = [
+            models.UniqueConstraint(fields=["operation", "sequence"], name="copilot_event_sequence_unique"),
+        ]
+
+
+class UploadedImage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="uploads")
+    message = models.ForeignKey(Message, null=True, on_delete=models.CASCADE, related_name="uploads")
+    media_type = models.CharField(max_length=32)
+    content = models.BinaryField()
+    size_bytes = models.PositiveIntegerField()
+    width = models.PositiveIntegerField()
+    height = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=copilot_upload_expiry, db_index=True)
+
+    class Meta:
+        indexes = [models.Index(fields=["conversation", "expires_at"])]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(size_bytes__gt=0), name="copilot_upload_size_positive"),
+            models.CheckConstraint(condition=models.Q(width__gt=0), name="copilot_upload_width_positive"),
+            models.CheckConstraint(condition=models.Q(height__gt=0), name="copilot_upload_height_positive"),
         ]

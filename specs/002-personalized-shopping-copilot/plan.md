@@ -4,12 +4,12 @@
 
 ## Summary
 
-Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. streaming با SSE و state authoritative در PostgreSQL طراحی می‌شود؛ memory opt-in و credential متعلق به کاربر مرزهای جدا دارند. Phase 7 فقط artifacts را تولید می‌کند و implementation شروع نمی‌شود.
+Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A اکنون conversation/brief، upload محافظت‌شده و streaming واقعی fixture را روی SSE با state authoritative در PostgreSQL پیاده می‌کند؛ پژوهش، ranking، memory و provider همچنان milestoneهای بعدی‌اند.
 
 ## Technical Context
 
 **Language/Version**: Python `3.12.x`، TypeScript `5.9.x`  
-**Primary Dependencies**: Django `5.2.16`, DRF `3.17.1`, React `19.3.1`, Vite `8.3.8`; dependency تازه در این phase اضافه نمی‌شود  
+**Primary Dependencies**: Django `5.2.16`, DRF `3.17.1`, React `19.3.1`, Vite `8.3.8`; Pillow `13.0.0` فقط برای decode/re-encode امن upload  
 **Storage**: PostgreSQL 18؛ object/file storage جدید تا سنجش upload volume اضافه نمی‌شود  
 **Testing**: backend suite، Vitest، Playwright، fixture HTTP transport و contract tests  
 **Target Platform**: یک Linux server کوچک با Docker Compose و same-origin HTTPS  
@@ -48,7 +48,20 @@ NGINX web ── /api/ ──> Django/DRF
 ```
 
 - REST command state را می‌سازد؛ SSE فقط event همان operation را می‌دهد. reconnect با `Last-Event-ID` و GET state reconcile می‌شود.
-- coordinator داخل process با timeout/cancellation/limit کار می‌کند؛ worker جدا فقط پس از measurement و تصمیم تازه.
+- execution mechanism در Milestone A یک `BoundedThreadPoolExecutor` process-local با دو worker و queue ظرفیت چهار است.
+  `POST message` ابتدا Message/StreamOperation را atomic ثبت می‌کند و فقط با `transaction.on_commit` submit می‌شود.
+  executor هیچ source of truth ندارد: worker با conditional update در PostgreSQL operation `PENDING` را claim،
+  `lease_owner` و `lease_expires_at` ثبت و eventها را در transactionهای کوتاه publish می‌کند. حداکثر دو operation
+  `PENDING|RUNNING` برای هر guest پذیرفته می‌شود؛ overflow پیش از ساخت operation با `429` رد می‌شود.
+- هر application process executor مستقل دارد، اما claim/sequence/cancel/token در PostgreSQL مشترک است. process crash
+  ممکن است `PENDING` ثبت‌شده اما submit‌نشده یا `RUNNING` leaseدار باقی بگذارد. status/reconciliation و cleanup، lease
+  منقضی را به terminal `INTERRUPTED` تبدیل می‌کنند؛ operation خودکار restart نمی‌شود و publish دوباره مجاز نیست.
+  controlled retry فقط operation تازه با idempotency key تازه می‌سازد.
+- browser disconnect فقط subscriber را قطع می‌کند و operation ادامه می‌یابد؛ cancel صریح flag دیتابیس را فوراً ثبت
+  می‌کند و generator میان deltaها آن را می‌سنجد. SSE هیچ execution را start/restart نمی‌کند و lock در generation یا
+  stream wait نگه داشته نمی‌شود.
+- Gunicorn از worker class `gthread` با دو process و چهار request thread استفاده می‌کند؛ executor دو thread جدا دارد.
+  بنابراین دو stream کند cancel/status را پشت pool stream قفل نمی‌کنند. این bound در proxy smoke آزموده می‌شود.
 - source response untrusted است؛ fetch/extract از prompt boundary جداست.
 - OpenAI built-in web search در MVP منبع بازار authoritative نیست.
 - model از catalog allowlisted پس از revalidation capability/price برای ID دقیق انتخاب می‌شود.
@@ -57,7 +70,7 @@ NGINX web ── /api/ ──> Django/DRF
 
 | Milestone | Outcome | Exit evidence |
 |---|---|---|
-| A — Conversation foundation | conversation/message/brief، guest ownership، fixture streaming | contract + ownership + reconnect/cancel tests |
+| A — Conversation foundation | conversation/message/brief، guest ownership، bounded fixture executor، upload boundary و fixture streaming | contract + ownership + reconnect/cancel/interruption tests |
 | B — Evidence foundation | policy/fetch/extract/variant/offer برای سه fixture category | extraction + SSRF/limit/failure tests |
 | C — Choice Desk | ranking deterministic، total cost، comparison responsive | invariant/component/browser tests |
 | D — Personalization & OpenAI readiness | memory opt-in، encrypted key، adapter stub و gates | secret/memory/model tests؛ live calls zero |
@@ -83,14 +96,14 @@ specs/002-personalized-shopping-copilot/
 └── tasks.md
 ```
 
-### Planned source code (not created in Phase 7)
+### Source layout (Milestone A subset implemented)
 
 ```text
 backend/analysis/{api,conversation,research,ranking,memory,ai}/
 frontend/src/features/copilot/{conversation,choice-desk,memory,services}/
 backend/tests/{api,integration,unit}/
 frontend/src/**/*.test.tsx
-tests/e2e/copilot.spec.ts
+tests/e2e/copilot-milestone-a.spec.ts
 ```
 
 **Structure Decision**: repository و deployment surface فعلی حفظ می‌شود؛ moduleهای feature داخل backend/frontend موجود اضافه می‌شوند.
@@ -107,8 +120,8 @@ tests/e2e/copilot.spec.ts
 ## Release Gates
 
 1. هر source فقط پس از policy review و extraction fixture وارد allowlist می‌شود.
-2. OpenAI برای ایران تا پشتیبانی رسمی/قابل اتکا fail closed است؛ user key bypass نیست.
-3. retention، backup erasure، encryption-key operations و target host پیش از pilot بسته می‌شوند.
+2. OpenAI برای ایران تا پشتیبانی رسمی/قابل اتکا fail closed است؛ user key bypass نیست. Milestone A هیچ provider call ندارد.
+3. retention فعال Milestone A مصوب است؛ retention مربوط به memory/credential/research، backup-erasure operations، encryption-key operations و target host پیش از pilot بسته می‌شوند.
 4. هیچ milestone این feature، `T039` feature 001 را کامل نمی‌کند.
 
 ## Complexity Tracking

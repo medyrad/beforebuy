@@ -74,3 +74,12 @@ class DevelopmentComposeTests(SimpleTestCase):
                 }
             ],
         )
+        self.assertEqual(config["services"]["web"]["ports"][0]["host_ip"], "127.0.0.1")
+        self.assertEqual(config["services"]["web"]["ports"][0]["published"], "58080")
+
+    def test_offline_web_uses_development_proxy_and_api_has_thread_capacity(self):
+        config = self.render()
+        self.assertEqual(config["services"]["web"]["build"]["args"]["NGINX_CONFIG"], "deploy/web.dev.conf")
+        command = config["services"]["api"]["command"]
+        self.assertIn("gthread", command)
+        self.assertIn("4", command)

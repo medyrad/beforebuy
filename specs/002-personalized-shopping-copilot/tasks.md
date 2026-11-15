@@ -5,24 +5,24 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 # Tasks: دستیار شخصی خرید
 
 **Input**: artifacts in `/specs/002-personalized-shopping-copilot/`  
-**Authorization**: Phase 7 planning only; every implementation task below remains pending.  
+**Authorization**: Phase 8 authorizes only `T001–T012` and `T049`; all later tasks remain pending.  
 **TDD**: behavioral tests MUST fail for the intended missing behavior before paired implementation.
 
 ## Milestone A — Conversation foundation
 
-- [ ] T001 [A] Revalidate exact existing dependency/runtime versions and record only necessary additions in `docs/tooling.md`; do not add a queue, WebSocket framework or provider framework
-- [ ] T002 [P] [US1] Write failing model/constraint tests for Conversation, Message, ShoppingBrief, StreamOperation and StreamEvent in `backend/tests/integration/test_copilot_models.py`
-- [ ] T003 [US1] Add reviewed migrations and models for T002 in `backend/analysis/models.py` and `backend/analysis/migrations/`; preserve feature 001 rows
-- [ ] T004 [P] [US1] Write failing owner/CSRF/lifecycle/foreign-ID API tests in `backend/tests/api/test_conversations.py`
-- [ ] T005 [US1] Implement owner-scoped conversation CRUD and brief revision CAS in `backend/analysis/api/conversations.py` and `backend/analysis/conversation/`
-- [ ] T006 [P] [US1] Write failing pure brief-builder cases for self/gift/household, Persian money, unknowns, contradictions and image attribution in `backend/tests/unit/test_brief_builder.py`
-- [ ] T007 [US1] Implement versioned brief normalization/confirmation without product-fact invention in `backend/analysis/conversation/brief.py`
-- [ ] T008 [P] [US4] Write failing SSE contract tests for sequence, duplicate, reconnect gap, provisional/final, heartbeat and terminal errors in `backend/tests/api/test_stream_events.py`
-- [ ] T009 [US4] Implement PostgreSQL-backed operation/event publication and same-origin SSE endpoint in `backend/analysis/conversation/streaming.py` and `backend/analysis/api/operations.py`
-- [ ] T010 [US4] Write failing cancellation races for delete/cancel/brief-edit versus late publish in `backend/tests/integration/test_copilot_concurrency.py`, then implement operation-token guards outside network locks in `backend/analysis/conversation/operations.py`
-- [ ] T011 [P] [US1] Write failing React component tests for Persian conversation, brief ribbon, upload validation, stop/error and bidi in `frontend/src/features/copilot/conversation/*.test.tsx`
-- [ ] T012 [US1] Implement fixture-only conversation shell and API client in `frontend/src/features/copilot/conversation/` without changing default feature 001 route
-- [ ] T049 [US1] Write failing upload API tests for owner isolation, CSRF, MIME/signature, size/count, metadata stripping, retention and delete races in `backend/tests/api/test_copilot_uploads.py`, then implement the bounded backend upload boundary in `backend/analysis/api/uploads.py` without object-storage dependency
+- [X] T001 [A] Revalidate exact existing dependency/runtime versions and record only necessary additions in `docs/tooling.md`; do not add a queue, WebSocket framework or provider framework
+- [X] T002 [P] [US1] Write failing model/constraint tests for Conversation, Message, ShoppingBrief, StreamOperation and StreamEvent in `backend/tests/integration/test_copilot_models.py`
+- [X] T003 [US1] Add reviewed migrations and models for T002 in `backend/analysis/models.py` and `backend/analysis/migrations/`; preserve feature 001 rows
+- [X] T004 [P] [US1] Write failing owner/CSRF/lifecycle/foreign-ID API and cleanup tests in `backend/tests/api/test_conversations.py` and `backend/tests/integration/test_copilot_cleanup.py`
+- [X] T005 [US1] Implement owner-scoped conversation CRUD, brief revision CAS and expired conversation/upload/event purge in `backend/analysis/api/conversations.py`, `backend/analysis/conversation/` and the existing cleanup command; preserve feature 001 expiry and owners with active conversations
+- [X] T006 [P] [US1] Write failing pure brief-builder cases for self/gift/household, Persian money, unknowns, contradictions and image attribution in `backend/tests/unit/test_brief_builder.py`
+- [X] T007 [US1] Implement versioned brief normalization/confirmation without product-fact invention in `backend/analysis/conversation/brief.py`
+- [X] T008 [P] [US4] Write failing SSE contract tests for sequence, duplicate, reconnect gap, provisional/final, heartbeat and terminal errors in `backend/tests/api/test_stream_events.py`
+- [X] T009 [US4] Implement PostgreSQL-backed operation/event publication، bounded process executor and same-origin SSE endpoint in `backend/analysis/conversation/streaming.py` and `backend/analysis/api/operations.py`; move only proxy buffering/thread-capacity prerequisites from T043 while leaving T043 open
+- [X] T010 [US4] Write failing cancellation races for delete/cancel/brief-edit versus late publish in `backend/tests/integration/test_copilot_concurrency.py`, then implement operation-token guards outside network locks in `backend/analysis/conversation/operations.py`
+- [X] T011 [P] [US1] Write failing React component tests for Persian conversation, brief ribbon, upload validation, stop/error and bidi in `frontend/src/features/copilot/conversation/*.test.tsx`
+- [X] T012 [US1] Implement fixture-only conversation shell and API client in `frontend/src/features/copilot/conversation/` without changing default feature 001 route
+- [X] T049 [US1] Write failing upload API tests for owner isolation, CSRF, MIME/signature, size/count, metadata stripping, retention and delete races in `backend/tests/api/test_copilot_uploads.py`, then implement the bounded backend upload boundary in `backend/analysis/api/uploads.py` without object-storage dependency
 
 **Checkpoint A**: fixture conversation/brief/stream works independently; no provider or research network.
 
@@ -83,7 +83,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 ## Dependencies
 
-`A → B → C`; memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T049 follows T003/T005 and blocks image use. T013 blocks live source access. T034 blocks credential implementation. T037/T040 and official region support block any live call. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
+`A → B → C`; memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 blocks live source access. T034 blocks credential implementation. T037/T040 and official region support block any live call. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
 
 ## Implementation strategy
 

@@ -162,8 +162,11 @@ provider/model/eligibility/credential، تمام limitها، rate/margin، budge
 docker compose run --rm api python backend/manage.py purge_expired_analyses
 ```
 
-این فرمان analysisهای منقضی، AI invocationهای قدیمی‌تر از ۹۰ روز، GuestContext منقضیِ بدون analysis و sessionهای منقضی Django را حذف می‌کند. دسترسی
-در query از لحظهٔ expiry بسته است؛ purge فقط حذف فیزیکی active storage است. پیش از production باید همین فرمان حداقل
+این فرمان analysisهای منقضی، conversationهای منقضی Milestone A، bytesهای upload و stream eventهای منقضی،
+AI invocationهای قدیمی‌تر از ۹۰ روز، GuestContext منقضیِ بدون analysis/conversation فعال و sessionهای منقضی Django
+را حذف می‌کند. Uploadهای Milestone A در PostgreSQL volume محافظت‌شده نگه‌داری می‌شوند؛ static/public media URL ندارند
+و فقط endpoint مالک bytes بازکدگذاری‌شده را می‌دهد. دسترسی در query از لحظهٔ expiry بسته است؛ purge فقط حذف فیزیکی
+active storage است. پیش از production باید همین فرمان حداقل
 روزانه با host scheduler اجرا می‌شود تا target حداکثر ۲۴ ساعت رعایت شود. واحدهای نمونه در `deploy/systemd/` هر روز
 ساعت ۰۲:۱۵ UTC `deploy/run-maintenance.sh` را اجرا می‌کنند؛ این script ابتدا backup و سپس cleanup را اجرا می‌کند.
 
@@ -180,6 +183,22 @@ journalctl -u beforebuy-maintenance.service
 وجود command به‌تنهایی کافی نیست؛ operator باید `list-timers` و آخرین exit موفق journal را در host مقصد ببیند.
 rehearsal محلی macOS یک launchd job موقت را دو بار اجرا کرد و آخرین exit آن صفر بود؛ job بلافاصله unload شد. activation
 systemd روی host Linux عمومی همچنان بخشی از release checklist است. Celery/Redis لازم نیست.
+
+## stack توسعهٔ کامل Milestone A
+
+پس از بازبینی `.env`، migration را جدا و بدون reset volume اجرا کنید و سپس stack offline را بالا بیاورید:
+
+```bash
+docker compose up -d db
+docker compose run --rm api python backend/manage.py migrate --noinput
+docker compose up --build -d --wait
+```
+
+رابط جدید در `http://127.0.0.1:58080/copilot` و feature 001 در `http://127.0.0.1:58080/` است. NGINX مسیر SSE را
+با buffering/cache/gzip خاموش و read timeout محدود عبور می‌دهد؛ Gunicorn با دو process از نوع `gthread` و چهار
+request thread در هر process اجرا می‌شود تا cancel/status پشت subscriberهای stream نمانند. executor fixture دو worker
+و queue چهار‌تایی per process دارد و durable نیست: restart/lease expiry نتیجه را `INTERRUPTED` می‌کند و خودکار از نو
+اجرا نمی‌کند. این تنظیم فقط prerequisite لازم T009 است؛ T043 و production rehearsal هنوز بازند.
 
 ## backup، restore و حذف
 

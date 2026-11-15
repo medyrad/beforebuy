@@ -154,6 +154,20 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
 - T039 feature 001 و public/live gates با specification جدید complete نمی‌شوند. cutover/legacy retirement تصمیم‌های
   جدا و reversible هستند.
 
+## تصمیم‌های هماهنگ‌کنندهٔ Phase 8 — Milestone A
+
+- conversation، message و brief جاری 90 روز پس از آخرین user message پذیرفته‌شده یا brief edit/confirmation منقضی
+  می‌شوند. read/list/SSE/replay/automatic retry/generator/background anchor را تمدید نمی‌کنند.
+- upload حداکثر 24 ساعت از creation و stream event برابر 24 ساعت retention دارد. replay ناموجود از REST reconcile
+  می‌شود و regeneration نمی‌کند. purge command bytes/rows expired را حذف می‌کند؛ backup erasure فوری وعده داده نمی‌شود.
+- guest access با eligible action تا آخرین conversation expiry owned تمدید می‌شود؛ browser credential loss recovery
+  ندارد. feature 001 expiry بدون تغییر است و cleanup نباید owner دارای conversation فعال را حذف کند.
+- executor کوچک process-local فقط fixture را پس از transaction commit اجرا می‌کند و با PostgreSQL lease/claim مشترک
+  هماهنگ می‌شود. crash/restart operation را `INTERRUPTED` می‌کند و خودکار restart نمی‌کند. SSE reader execution را
+  start نمی‌کند و explicit cancel مستقل از connection است.
+- M1/A فقط shell گفت‌وگو، brief قابل‌ویرایش، upload محافظت‌شده، streaming واقعی fixture و Desk readiness خالی را
+  پیاده می‌کند. product/price/review/ranking/citation و merchant offer ساختگی ممنوع و Milestone C زودهنگام نیست.
+
 ## تصمیم‌های Phase 5.2 — provider ایران
 
 - context قطعی: کاربران اولیه و backend در ایران هستند؛ قیمت و بودجهٔ خرید همچنان تومان است.

@@ -14,4 +14,4 @@ RUN addgroup --system beforebuy && adduser --system --ingroup beforebuy --home /
     && chown -R beforebuy:beforebuy /app
 USER beforebuy
 EXPOSE 8000
-CMD ["gunicorn", "--chdir", "backend", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "30", "--access-logfile", "-"]
+CMD ["gunicorn", "--chdir", "backend", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--worker-class", "gthread", "--threads", "4", "--timeout", "45", "--graceful-timeout", "10", "--access-logfile", "-"]

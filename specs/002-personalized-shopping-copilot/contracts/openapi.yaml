@@ -1,18 +1,116 @@
 openapi: 3.1.0
-info: {title: Beforebuy Shopping Copilot API, version: 0.1.0-planned}
-servers: [{url: /api}]
+info:
+  title: Beforebuy Shopping Copilot API
+  version: 0.2.0-milestone-a
+  description: |
+    Same-origin guest-owned Milestone A contract. Unsafe requests require the
+    existing csrftoken cookie and matching X-CSRFToken header. Missing, foreign,
+    deleted and expired resources all return RESOURCE_UNAVAILABLE.
+servers: [{url: /api/v1}]
 paths:
   /session:
-    get: {summary: Bootstrap guest/CSRF context, responses: {'200': {description: Ready}}}
+    get:
+      summary: Reuse the existing guest and CSRF bootstrap
+      operationId: bootstrapSession
+      responses:
+        '200':
+          description: Guest session ready
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Session'}
+              example: {expires_at: '2027-02-13T10:30:00Z'}
   /conversations:
-    get: {summary: List owner conversations, responses: {'200': {description: List}}}
-    post: {summary: Create conversation, responses: {'201': {description: Created}, '403': {description: CSRF rejected}}}
+    get:
+      summary: List owned unexpired conversations without extending retention
+      operationId: listConversations
+      parameters:
+        - {$ref: '#/components/parameters/Cursor'}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 50, default: 20}}
+      responses:
+        '200':
+          description: Reverse-chronological page
+          content: {application/json: {schema: {$ref: '#/components/schemas/ConversationPage'}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+    post:
+      summary: Create a category-neutral conversation and empty brief
+      operationId: createConversation
+      requestBody:
+        required: false
+        content: {application/json: {schema: {$ref: '#/components/schemas/CreateConversationRequest'}, example: {title: خرید بعدی من}}}
+      responses:
+        '201':
+          description: Created with brief revision zero
+          content: {application/json: {schema: {$ref: '#/components/schemas/ConversationDetail'}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
   /conversations/{conversationId}:
-    get: {summary: Read authoritative state, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'200': {description: State}, '404': {description: Unavailable}}}
-    delete: {summary: Delete and cancel, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'204': {description: Deleted}}}
+    parameters: [{$ref: '#/components/parameters/ConversationId'}]
+    get:
+      summary: Read authoritative state; never execute or extend retention
+      operationId: getConversation
+      responses:
+        '200': {description: Current state, content: {application/json: {schema: {$ref: '#/components/schemas/ConversationDetail'}}}}
+        '404': {$ref: '#/components/responses/Unavailable'}
+    delete:
+      summary: Delete, cancel work and invalidate late publication
+      operationId: deleteConversation
+      responses:
+        '204': {description: Deleted; repeating returns unavailable}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
   /conversations/{conversationId}/messages:
     post:
-      summary: Submit message/start bounded operation
+      summary: Accept a message and schedule one bounded fixture operation
+      operationId: submitMessage
+      parameters:
+        - {$ref: '#/components/parameters/ConversationId'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SubmitMessageRequest'}
+            example: {text: برای خرید لپ‌تاپ کمک می‌خواهم., upload_ids: [], expected_brief_revision: 0}
+      responses:
+        '202':
+          description: New acceptance or identical idempotent replay
+          content: {application/json: {schema: {$ref: '#/components/schemas/AcceptedOperation'}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409':
+          description: Stale brief or idempotency-key payload conflict
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Problem'}
+              examples:
+                stale: {value: {error: {code: STALE_BRIEF_REVISION, message: Brief changed., current_revision: 2}}}
+                key: {value: {error: {code: IDEMPOTENCY_CONFLICT, message: Idempotency key belongs to another payload.}}}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+        '429': {description: Two guest operations are already pending/running, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+  /conversations/{conversationId}/brief:
+    parameters: [{$ref: '#/components/parameters/ConversationId'}]
+    get:
+      summary: Read current brief without extending retention
+      operationId: getBrief
+      responses:
+        '200': {description: Current revision, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingBrief'}}}}
+        '404': {$ref: '#/components/responses/Unavailable'}
+    patch:
+      summary: Compare-and-swap explicit edit and invalidate stale output
+      operationId: editBrief
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: '#/components/schemas/EditBriefRequest'}}}
+      responses:
+        '200': {description: New revision and retention anchor, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingBrief'}}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409': {$ref: '#/components/responses/StaleRevision'}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+  /conversations/{conversationId}/brief/confirm:
+    post:
+      summary: Confirm an exact brief revision
+      operationId: confirmBrief
       parameters: [{$ref: '#/components/parameters/ConversationId'}]
       requestBody:
         required: true
@@ -20,47 +118,257 @@ paths:
           application/json:
             schema:
               type: object
-              required: [text, expected_brief_revision]
-              properties:
-                text: {type: string, minLength: 1, maxLength: 8000}
-                upload_ids: {type: array, maxItems: 3, items: {type: string, format: uuid}}
-                expected_brief_revision: {type: integer, minimum: 0}
-      responses: {'202': {description: Accepted}, '409': {description: Stale}, '422': {description: Invalid}}
+              additionalProperties: false
+              required: [expected_revision]
+              properties: {expected_revision: {type: integer, minimum: 0}}
+      responses:
+        '200': {description: Confirmed and retention anchor advanced, content: {application/json: {schema: {$ref: '#/components/schemas/ShoppingBrief'}}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409': {$ref: '#/components/responses/StaleRevision'}
+  /operations/{operationId}:
+    get:
+      summary: Reconcile authoritative state; never execute or retry
+      operationId: getOperation
+      parameters: [{$ref: '#/components/parameters/OperationId'}]
+      responses:
+        '200': {description: Current operation, content: {application/json: {schema: {$ref: '#/components/schemas/Operation'}}}}
+        '404': {$ref: '#/components/responses/Unavailable'}
+  /operations/{operationId}/events:
+    get:
+      summary: Replay/follow stored events; never start or restart execution
+      operationId: streamOperationEvents
+      parameters:
+        - {$ref: '#/components/parameters/OperationId'}
+        - {name: Last-Event-ID, in: header, required: false, description: 'Must be {operationId}:{sequence}.', schema: {type: string, maxLength: 80, pattern: '^[0-9a-fA-F-]{36}:[0-9]+$'}}
+      responses:
+        '200':
+          description: Versioned frames; heartbeat comments are not progress
+          headers:
+            Cache-Control: {schema: {type: string}, example: no-cache}
+            X-Accel-Buffering: {schema: {type: string}, example: 'no'}
+          content:
+            text/event-stream:
+              schema: {type: string}
+              example: "id: 9ea71b3a-b30d-4dfb-bbf3-b7f26777f5c1:1\nevent: operation.started\ndata: {\"schema_version\":\"COPILOT-STREAM-v1\",\"sequence\":1}\n\n"
+        '400': {description: Malformed or foreign replay ID, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: INVALID_REPLAY_ID, message: Last-Event-ID is invalid.}}}}}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409': {description: Replay gap; reconcile via REST without regeneration, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: REPLAY_GAP, message: Retained events do not cover that sequence.}}}}}
+  /operations/{operationId}/cancel:
+    post:
+      summary: Cancel independently of the SSE connection
+      operationId: cancelOperation
+      parameters: [{$ref: '#/components/parameters/OperationId'}]
+      responses:
+        '202': {description: Newly requested, content: {application/json: {schema: {$ref: '#/components/schemas/Operation'}}}}
+        '200': {description: Duplicate cancellation is idempotent, content: {application/json: {schema: {$ref: '#/components/schemas/Operation'}}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409': {description: Operation already completed/failed/interrupted, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}}}}
   /uploads:
     post:
-      summary: Upload a bounded owner-scoped image for a conversation
+      summary: Validate, strip metadata and store a protected image for at most 24h
+      operationId: createUpload
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
               type: object
+              additionalProperties: false
               required: [conversation_id, image]
               properties:
                 conversation_id: {type: string, format: uuid}
-                image: {type: string, format: binary}
-      responses: {'201': {description: Validated upload reference}, '413': {description: Too large}, '415': {description: Unsupported content}, '422': {description: Invalid image}}
-  /conversations/{conversationId}/research:
-    post: {summary: Start explicit bounded research, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'202': {description: Accepted}, '409': {description: Brief not ready}, '422': {description: Source unavailable}}}
-  /operations/{operationId}/events:
+                image: {type: string, format: binary, description: JPEG/PNG/WebP; raw bytes at most 5 MiB}
+      responses:
+        '201': {description: Decoded and sanitized; max 3 active per conversation, content: {application/json: {schema: {$ref: '#/components/schemas/Upload'}}}}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '413': {description: Byte/dimension/pixel/decompression bound exceeded, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+        '415': {description: Decoded type unsupported; SVG/HTML rejected, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+        '422': {$ref: '#/components/responses/ValidationFailed'}
+        '429': {description: Three unexpired uploads already exist, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+  /uploads/{uploadId}:
+    parameters: [{$ref: '#/components/parameters/UploadId'}]
     get:
-      summary: Replay/follow SSE
-      parameters: [{name: operationId, in: path, required: true, schema: {type: string, format: uuid}}, {name: Last-Event-ID, in: header, required: false, schema: {type: string}}]
-      responses: {'200': {description: SSE per stream-events.md, content: {text/event-stream: {schema: {type: string}}}}, '404': {description: Unavailable}}
-  /operations/{operationId}/cancel:
-    post: {summary: Cancel operation, parameters: [{name: operationId, in: path, required: true, schema: {type: string, format: uuid}}], responses: {'202': {description: Requested}, '409': {description: Terminal}}}
-  /conversations/{conversationId}/choices/current:
-    get: {summary: Read Choice Desk, parameters: [{$ref: '#/components/parameters/ConversationId'}], responses: {'200': {description: ChoiceSet}, '404': {description: Missing}}}
-  /memory:
-    get: {summary: Review preferences, responses: {'200': {description: Entries}}}
-    delete: {summary: Disable/delete memory, responses: {'204': {description: Deleted}}}
-  /credentials/openai:
-    put: {summary: Replace write-only user key, responses: {'204': {description: Encrypted}, '422': {description: Invalid}}}
-    delete: {summary: Delete key, responses: {'204': {description: Deleted}}}
-  /credentials/openai/status:
-    get: {summary: Masked config/eligibility only, responses: {'200': {description: Status}}}
-  /export:
-    get: {summary: Export owner conversation, current brief, citations and confirmed memory without credentials, responses: {'200': {description: Minimal JSON export}}}
+      summary: Read sanitized bytes through owner authorization; no public URL
+      operationId: getUpload
+      responses:
+        '200':
+          description: Sanitized bytes
+          headers:
+            Cache-Control: {schema: {type: string}, example: 'private, no-store'}
+            Content-Security-Policy: {schema: {type: string}, example: "default-src 'none'; sandbox"}
+          content:
+            image/jpeg: {schema: {type: string, format: binary}}
+            image/png: {schema: {type: string, format: binary}}
+            image/webp: {schema: {type: string, format: binary}}
+        '404': {$ref: '#/components/responses/Unavailable'}
+    delete:
+      summary: Delete an unconsumed owned upload
+      operationId: deleteUpload
+      responses:
+        '204': {description: Deleted}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
+        '404': {$ref: '#/components/responses/Unavailable'}
+        '409': {description: Already referenced by an accepted message, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}}}}
 components:
   parameters:
     ConversationId: {name: conversationId, in: path, required: true, schema: {type: string, format: uuid}}
+    OperationId: {name: operationId, in: path, required: true, schema: {type: string, format: uuid}}
+    UploadId: {name: uploadId, in: path, required: true, schema: {type: string, format: uuid}}
+    Cursor: {name: cursor, in: query, description: Opaque cursor, schema: {type: string, maxLength: 256}}
+    IdempotencyKey: {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 16, maxLength: 128, pattern: '^[A-Za-z0-9._:-]+$'}}
+  responses:
+    CsrfRejected: {description: Missing/invalid same-origin CSRF proof, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: CSRF_FAILED, message: CSRF verification failed.}}}}}
+    InvalidRequest: {description: Invalid query/header, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    ValidationFailed: {description: Invalid bounded input, content: {application/json: {schema: {$ref: '#/components/schemas/ValidationProblem'}}}}
+    Unavailable: {description: Missing/foreign/expired/deleted, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: RESOURCE_UNAVAILABLE, message: این منبع در دسترس نیست.}}}}}
+    StaleRevision: {description: Expected revision is stale, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: STALE_BRIEF_REVISION, message: Brief changed., current_revision: 3}}}}}
+  schemas:
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: true
+          required: [code, message]
+          properties:
+            code: {type: string, maxLength: 64}
+            message: {type: string, maxLength: 500}
+            current_revision: {type: integer, minimum: 0}
+            reconcile_url: {type: string, maxLength: 300}
+    ValidationProblem:
+      allOf:
+        - {$ref: '#/components/schemas/Problem'}
+        - {type: object, properties: {error: {type: object, properties: {field_errors: {type: object, additionalProperties: {type: array, items: {type: string, maxLength: 200}}}}}}}
+    Session:
+      type: object
+      additionalProperties: false
+      required: [expires_at]
+      properties: {expires_at: {type: string, format: date-time}}
+    CreateConversationRequest:
+      type: object
+      additionalProperties: false
+      properties: {title: {type: string, minLength: 1, maxLength: 120}}
+    ConversationSummary:
+      type: object
+      additionalProperties: false
+      required: [id, status, title, brief_revision, created_at, updated_at, expires_at]
+      properties:
+        id: {type: string, format: uuid}
+        status: {type: string, enum: [ACTIVE]}
+        title: {type: string, maxLength: 120}
+        brief_revision: {type: integer, minimum: 0}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        expires_at: {type: string, format: date-time}
+    ConversationPage:
+      type: object
+      additionalProperties: false
+      required: [items, next_cursor]
+      properties:
+        items: {type: array, maxItems: 50, items: {$ref: '#/components/schemas/ConversationSummary'}}
+        next_cursor: {type: [string, 'null'], maxLength: 256}
+    ConversationDetail:
+      allOf:
+        - {$ref: '#/components/schemas/ConversationSummary'}
+        - {type: object, required: [brief, messages, operations], properties: {brief: {$ref: '#/components/schemas/ShoppingBrief'}, messages: {type: array, maxItems: 200, items: {$ref: '#/components/schemas/Message'}}, operations: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/Operation'}}}}
+    Message:
+      type: object
+      additionalProperties: false
+      required: [id, role, state, text, upload_ids, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        role: {type: string, enum: [USER, ASSISTANT]}
+        state: {type: string, enum: [ACCEPTED, FINAL, FAILED, CANCELLED]}
+        text: {type: string, maxLength: 12000}
+        upload_ids: {type: array, maxItems: 3, items: {type: string, format: uuid}}
+        created_at: {type: string, format: date-time}
+    ShoppingBrief:
+      type: object
+      additionalProperties: false
+      required: [revision, recipient_context, category, selected_product_label, budget_toman, use_cases, hard_constraints, unknowns, contradictions, provenance, confirmed, updated_at]
+      properties:
+        revision: {type: integer, minimum: 0}
+        recipient_context: {type: [string, 'null'], enum: [SELF, GIFT, HOUSEHOLD, null]}
+        category: {type: [string, 'null'], maxLength: 120}
+        selected_product_label: {type: [string, 'null'], maxLength: 160}
+        budget_toman: {type: [integer, 'null'], minimum: 0, description: null is unknown; zero is explicit}
+        use_cases: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
+        hard_constraints: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
+        unknowns: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
+        contradictions: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 300}}
+        provenance: {type: array, maxItems: 100, items: {type: object, additionalProperties: false, required: [field, source_type, source_id], properties: {field: {type: string, maxLength: 64}, source_type: {type: string, enum: [MESSAGE, EXPLICIT_EDIT]}, source_id: {type: string, format: uuid}}}}
+        confirmed: {type: boolean}
+        updated_at: {type: string, format: date-time}
+    EditBriefRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_revision, changes]
+      properties:
+        expected_revision: {type: integer, minimum: 0}
+        changes:
+          type: object
+          additionalProperties: false
+          minProperties: 1
+          properties:
+            recipient_context: {type: [string, 'null'], enum: [SELF, GIFT, HOUSEHOLD, null]}
+            category: {type: [string, 'null'], maxLength: 120}
+            selected_product_label: {type: [string, 'null'], maxLength: 160}
+            budget_toman: {type: [integer, 'null'], minimum: 0}
+            use_cases: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
+            hard_constraints: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
+            unknowns: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
+            contradictions: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 300}}
+    SubmitMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [text, expected_brief_revision]
+      properties:
+        text: {type: string, minLength: 1, maxLength: 8000}
+        upload_ids: {type: array, uniqueItems: true, maxItems: 3, items: {type: string, format: uuid}, default: []}
+        expected_brief_revision: {type: integer, minimum: 0}
+    AcceptedOperation:
+      type: object
+      additionalProperties: false
+      required: [operation, message_id, idempotent_replay, events_url]
+      properties:
+        operation: {$ref: '#/components/schemas/Operation'}
+        message_id: {type: string, format: uuid}
+        idempotent_replay: {type: boolean}
+        events_url: {type: string, maxLength: 300}
+    Operation:
+      type: object
+      additionalProperties: false
+      required: [id, conversation_id, status, expected_brief_revision, created_at, updated_at]
+      properties:
+        id: {type: string, format: uuid}
+        conversation_id: {type: string, format: uuid}
+        status: {type: string, enum: [PENDING, RUNNING, COMPLETED, FAILED, CANCELLED, INTERRUPTED]}
+        expected_brief_revision: {type: integer, minimum: 0}
+        final_message_id: {type: [string, 'null'], format: uuid}
+        terminal_code: {type: [string, 'null'], maxLength: 64}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        started_at: {type: [string, 'null'], format: date-time}
+        completed_at: {type: [string, 'null'], format: date-time}
+    Upload:
+      type: object
+      additionalProperties: false
+      required: [id, conversation_id, media_type, size_bytes, width, height, sha256, created_at, expires_at]
+      properties:
+        id: {type: string, format: uuid}
+        conversation_id: {type: string, format: uuid}
+        media_type: {type: string, enum: [image/jpeg, image/png, image/webp]}
+        size_bytes: {type: integer, minimum: 1, maximum: 5242880}
+        width: {type: integer, minimum: 1, maximum: 4096}
+        height: {type: integer, minimum: 1, maximum: 4096}
+        sha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        created_at: {type: string, format: date-time}
+        expires_at: {type: string, format: date-time}
+
+# Research, choice sets, memory, credentials and export remain planned later-milestone
+# contracts and deliberately expose no active Milestone A paths.

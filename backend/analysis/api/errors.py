@@ -3,6 +3,10 @@ from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.views import exception_handler
 
 
+class CopilotUnavailable(NotFound):
+    pass
+
+
 def api_exception_handler(exc, context):
     response = exception_handler(exc, context)
     if response is None:
@@ -14,6 +18,10 @@ def api_exception_handler(exc, context):
                 "message": "ورودی‌ها را اصلاح کنید.",
                 "field_errors": response.data,
             }
+        }
+    elif isinstance(exc, CopilotUnavailable):
+        response.data = {
+            "error": {"code": "RESOURCE_UNAVAILABLE", "message": "این منبع در دسترس نیست."}
         }
     elif isinstance(exc, (Http404, NotFound)):
         response.data = {"error": {"code": "NOT_FOUND", "message": "این تحلیل در دسترس نیست."}}

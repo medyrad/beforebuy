@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL
+const bundledBrowser = process.env.PLAYWRIGHT_USE_BUNDLED === '1'
 
 export default defineConfig({
   testDir: '../tests/e2e',
@@ -16,7 +17,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chrome', use: { ...devices['Desktop Chrome'], channel: 'chrome' } }],
+  projects: [{ name: bundledBrowser ? 'chromium-container' : 'chrome', use: { ...devices['Desktop Chrome'], ...(bundledBrowser ? {} : { channel: 'chrome' }) } }],
   webServer: externalBaseUrl ? undefined : {
     command: 'npm run dev -- --host 127.0.0.1',
     url: 'http://127.0.0.1:5173',

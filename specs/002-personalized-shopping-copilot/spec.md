@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Planned; implementation not started
+**Status**: Milestone A implementation authorized; later milestones remain planned
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و کلید OpenAI متعلق به کاربر.
 
@@ -142,6 +142,10 @@
 - **FR-034**: source expansion، model activation و public release MUST gate مستقل داشته باشند؛ موفقیت یک category/source یا fixture به سایر categoryها تعمیم داده نشود.
 - **FR-035**: system MUST data export حداقلی conversation/brief/memory و delete path قابل آزمون ارائه کند؛ plaintext credential هرگز export نمی‌شود.
 - **FR-036**: accessible stream MUST throttled announcements، pause/stop، reduced motion، keyboard/focus semantics و status غیررنگی داشته باشد.
+- **FR-037**: در Milestone A، conversation/message/brief MUST پس از آخرین accepted user message یا explicit brief edit/confirmation تا 90 روز retained باشند؛ read/list/SSE/replay/generator/background این anchor را تمدید نکند. Upload و StreamEvent MUST به‌ترتیب حداکثر 24 ساعت از creation و 24 ساعت retained باشند و cleanup نباید owner دارای conversation فعال را حذف کند.
+- **FR-038**: message submission MUST یک `Idempotency-Key` bounded بپذیرد؛ همان key و canonical payload همان operation را برگرداند و reuse با payload متفاوت conflict بدهد. GET و SSE MUST generation را start/restart نکنند.
+- **FR-039**: Milestone A MUST فقط fixture generator صریح و deterministic را با executor محدود، PostgreSQL claim/lease، interruption terminal، cancellation مستقل و stale-publication guard اجرا کند؛ crash/restart durability تضمین نمی‌شود.
+- **FR-040**: image upload MUST raw body حداکثر 5 MiB، حداکثر سه فایل فعال در هر conversation، dimension حداکثر 4096 در هر محور و 12MP را enforce، decoded JPEG/PNG/WebP را re-encode و metadata را حذف کند؛ SVG/HTML، multi-frame و decompression-bomb رد شوند و bytes فقط owner-scoped سرو شوند.
 
 ### Key Entities *(include if feature involves data)*
 
@@ -174,7 +178,7 @@
 - در milestone اولیه sourceهای manufacturer و merchant با policy صریح بر aggregator/reviewهای نامطمئن اولویت دارند.
 - SSE برای downstream server-to-browser کافی فرض شده و فقط با evidence implementation تغییر می‌کند.
 - eligibility مستقیم OpenAI برای users/backend ایران در تاریخ planning تأیید نشده و release blocker است.
-- retention دقیق conversation/upload/research cache/credential پیش از implementation در task مربوط با privacy review نهایی می‌شود؛ default پیشنهادی کمینه و قابل پیکربندی است.
+- retention مصوب Milestone A برای conversation/message/current brief برابر 90 روز پس از eligible action و برای upload/event برابر 24 ساعت است؛ retention research/memory/credential فقط در milestone مربوط تصمیم‌گیری می‌شود.
 
 ## Out of Scope
 

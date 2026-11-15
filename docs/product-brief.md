@@ -1,6 +1,6 @@
 # خلاصه محصول
 
-## جهت مصوب Phase 7 — Personalized Shopping Copilot
+## جهت مصوب Personalized Shopping Copilot
 
 Beforebuy اکنون به‌عنوان دستیار شخصی خرید چنددسته‌ای تعریف می‌شود: کاربر در گفت‌وگوی فارسی/RTL مسئله، بودجه،
 کاربرد، محدودیت و recipient را روشن می‌کند؛ سپس پژوهش on-demand و محدود، evidence قابل‌ردیابی و «میز انتخاب»
@@ -18,8 +18,9 @@ Beforebuy اکنون به‌عنوان دستیار شخصی خرید چنددس
 - معماری React + Vite، Django/DRF، PostgreSQL، same-origin، Compose و تک‌سرور حفظ می‌شود.
 
 Specification canonical این جهت در `specs/002-personalized-shopping-copilot/` است. feature 001 و داده/شواهد آن تا
-تصمیم cutover حفظ می‌شوند و `T039` آن همچنان pending است. Phase 7 فقط specification/planning است؛ implementation
-شروع نشده است.
+تصمیم cutover حفظ می‌شوند و `T039` آن همچنان pending است. در Phase 8 فقط Milestone A پیاده شده است: route غیراصلی
+`/copilot`، conversation/brief، upload owner-scoped و streaming واقعی generator قطعی fixture. پژوهش منبع، پیشنهاد
+محصول، ranking، memory، credential و AI زنده هنوز پیاده نشده‌اند.
 
 ## مسئله و ارزش پیشنهادی
 

@@ -4,6 +4,7 @@ import { Questionnaire } from './features/analysis/Questionnaire'
 import { ReportView } from './features/analysis/ReportView'
 import { createEmptyDraft, draftFromAnalysis, type Draft } from './features/analysis/draft'
 import { HistoryView } from './features/history/HistoryView'
+import { CopilotApp } from './features/copilot/conversation/CopilotApp'
 import { api, ApiError } from './services/api/client'
 import type { Analysis, AnalysisInput, AnalysisSummary } from './services/api/types'
 
@@ -36,7 +37,7 @@ function Home({ onStart, onHistory, count }: { onStart: () => void; onHistory: (
   </section>
 }
 
-export default function App() {
+function LegacyApp() {
   const [view, setView] = useState<View>('home')
   const [history, setHistory] = useState<AnalysisSummary[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
@@ -195,4 +196,9 @@ export default function App() {
     </main>
     <footer className="site-footer"><p>این ابزار تصمیم‌یار است، نه مشاورهٔ مالی یا تأیید فنی محصول.</p><span>نسخهٔ آزمایشی · تلفن همراه</span></footer>
   </>
+}
+
+export default function App() {
+  const isCopilot = window.location.pathname === '/copilot' || window.location.pathname.startsWith('/copilot/')
+  return isCopilot ? <CopilotApp /> : <LegacyApp />
 }

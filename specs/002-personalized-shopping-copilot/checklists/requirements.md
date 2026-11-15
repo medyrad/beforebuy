@@ -31,4 +31,4 @@
 
 ## Notes
 
-Formal clarification scan found no critical ambiguity requiring a product-lead question. Region eligibility, source permission and exact retention remain explicit implementation/release gates rather than silently assumed decisions.
+Formal clarification scan found no critical ambiguity requiring a product-lead question. Milestone A retention was subsequently approved and encoded in FR-037; provider region eligibility, source permission, and later-entity retention remain explicit implementation/release gates rather than silently assumed decisions.

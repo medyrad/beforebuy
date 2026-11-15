@@ -26,3 +26,8 @@ def extend_guest_session_for_new_analysis(request, analysis_expiry) -> None:
         GuestContext.objects.filter(id=guest.id).update(access_expires_at=analysis_expiry)
     remaining = max(timedelta(seconds=1), analysis_expiry - timezone.now())
     request.session.set_expiry(remaining)
+
+
+def extend_guest_session_for_eligible_action(request, expiry) -> None:
+    """Extend access only for an accepted message or explicit brief action."""
+    extend_guest_session_for_new_analysis(request, expiry)

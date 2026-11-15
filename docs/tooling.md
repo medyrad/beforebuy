@@ -110,3 +110,14 @@ code-intelligence در Phase 4 نصب نشد. vertical slice اکنون موجو
 
 Installed files are `.agents/skills/frontend-design/SKILL.md` and `LICENSE.txt`; upstream license is Apache-2.0. The
 project overlay forbids introducing Next.js, Tailwind/shadcn or Vercel deployment requirements merely from design guidance.
+
+## Phase 8 Milestone A inventory
+
+| Need | Selected tool/skill | Alternatives | Evidence | Version/commit | Install phase | Verification | Reason for deferral |
+|---|---|---|---|---|---|---|---|
+| Image decode/sanitize | Pillow | browser MIME، ImageMagick subprocess، custom parser | Pillow decodes JPEG/PNG/WebP, exposes dimension/frame checks and supports decode/re-encode without retaining EXIF/XMP. Official project declares MIT-CMU and Python ≥3.11; no performance claim is treated as workspace evidence. | `13.0.0` | Phase 8 / T049 | locked dependency plus invalid-bytes, metadata, ownership, limit and cleanup tests | OCR/vision intentionally deferred; no provider call |
+| Fixture operation execution | Python bounded executor + PostgreSQL claim/lease | unbounded thread، Celery/Redis، WebSocket service | standard-library executor adds no service; PostgreSQL remains shared truth. It is explicitly non-durable: stale leases become `INTERRUPTED`, never silently restart. | Python 3.12 stdlib; repository implementation | Phase 8 / T009 | concurrency, cancellation, reconnect and proxy-first-chunk checks | durable queue deferred until measured need |
+| Repeatable Linux browser check | existing Playwright Test/axe packages in official Playwright image | host Chrome channel؛ MCP | official image matches the locked runner, contains browser/system dependencies and avoids the unsupported host Node/macOS combination. It is test-only and does not enter runtime images. | Playwright `1.65.1`, image digest `sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579` | Phase 8 verification | proxy journey at 390/1440, keyboard/reduced-motion/axe/screenshots | MCP still unnecessary |
+
+`frontend-design` is natively discoverable in the Phase 8 skill catalog and was invoked as an installed project skill;
+this differs from Phase 7, when only its files had been inspected after the catalog snapshot was created.

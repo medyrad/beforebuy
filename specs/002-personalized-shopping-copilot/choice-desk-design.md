@@ -1,19 +1,31 @@
 # Choice Desk Design Specification — Concept 2
 
-Choice Desk فضای آرام تحلیلی است، نه storefront. conversation brief می‌سازد؛ Desk evidence/tradeoff را مقایسه می‌کند. visual language باید editorial و فارسی‌اول باشد، نه dashboard generic.
+Choice Desk فضای آرام تحلیلی است، نه storefront. conversation brief می‌سازد؛ Desk evidence/tradeoff را مقایسه می‌کند. visual language باید دقیق، فارسی‌اول و شبیه یک workspace تصمیم‌گیری باشد، نه dashboard generic.
 
 ## Information architecture
 
-1. conversation rail: thread، composer، attachment، stop، memory status.
-2. brief ribbon: budget، recipient، use، hard constraints، unknowns؛ editable/versioned.
-3. desk canvas: shortlist 3–6، recommendation مشروط، comparison و evidence drawer.
-4. research ledger: progress واقعی، coverage، freshness و failure؛ collapsed by default.
+1. right-side navigation: brand، مسیر legacy، conversation history و وضعیت fixture.
+2. conversation panel on the right: thread، composer، attachment و stop/retry.
+3. brief ribbon: budget، recipient، use، hard constraints، unknowns؛ editable/versioned.
+4. larger Choice Desk on the left: readiness/empty state در A و shortlist/comparison فقط در milestone C.
+5. research ledger: progress واقعی، coverage، freshness و failure؛ از milestone B و collapsed by default.
 
-Desktop layout 5/7؛ conversation راست و Desk چپ با DOM order منطقی RTL. Mobile stack با landmarks/tabs «گفت‌وگو / میز انتخاب» و بدون horizontal-scroll ضروری.
+Desktop تقریباً `5/7` است: conversation در راست و Choice Desk بزرگ‌تر در چپ، با navigation در لبهٔ راست و DOM order منطقی RTL. Mobile navigation میان «گفت‌وگو / میز انتخاب» state هر دو را حفظ می‌کند و دادهٔ ضروری به horizontal scroll وابسته نیست.
 
 ## Visual and states
 
-Vazirmatn موجود؛ سطوح گرم خنثی، ink تیره و accent زعفرانی محدود؛ status رنگی همراه text/icon. cards کم؛ desktop table و mobile disclosure. States: empty، clarifying، brief-ready، researching، partial، ready، cancelled، source-limited، AI-blocked، recoverable error. Partial visually final نیست.
+Vazirmatn self-hosted موجود؛ surfaceهای off-white و cool-gray، ink slate و accent indigo محدود. token پایه:
+`paper #F7F8FA`، `surface #FFFFFF`، `surface-muted #EEF1F5`، `ink #172033`، `muted #667085`،
+`indigo #4F46E5` و `indigo-soft #EEF2FF`. status رنگی همیشه text/icon دارد. SVG iconها باید stroke/size
+یکدست، decorative iconها hidden و control iconها label قابل‌دسترسی داشته باشند. cardها کم و hierarchy-driven هستند؛
+desktop table و mobile disclosure به Milestone C تعلق دارند.
+
+States: empty، clarifying، brief-ready، generating-fixture، cancelled، interrupted و recoverable error در A؛ researching،
+partial، source-limited و choice-ready بعداً. Partial visually final نیست. M1/A فقط empty/readiness صادقانه نشان می‌دهد:
+هیچ product card، price، review، rank یا citation ساختگی برای پرکردن Desk وجود ندارد. هر demo صریحاً «fixture توسعه» است.
+
+Shortlist در Milestone C شامل محصول انتخاب‌شدهٔ کاربر، اگر موجود باشد، به‌علاوهٔ حداکثر سه alternative است. merchant
+offerها فهرست جدا هستند و recommendation محصول اضافی محسوب نمی‌شوند.
 
 ## Accessibility/RTL overlay
 
