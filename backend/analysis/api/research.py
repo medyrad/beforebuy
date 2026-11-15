@@ -7,12 +7,15 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from analysis.conversation.serializers import serialize_operation
-from analysis.conversation.streaming import TERMINAL, cancel_operation
+from analysis.conversation.streaming import TERMINAL
 from analysis.guest import get_or_create_guest
 from analysis.models import Conversation, ResearchJob
 from analysis.research.jobs import (
     canonical_research_hash,
+    cancel_research_job,
     create_research_job,
+    normalize_targets,
+    reconcile_research_job,
     release_research_slot,
     reserve_research_slot,
     submit_research_reserved,
@@ -37,6 +40,11 @@ def serialize_research_job(job):
         "total": job.total_units,
         "request_count": job.request_count,
         "decoded_bytes": job.decoded_bytes,
+        "wire_bytes": job.wire_bytes,
+        "redirect_count": job.redirect_count,
+        "targets": job.targets,
+        "brief_revision": job.brief_revision,
+        "current_for_brief": job.conversation.brief_revision == job.brief_revision,
         "coverage": job.coverage,
         "limits": job.limits,
         "snapshots": [
@@ -47,8 +55,23 @@ def serialize_research_job(job):
                 "fixture_label": item.fixture_label,
                 "retrieval_time": item.retrieval_time.isoformat(),
                 "status": item.status,
+                "failure_code": item.failure_code,
                 "fingerprint": item.fingerprint,
                 "extractor_version": item.extractor_version,
+                "offers": [
+                    {
+                        "item_price_minor": offer.item_price_minor,
+                        "currency": offer.currency,
+                        "shipping_minor": offer.shipping_minor,
+                        "total_payable_minor": offer.total_payable_minor,
+                        "seller": offer.seller,
+                        "warranty": offer.warranty,
+                        "registration": offer.registration,
+                        "availability": offer.availability,
+                        "observed_at": offer.observed_at.isoformat(),
+                    }
+                    for offer in item.offers.order_by("observed_at")
+                ],
                 "claims": [
                     {
                         "field": claim.field,
@@ -103,50 +126,43 @@ class ResearchStartView(CsrfProtectedAPIView):
         conversation = active_conversation(guest, conversation_id)
         key = request.headers.get("Idempotency-Key", "")
         expected = request.data.get("expected_brief_revision")
-        source_ids = request.data.get("source_ids")
-        if (
-            not re.fullmatch(r"[A-Za-z0-9._:-]{16,128}", key)
-            or not isinstance(expected, int)
-            or not isinstance(source_ids, list)
-            or not 1 <= len(source_ids) <= 3
-            or len(set(source_ids)) != len(source_ids)
-            or any(not isinstance(item, str) or not 1 <= len(item) <= 253 for item in source_ids)
-        ):
+        raw_targets = request.data.get("targets")
+        if raw_targets is None and configured_mode == "FIXTURE":
+            source_ids = request.data.get("source_ids")
+            raw_targets = ([{"source_id": item, "url": None} for item in source_ids]
+                           if isinstance(source_ids, list) else source_ids)
+        valid_targets = isinstance(raw_targets, list) and 1 <= len(raw_targets) <= 3
+        targets = []
+        if valid_targets:
+            for item in raw_targets:
+                if not isinstance(item, dict) or set(item) - {"source_id", "url"}:
+                    valid_targets = False
+                    break
+                source_id, url = item.get("source_id"), item.get("url")
+                if (not isinstance(source_id, str) or not 1 <= len(source_id) <= 253
+                        or (url is not None and (not isinstance(url, str) or not 1 <= len(url) <= 1000))
+                        or (configured_mode == "LIVE" and not url)):
+                    valid_targets = False
+                    break
+                targets.append({"source_id": source_id.rstrip(".").lower(), "url": url})
+        if valid_targets and len({(item["source_id"], item["url"]) for item in targets}) != len(targets):
+            valid_targets = False
+        if (not re.fullmatch(r"[A-Za-z0-9._:-]{16,128}", key)
+                or not isinstance(expected, int) or isinstance(expected, bool) or not valid_targets):
             return error("VALIDATION_ERROR", "درخواست پژوهش نامعتبر است.", 422)
-        if conversation.brief_revision != expected:
-            return error(
-                "STALE_BRIEF_REVISION", "نسخهٔ brief تغییر کرده است.", 409,
-                current_revision=conversation.brief_revision,
-            )
-        if not conversation.brief.confirmed:
-            return error("BRIEF_NOT_CONFIRMED", "ابتدا brief را تأیید کنید.", 409)
-        request_hash = canonical_research_hash(expected, source_ids, configured_mode)
-        existing = ResearchJob.objects.filter(
-            conversation=conversation,
-            operation__idempotency_key=key,
-            operation__operation_kind="RESEARCH",
-        ).select_related("operation").first()
-        if existing:
-            if existing.request_hash != request_hash:
-                return error("IDEMPOTENCY_CONFLICT", "این کلید برای درخواست دیگری استفاده شده است.", 409)
-            return Response(
-                {
-                    "job": serialize_research_job(existing),
-                    "operation": serialize_operation(existing.operation),
-                    "idempotent_replay": True,
-                    "events_url": f"/api/v1/operations/{existing.operation_id}/events",
-                },
-                status=status.HTTP_202_ACCEPTED,
-            )
+        targets = normalize_targets(targets=targets)
+        request_hash = canonical_research_hash(expected, targets, configured_mode)
         if not reserve_research_slot():
             return error("RESEARCH_PROCESS_CAPACITY", "ظرفیت پژوهش موقتاً پر است.", 429)
         try:
             with transaction.atomic():
                 job, replay = create_research_job(
-                    conversation=conversation,
+                    conversation_id=conversation.id,
+                    guest=guest,
+                    expected_revision=expected,
                     idempotency_key=key,
                     request_hash=request_hash,
-                    source_ids=source_ids,
+                    targets=targets,
                     mode=configured_mode,
                 )
                 if not replay:
@@ -154,12 +170,17 @@ class ResearchStartView(CsrfProtectedAPIView):
         except ValueError as exc:
             release_research_slot()
             code = str(exc)
-            return error(code, "یک پژوهش فعال یا تعارض idempotency وجود دارد.", 429 if code == "RESEARCH_LIMIT_REACHED" else 409)
+            status_code = 429 if code == "RESEARCH_LIMIT_REACHED" else 422 if code in {
+                "SOURCE_NOT_APPROVED", "TARGET_URL_INVALID", "TARGET_SOURCE_MISMATCH"
+            } else 409
+            return error(code, "پذیرش اتمیک درخواست پژوهش ناموفق بود.", status_code)
         except Exception:
             release_research_slot()
             raise
         if replay:
             release_research_slot()
+        job.refresh_from_db()
+        job.operation.refresh_from_db()
         return Response(
             {
                 "job": serialize_research_job(job),
@@ -173,7 +194,8 @@ class ResearchStartView(CsrfProtectedAPIView):
 
 class ResearchDetailView(CsrfProtectedAPIView):
     def get(self, request, job_id):
-        return Response(serialize_research_job(owned_job(get_or_create_guest(request), job_id)))
+        job = owned_job(get_or_create_guest(request), job_id)
+        return Response(serialize_research_job(reconcile_research_job(job.id)))
 
 
 class ResearchCancelView(CsrfProtectedAPIView):
@@ -183,13 +205,9 @@ class ResearchCancelView(CsrfProtectedAPIView):
             if job.operation.status == "CANCELLED":
                 return Response({"job": serialize_research_job(job), "operation": serialize_operation(job.operation)})
             return error("OPERATION_TERMINAL", "عملیات پایان یافته است.", 409)
-        changed, operation = cancel_operation(job.operation_id)
+        changed, operation, job = cancel_research_job(job.id)
         if not changed or operation is None:
             return error("OPERATION_TERMINAL", "عملیات پایان یافته است.", 409)
-        ResearchJob.objects.filter(id=job.id).update(
-            status="CANCELLED", stage="CANCELLED", terminal_code="USER_REQUEST", completed_at=timezone.now()
-        )
-        job.refresh_from_db()
         return Response(
             {"job": serialize_research_job(job), "operation": serialize_operation(operation)},
             status=status.HTTP_202_ACCEPTED,

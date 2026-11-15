@@ -225,7 +225,7 @@ paths:
         content:
           application/json:
             schema: {$ref: '#/components/schemas/ResearchStartRequest'}
-            example: {expected_brief_revision: 1, source_ids: [synthetic-appliance-v1]}
+            example: {expected_brief_revision: 1, targets: [{source_id: synthetic-appliance-v1}]}
       responses:
         '202': {description: Scheduled fixture/live-labeled job or identical active replay, content: {application/json: {schema: {$ref: '#/components/schemas/ResearchAccepted'}}}}
         '403': {$ref: '#/components/responses/CsrfRejected'}
@@ -415,20 +415,28 @@ components:
     ResearchStartRequest:
       type: object
       additionalProperties: false
-      required: [expected_brief_revision, source_ids]
+      required: [expected_brief_revision, targets]
       properties:
         expected_brief_revision: {type: integer, minimum: 0}
-        source_ids: {type: array, minItems: 1, maxItems: 3, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 253}}
+        targets: {type: array, minItems: 1, maxItems: 3, uniqueItems: true, items: {$ref: '#/components/schemas/ResearchTarget'}}
+    ResearchTarget:
+      type: object
+      additionalProperties: false
+      required: [source_id]
+      properties:
+        source_id: {type: string, minLength: 1, maxLength: 253}
+        url: {type: [string, 'null'], format: uri, maxLength: 1000, description: Required in LIVE mode; exact product URL, never a domain-only discovery request.}
     ResearchLimits:
       type: object
       additionalProperties: false
-      required: [max_domains, max_pages_per_domain, max_redirects_per_request, max_total_requests, max_decoded_bytes_per_page, request_timeout_seconds, job_deadline_seconds, outbound_concurrency_per_process, min_domain_interval_ms]
+      required: [max_domains, max_pages_per_domain, max_redirects_per_request, max_total_requests, max_decoded_bytes_per_page, max_wire_bytes_per_page, request_timeout_seconds, job_deadline_seconds, outbound_concurrency_per_process, min_domain_interval_ms]
       properties:
         max_domains: {type: integer, maximum: 3}
         max_pages_per_domain: {type: integer, maximum: 5}
         max_redirects_per_request: {type: integer, maximum: 2}
         max_total_requests: {type: integer, maximum: 20}
         max_decoded_bytes_per_page: {type: integer, maximum: 2097152}
+        max_wire_bytes_per_page: {type: integer, maximum: 2097152}
         request_timeout_seconds: {type: integer, maximum: 20}
         job_deadline_seconds: {type: integer, maximum: 60}
         outbound_concurrency_per_process: {type: integer, maximum: 2}
@@ -460,7 +468,7 @@ components:
     ResearchSnapshot:
       type: object
       additionalProperties: false
-      required: [id, source_role, canonical_url, fixture_label, retrieval_time, status, fingerprint, extractor_version, claims]
+      required: [id, source_role, canonical_url, fixture_label, retrieval_time, status, failure_code, fingerprint, extractor_version, offers, claims]
       properties:
         id: {type: string, format: uuid}
         source_role: {type: string, enum: [MANUFACTURER, MERCHANT, EXPERT, CUSTOMER_REVIEW]}
@@ -468,13 +476,29 @@ components:
         fixture_label: {type: [string, 'null'], maxLength: 120}
         retrieval_time: {type: string, format: date-time}
         status: {type: string, enum: [EXTRACTED, CACHE_HIT, BLOCKED, FAILED]}
+        failure_code: {type: [string, 'null'], maxLength: 64}
         fingerprint: {type: string, pattern: '^[0-9a-f]{64}$'}
         extractor_version: {type: [string, 'null'], maxLength: 64}
+        offers: {type: array, items: {$ref: '#/components/schemas/ResearchOffer'}}
         claims: {type: array, items: {$ref: '#/components/schemas/EvidenceClaim'}}
+    ResearchOffer:
+      type: object
+      additionalProperties: false
+      required: [item_price_minor, currency, shipping_minor, total_payable_minor, seller, warranty, registration, availability, observed_at]
+      properties:
+        item_price_minor: {type: [integer, 'null'], minimum: 0}
+        currency: {type: [string, 'null'], maxLength: 12}
+        shipping_minor: {type: [integer, 'null'], minimum: 0}
+        total_payable_minor: {type: [integer, 'null'], minimum: 0}
+        seller: {type: [string, 'null'], maxLength: 200}
+        warranty: {type: [string, 'null'], maxLength: 200}
+        registration: {type: [string, 'null'], maxLength: 200}
+        availability: {type: string, enum: [IN_STOCK, OUT_OF_STOCK, PREORDER, UNKNOWN]}
+        observed_at: {type: string, format: date-time}
     ResearchJob:
       type: object
       additionalProperties: false
-      required: [id, conversation_id, operation_id, mode, fixture_labeled, status, stage, completed, total, request_count, decoded_bytes, coverage, limits, snapshots, created_at, started_at, completed_at]
+      required: [id, conversation_id, operation_id, mode, fixture_labeled, status, stage, completed, total, request_count, decoded_bytes, wire_bytes, redirect_count, targets, brief_revision, current_for_brief, coverage, limits, snapshots, created_at, started_at, completed_at]
       properties:
         id: {type: string, format: uuid}
         conversation_id: {type: string, format: uuid}
@@ -487,6 +511,11 @@ components:
         total: {type: integer, minimum: 0, maximum: 3}
         request_count: {type: integer, minimum: 0, maximum: 20}
         decoded_bytes: {type: integer, minimum: 0}
+        wire_bytes: {type: integer, minimum: 0}
+        redirect_count: {type: integer, minimum: 0}
+        targets: {type: array, minItems: 1, maxItems: 3, items: {$ref: '#/components/schemas/ResearchTarget'}}
+        brief_revision: {type: integer, minimum: 0}
+        current_for_brief: {type: boolean}
         coverage: {type: object, additionalProperties: true}
         limits: {$ref: '#/components/schemas/ResearchLimits'}
         snapshots: {type: array, maxItems: 15, items: {$ref: '#/components/schemas/ResearchSnapshot'}}

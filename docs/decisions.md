@@ -188,6 +188,20 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
   با migration غیرمخرب افزوده شدند و research lifecycle از `StreamOperation`/`StreamEvent`، lease و lock order موجود
   استفاده می‌کند. Milestone C ranking، memory، credential، provider call، public deployment و هر دو T039 خارج scope‌اند.
 
+## اصلاحات Phase 9.1 — bounded research pipeline
+
+- LIVE input یک domain discovery نیست؛ target شامل source policy hostname و exact product URL است. fixture می‌تواند
+  URL-null بماند. idempotent replay به payload/revision اصلی وفادار است و brief تازه آن را reinterpret نمی‌کند.
+- acceptance زیر Guest→Conversation lock مالکیت، expiry، confirmation، expected revision، target association و
+  guest-wide admission را یک‌جا می‌سنجد. boolean revision و object/list malformed با 422 رد می‌شوند.
+- network/extraction بیرون transaction است. publication پس از revalidation lease/cancel/expiry/revision/generation و
+  current source policy، snapshot/product/variant/offer/claims، counters و eventها را اتمیک commit می‌کند؛ cache همان
+  guard را دارد.
+- `FetchBudget` persisted limits را اجرا می‌کند: DNS/pacing/capacity/connect/TLS/header/body deadline، request/domain/
+  redirect budget، wire/decoded size، gzip کامل و path normalized. شمارنده‌های مصرف واقعی روی failure نیز حفظ می‌شوند.
+- controlled localhost server فقط test connector است؛ DNS/public-IP validation production دور زده نمی‌شود. این test
+  plumbing را verify می‌کند، نه permission یا کیفیت source عمومی. enabled public policy همچنان صفر است.
+
 ## تصمیم‌های Phase 5.2 — provider ایران
 
 - context قطعی: کاربران اولیه و backend در ایران هستند؛ قیمت و بودجهٔ خرید همچنان تومان است.

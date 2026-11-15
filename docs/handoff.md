@@ -1,130 +1,119 @@
-# تحویل Phase 9 — Milestone B: پژوهش محدود و evidence
+# تحویل Phase 9.1 — تکمیل و راستی‌آزمایی bounded research pipeline
 
 **تاریخ:** ۱۵ نوامبر ۲۰۲۶  
-**baseline بازبینی‌شده:** `09e8dff14c42e87c3cdf21a317bcc28f0a455b9e`  
+**baseline بازبینی‌شده:** `5b4bb551f71f0c444c082859329290f0d2273541`  
 **branch:** `002-personalized-shopping-copilot`  
-**وضعیت:** زیرساخت evidence و fixture research verify شد؛ live allowlist خالی و پوشش source کامل نیست  
-**taskهای کامل:** `T014–T017`, `T020–T023`  
+**وضعیت:** pipeline منبع کنترل‌شده کامل و verify شد؛ پوشش source عمومی همچنان pending است  
+**taskهای کامل این فاز:** `T055–T059`  
 **taskهای partial و باز:** `T013`, `T018`, `T019`  
-**taskهای خارج scope:** Milestoneهای C–E باز؛ هر دو feature-specific `T039` بدون تغییر و pending
+**خارج scope و باز:** Milestoneهای C–E، memory/credential/live AI و هر دو feature-specific `T039`
 
-## دامنه و نتیجه
+## نتیجه و مرز فاز
 
-Phase 9 entityهای پژوهش، migration غیرمخرب، safe-fetch، extraction/identity قطعی، cache/cleanup، coordinator و API
-حداقلی start/status/cancel را روی lifecycle موجود `StreamOperation`/`StreamEvent` افزود. default برنامه `OFFLINE` است؛
-`FIXTURE` فقط با label صریح فعال می‌شود و `LIVE` با نبود source مجاز `NO_SUPPORTED_SOURCES` می‌دهد و outbound صفر دارد.
-هیچ ranking/Choice Desk Milestone C، memory، credential، provider/model call، پرداخت، public deployment یا route cutover
-انجام نشد. حذف نامرتبط `test.txt` حفظ و از commit کنار گذاشته می‌شود. handoff قبلی در
-`docs/archive/phase-8.1-handoff.md` آرشیو شد.
+در Phase 9.1 مسیر واقعی request معتبر → policy → bounded fetch → deterministic extraction → identity → offer/claims →
+atomic evidence publication به coordinator موجود متصل شد. این مسیر با HTTP server کنترل‌شده و PostgreSQL واقعی verify
+شد، اما هیچ source عمومی enable یا فراخوانی نشد. Choice Desk/ranking Milestone C، memory، credential، provider call،
+خرید، public deployment و live AI تغییری نکردند. حذف نامرتبط `test.txt` حفظ و از commit کنار گذاشته می‌شود. handoff
+Phase 9 در `docs/archive/phase-9-handoff.md` آرشیو شد.
 
-## Spec Kit و task truth
+## Spec Kit و truth taskها
 
-- prerequisite رسمی feature `002-personalized-shopping-copilot` و checklist `requirements.md` برابر 16/16 بود؛
-  `.specify/extensions.yml` وجود نداشت.
-- `$speckit-analyze` پیش از implementation سه gap High در حدود دقیق B، retention و قرارداد API و یک gap Medium در
-  گستردگی T023 یافت. اصلاحات مجاز در `FR-044–FR-049`، plan، data model، OpenAPI و تفکیک statusها ثبت شد. rerun پس از
-  اصلاح Critical/High یا placeholder نیافت؛ incomplete source coverage به‌عنوان blocker واقعی task حذف یا ضعیف نشد.
-- `$speckit-implement` فقط `T013–T023` را اجرا کرد. `T014–T017` و `T020–T023` complete شدند. `T013` به‌علت نبود
-  permission/retention/display روشن برای enablement، و `T018/T019` به‌علت نبود sports source/fixture مجاز باز و partial
-  ماندند. Milestoneهای C–E و feature 001/002 `T039` unchecked هستند.
+- feature رسمی همان `002-personalized-shopping-copilot` است؛ `.specify/extensions.yml` وجود نداشت و checklist
+  `requirements.md` برابر 16/16 بود.
+- `$speckit-analyze` چهار gap High اولیه را تأیید کرد: coordinator متصل نبود، acceptance payload/revision را اتمیک
+  تثبیت نمی‌کرد، evidence/progress یک publication unit نبود و limits persisted execution counters واقعی نبودند.
+- اصلاحات در `FR-050–FR-054`، plan، data model، OpenAPI و `T055–T059` ثبت شدند. تحلیل پس از اصلاح هیچ Critical/High
+  تازه‌ای نداشت؛ gapهای source عمومی و Milestoneهای آینده به‌عمد باز ماندند.
+- `$speckit-implement` فقط `T055–T059` را اجرا کرد. `T020–T023` پس از اتصال production path و regressionهای تازه همچنان
+  complete هستند. `T013/T018/T019` برای permission و sports fixture/extractor partial باقی ماندند.
 
-## feasibility منبع و probe زنده
+## قرارداد acceptance و API
 
-هفت GET عمومی کم‌حجم، read-only و بدون retry اجرا شد؛ proxy محیطی استفاده نشد، redirect حداکثر ۲، decoded cap برابر
-۲ MiB و timeout برابر ۲۰ ثانیه بود. فایل خام probe فقط در `/tmp` بود و وارد Git نشد. provider/model call و هزینه صفر.
+- input اصلی `targets` است. هر LIVE target باید `{source_id, url}` با exact product URL داشته باشد؛ domain-only با
+  422 رد می‌شود. fixture می‌تواند URL-null باشد و compatibility محدود `source_ids` فقط برای FIXTURE حفظ شده است.
+- boolean revision، list/object تو‌در‌تو، field اضافی، URL نامعتبر و source/hostname mismatch پاسخ typed 4xx دارند.
+- admission زیر `GuestContext → Conversation` lock، ownership/expiry، confirmed brief، expected revision، target-mode
+  association، idempotency و یک active job per guest را اتمیک می‌سنجد. race دو request واقعی API فقط یکی را 202 کرد
+  و دیگری 429 گرفت.
+- idempotent replay قبل از reinterpretation state تازه بررسی می‌شود؛ brief تغییرکرده revision job قدیمی را عوض نمی‌کند.
+- status شامل targets، pinned brief revision، `current_for_brief`، request/redirect/wire/decoded counters، snapshot،
+  failure code، offer و claim attribution است. GET/SSE کار شبکه را شروع یا تکرار نمی‌کند.
 
-| Source | درخواست Phase 9 | مشاهده و extraction | readiness / enablement |
-|---|---:|---|---|
-| Philips `www.philips.com` | ۲ | robots: 200/254 B؛ صفحه EP5934: 200 HTML/33,782 B/0 redirect/0.330s؛ JSON-LD name, brand, SKU, MPN=`EP5934/10R1` | `CAPTURED_REAL_FIXTURE` + `LIVE_PROBE`؛ disabled تا روشن‌شدن permission/retention/display |
-| Technolife `www.technolife.com` | ۳ | robots: 200/589 B؛ terms: 200/134,718 B؛ A56: 200 HTML/147,320 B/0 redirect/0.485s؛ identity `99474` و متن دقیق `ناموجود`؛ price/shipping/total absent | `CAPTURED_REAL_FIXTURE` + `LIVE_PROBE`؛ disabled تا clarification کتبی |
-| Torob `torob.com` | ۲ | robots: 200/110 B؛ terms: 200/11,234 B؛ product request و offer extraction انجام نشد | `LIVE_PROBE` policy-only؛ disabled |
-| Apple | ۰ | terms automated page scraping/robot را منع می‌کند | disabled |
-| Adidas / Decathlon | ۰ | terms برای automated access به permission/consent کتبی نیاز دارد | disabled؛ sports blocker |
-| Nike / Digikala | ۰ | Phase 7 permission/timeout unresolved؛ retry تکراری انجام نشد | disabled/unassessed؛ timeout عدم دسترسی دائمی نیست |
+## transport و budget واقعی
 
-بنابراین enabled live source دقیقاً صفر است. Philips manufacturer claim است و اندازه‌گیری مستقل performance نیست.
-Technolife fixture فقط availability تاریخی out-of-stock دارد و price/current stock یا cheapest-in-Iran را پشتیبانی
-نمی‌کند. fixtureهای حداقلی checksummed هستند: Philips
-`4962e609585514bf48ad6026c7309feeb4e2c680003f86bcf364eae0f700d424` و Technolife
-`87f2d00a9abf19b4ddb84da8a9ce41ab03ed348398ebc3e0e15840d1c529921c`.
+- SafeFetcher همان Python stdlib 3.12 و IP-pinned connection را حفظ می‌کند؛ TLS SNI/certificate و Host اصلی‌اند، همهٔ
+  DNS answerها باید public باشند، proxy/cookie/credential و private endpoint ممنوع‌اند.
+- DNS executor/capacity، pacing، outbound capacity، connect/TLS/header/body، request و job همگی remaining deadline
+  دارند. testهای server کنترل‌شده slow-header و slow-drip نشان دادند انتظار از deadline عبور نمی‌کند.
+- path پیش از prefix check normalize می‌شود و encoded dot/slash/backslash/percent ambiguity رد می‌شود. redirect مقصد
+  rule مستقل host/port/path دارد.
+- gzip malformed، truncated و concatenated/composite رد می‌شود. سقف wire compressed و decoded مستقل است. non-2xx،
+  MIME نامعتبر، request/domain/redirect cap و DNS failure code صریح دارند.
+- یک `FetchBudget` از limits persisted برای کل job sequential ساخته می‌شود. request/redirect/wire/decoded واقعی، از
+  جمله مصرف پیش از failure، روی ResearchJob ثبت می‌شوند. semaphore دو outbound per process است و global معرفی نمی‌شود.
 
-## safe fetch، limits و dependency
+## publication، identity، cache و lifecycle
 
-- transport از Python stdlib 3.12 (`http.client`, `ssl`, `socket`, `ipaddress`) استفاده می‌کند؛ dependency و lockfile
-  تازه‌ای اضافه نشد. skill محلی validated در `.agents/skills/bounded-product-research/` مرز DNS/pinning/source truth را
-  ثبت می‌کند.
-- scheme فقط HTTP(S)، port/hostname/path/redirect exact policy، embedded credential ممنوع، و همهٔ DNS answerها باید
-  public/global باشند. connection واقعی به IP تأییدشده pin می‌شود، ولی TLS SNI/certificate verification و Host اصلی
-  حفظ می‌شوند. redirect دوباره validate می‌شود؛ proxy env، cookie و credential وارد fetch نمی‌شوند.
-- limits مصوب و persisted: ۳ domain/job، ۵ page/domain، ۲ redirect/request، ۲۰ HTTP request/job، ۲ MiB decoded/page،
-  ۲۰s/request، ۶۰s/job، pace حداقل ۱s/domain، outbound concurrency دو/process و یک active job/guest. retry خودکار وجود
-  ندارد؛ در نتیجه Retry-After دنبال نمی‌شود و loop نامحدود ممکن نیست. semaphore per-process deployment-global نیست.
-- research executor و admission از conversation executor جداست تا fetch کار status/cancel را exhaust نکند. network
-  در transaction اجرا نمی‌شود. lease ۳۰s قبل از هر work unit renew و publication بعد از I/O دوباره owner، expiry،
-  brief revision، cancel و conversation expiry را زیر lock order `Conversation → StreamOperation → ResearchJob`
-  می‌سنجد. restart network work را خودکار تکرار نمی‌کند.
+- fetch/extraction خارج transaction انجام می‌شود. publication با lock order
+  `Conversation → StreamOperation → ResearchJob → SourcePolicy` دوباره owner، lease، cancel، conversation expiry،
+  brief revision، generation epoch، job state و current policy را می‌سنجد.
+- snapshot، product/variant، offer، claims، counters، `evidence.published` و `research.progress` یک per-source transaction
+  هستند. fault injection rollback نشان داد snapshot/event/identity orphan باقی نمی‌ماند.
+- identity فقط با common identifier سازگار merge می‌شود؛ name-only ambiguity یا identifier/region/attribute conflict
+  variant جدا می‌سازد. offer timestamp و price/currency/seller/availability جدا persist می‌شوند.
+- cache فقط در همان conversation، با raw غیرمنقضی و policy دوباره‌قفل‌شده reuse می‌شود. cancel پیش از cache publication
+  snapshot تازه‌ای ایجاد نکرد.
+- submission failure، cancel، worker exception، stale lease/brief/expiry و completion، ResearchJob و StreamOperation را
+  اتمیک یا با status/admission reconciliation همگرا می‌کنند. restart کار network را تکرار نمی‌کند و quota stale آزاد
+  می‌شود.
+- migration `0007_research_targets_and_transport_counters` legacy `source_ids` را به targetهای URL-null تبدیل و
+  `redirect_rules`, `targets`, `wire_bytes`, `redirect_count` را بدون حذف یا reset داده اضافه کرد.
 
-## داده، provenance، cache و lifecycle
+## controlled-source evidence و source عمومی
 
-Migration `0006_copilot_milestone_b` مدل‌های `SourcePolicy`, `ResearchJob`, `SourceSnapshot`, `EvidenceClaim`, `Product`,
-`Variant`, `Offer` و `operation_kind` را بدون دست‌زدن به rowهای feature 001 افزود. هر snapshot retrieval time، source
-role، MIME/status/bytes، fingerprint، extractor version و failure را دارد؛ claim به field/value/location و status
-متصل است. Offer item/shipping/total/seller/condition/availability/observed time را جدا نگه می‌دارد؛ shipping نامعلوم
-یعنی total نامعلوم.
+integration test یک policy فقط-تستی `products.example` می‌سازد. resolver یک IP public مستندشده برمی‌گرداند و connector
+مرزی تست socket را به loopback server می‌فرستد؛ production policy هیچ localhost/private bypass ندارد. مسیر واقعی API،
+policy، fetcher، JSON-LD extractor، identity، offer/claims، PostgreSQL و events اجرا شد:
 
-raw cache حداکثر ۲۴ ساعت و non-sliding است. cache hit timestamp و expiry اصلی را حفظ می‌کند و فقط داخل همان conversation
-reuse می‌شود. conversation delete/expiry snapshot/claim/offer را cascade می‌کند؛ cleanup raw منقضی را null و فقط
-Product/Variant کاملاً orphan را حذف می‌کند، بنابراین identity هنوز referenced حذف نمی‌شود. backup erasure فوری وعده
-داده نمی‌شود و تابع lifecycle backup است.
+- یک request، صفر redirect، wire/decoded مثبت؛ Host و exact `/products/e1` مطابق policy؛
+- snapshot `EXTRACTED`، SKU attributed، offer تومان با seller/availability و outcome `SUCCESS`؛
+- یک `evidence.published` و progress اتمیک؛ rollback/cancel بدون evidence نیمه‌کاره.
 
-## API و smoke واقعی Compose
+این سند quality/permission source عمومی را نتیجه نمی‌گیرد. enabled public source دقیقاً صفر است؛ public request،
+provider/model call و paid activity Phase 9.1 همگی صفر بودند. Philips/Technolife/Torob همچنان clarification کتبی
+permission/retention/display/rate می‌خواهند و sports source مجاز وجود ندارد.
 
-OpenAPI برای start/status/cancel، typed job/snapshot/claim/coverage/error و `operation_kind` تکمیل شد. start به brief
-تأییدشده، expected revision، CSRF و idempotency key نیاز دارد. GET/status/replay work را آغاز نمی‌کند. active limit
-guest-wide است؛ foreign owner 404 می‌گیرد؛ cancel terminal است؛ progress فقط completed unit را می‌شمارد. outcomeهای
-`SUCCESS`, `PARTIAL_SUCCESS`, `NO_SUPPORTED_SOURCES`, blocked/extraction/timeout/cancel/interrupted/failed جدا هستند.
+## verification تازه
 
-Compose با `BEFOREBUY_RESEARCH_MODE=FIXTURE docker compose up --build -d` بازسازی شد؛ migration 0006 اعمال و هر سه
-service healthy شدند. smoke از NGINX روی `127.0.0.1:58080` مسیر session → conversation → brief edit/confirm → research
-را اجرا کرد: `SUCCESS`, `completed=2`, `total=2`، دو snapshot، چهار claim دارای variant identity،
-`fixture_labeled=true` و `canonical_url=null` برای هر دو.
-سپس API با env unset force-recreate شد؛ env واقعی `OFFLINE`، service healthy و start از NGINX برابر
-`HTTP 409 RESEARCH_OFFLINE` بود. volume reset یا public deploy انجام نشد.
+- focused research/API/PostgreSQL/transport/extractor/identity/migration: 47 discovered/run، 47 passed، skipped/failed/
+  error صفر در 11.086s. slow-header/slow-drip disconnectهای مورد انتظار در test handler جذب شدند؛ رفتار production تغییر نکرد.
+- پس از review نهایی lock شدن SourcePolicy در acceptance و refresh پاسخ submission، مجموعهٔ affected API/lifecycle/
+  concurrency/pipeline دوباره اجرا شد: 24/24 passed در 8.558s.
+- canonical backend از root: `./scripts/test-backend.sh --keepdb --verbosity 1` → 229 discovered/run، 229 passed،
+  skipped/failed/error صفر در 44.388s.
+- `manage.py check` بدون issue؛ `makemigrations --check --dry-run` → `No changes detected`؛ compileall، OpenAPI YAML و
+  `git diff --check` موفق.
+- migration 0007 روی development Compose اعمال شد؛ volume/database reset نشد و سه service healthy ماندند.
+- Playwright رسمی 1.65.1 image digest
+  `sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579` علیه NGINX
+  `127.0.0.1:58080`: 3/3 passed در 14.4s (desktop/accessibility/fixture stream، mobile/keyboard، legacy route).
+  اجرای نخست بدون `NODE_PATH` پیش از discovery متوقف شد؛ اجرای دوم با `host.docker.internal` به‌درستی توسط ALLOWED_HOSTS
+  رد شد (1/3 pass). معیار نهایی از host networking و Host مجاز استفاده کرد؛ allowlist تضعیف نشد.
+- controlled pipeline smoke در suite PostgreSQL: API → real local HTTP transport → extractor → DB → status/events
+  موفق بود. runtime research در Compose همچنان `OFFLINE` است.
 
-## verification
+## gateهای باقی‌مانده
 
-- TDD RED اولیه: شش import error برای مدل/moduleهای مفقود؛ سپس failures هدفمند برای PostgreSQL lock، executor double،
-  deadline، Technolife fallback و raw-cache cleanup ثبت و علت‌ها اصلاح شدند.
-- focused نهایی research/migration/cleanup: ۳۹ test، passed ۳۹، failed/error/skipped صفر در 5.675s؛ findingهای
-  orphan identity، variant API attribution و pacing deadline در همین مجموعه پوشش داده شدند.
-- canonical backend نهایی از root: `./scripts/test-backend.sh --verbosity 1` → ۲۱۴ discovered/run، ۲۱۴ passed،
-  skipped ۰، failed/error صفر در 41.196s.
-- `manage.py check` بدون issue؛ `makemigrations --check --dry-run` → `No changes detected`؛ compileall، skill validator،
-  JSON manifest، OpenAPI YAML و `git diff --check` موفق. `check --deploy` با settings تولید در container توسعه به‌درستی
-  روی `DJANGO_DEBUG=1` fail-closed شد و به‌عنوان pass شمرده نشد.
-- browser smoke از image رسمی Playwright 1.65.1 digest
-  `sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579` و NGINX واقعی: ۳/۳ passed در 26.3s؛
-  desktop/accessibility، mobile/keyboard و legacy route. اجرای host Node قبل از discovery به علت dyld/Hermes نامعتبر بود؛
-  اجرای container معیار نهایی است.
-- live public source probe: ۷ request، سه domain، zero retry. runtime live research call: صفر؛ provider/model call: صفر؛
-  paid activity: صفر.
-
-## gateها و ادامهٔ مجاز بعدی
-
-1. Philips/Technolife/Torob باید permission، retention، display/attribution و rate contract را روشن کنند؛ بدون آن
-   `T013` و live allowlist باز است.
-2. sports source مجاز و direct extraction لازم است تا `T018/T019` کامل شوند. Iranian current offer، shipping و total
-   نیز هنوز evidence ندارد.
-3. process-local semaphore global cap نیست؛ چند worker حداکثر مستقل دارند. durable queue/Redis بدون evidence نیاز اضافه
-   نمی‌شود.
-4. Milestone C ranking/Choice Desk، D memory/credential/OpenAI و E pilot/deployment gateها مجوز جدا می‌خواهند.
-5. feature 001 `T039` تا live provider evidence + human review و feature 002 `T039` تا direct OpenAI eligibility/authorization
-   هر دو pending هستند. هیچ market comparison یا best-price recommendation پیاده نشده است.
+1. `T013`: قرارداد روشن permission، retention، display/attribution و rate برای source عمومی.
+2. `T018/T019`: sports source مجاز، fixture حداقلی checksummed و direct extraction test.
+3. public-source controlled rollout باید جداگانه approved شود؛ موفقیت synthetic server مجوز source نیست.
+4. Milestone C ranking/Choice Desk و Milestoneهای D/E مجوز مستقل می‌خواهند.
+5. feature 001 `T039` و feature 002 live-AI gateها pending هستند؛ این فاز full-product convergence نیست.
 
 ## Git
 
-فقط code/test/migration/skill/spec/contracts/docs/Compose مرتبط Phase 9 stage می‌شود. `.env`، credential، database، dump،
-log، cache، browser artifact و حذف نامرتبط `test.txt` وارد commit نمی‌شوند. branch جاری به origin موجود push می‌شود؛
-merge، force-push و remote جدید انجام نمی‌شود.
+فقط code/test/migration/spec/contracts/docs مرتبط Phase 9.1 stage می‌شوند. `.env`، secret، database، dump، log، cache،
+Playwright artifact و حذف نامرتبط `test.txt` وارد commit نمی‌شوند. push فقط به branch جاری و origin موجود، بدون force،
+merge یا remote تازه انجام می‌شود.
 
-**Milestone B partially complete — source/check blockers listed.**
+**Milestone B pipeline verified with controlled sources — public source coverage still pending.**

@@ -36,7 +36,7 @@ Idempotency-Key: research-smoke-key-0001
 X-CSRFToken: {token}
 Content-Type: application/json
 
-{"expected_brief_revision":1,"source_ids":["synthetic-appliance-v1","synthetic-electronics-v1"]}
+{"expected_brief_revision":1,"targets":[{"source_id":"synthetic-appliance-v1"},{"source_id":"synthetic-electronics-v1"}]}
 ```
 
 Poll `GET /api/v1/research-jobs/{job_id}` or follow the returned operation `events_url`. Expected terminal fixture result:
@@ -49,5 +49,21 @@ docker compose up -d --force-recreate api
 
 with `BEFOREBUY_RESEARCH_MODE` unset/`OFFLINE`. `LIVE` currently has zero enabled source policy and must report
 `NO_SUPPORTED_SOURCES`; it must not silently emit fixture evidence.
+
+## Controlled LIVE pipeline verification
+
+`LIVE` accepts only `{source_id, url}` targets where `url` is an exact product URL and its hostname matches an existing
+`SourcePolicy`; a domain alone is rejected. `tests.integration.test_research_pipeline` starts a loopback HTTP server،
+while a test-only connector maps an already public-validated synthetic address to that server. It otherwise uses the
+production API، policy validation، fetcher، extractor، identity reconciliation، PostgreSQL publication and event ledger.
+This verifies controlled-source plumbing، not permission or quality for a public source.
+
+```sh
+cd backend
+uv run --project .. python manage.py test \
+  tests.integration.test_research_pipeline \
+  tests.integration.test_research_concurrency \
+  tests.unit.test_safe_fetch --settings=config.settings.test --keepdb
+```
 
 No public deployment, provider call, broad crawl, product ranking, memory or credential storage belongs to Milestone B.

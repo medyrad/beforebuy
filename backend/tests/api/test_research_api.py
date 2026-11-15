@@ -113,6 +113,29 @@ class ResearchApiTests(TestCase):
         self.assertEqual(cancelled.status_code, 202, cancelled.content)
         self.assertEqual(cancelled.json()["operation"]["status"], "CANCELLED")
 
+    def test_boolean_revision_and_malformed_targets_are_typed_validation_errors(self):
+        path = f"/api/v1/conversations/{self.conversation['id']}/research"
+        cases = [
+            {"expected_brief_revision": True, "targets": [{"source_id": "synthetic-appliance-v1"}]},
+            {"expected_brief_revision": 1, "targets": [{"source_id": ["nested"]}]},
+            {"expected_brief_revision": 1, "targets": ["not-an-object"]},
+        ]
+        for index, payload in enumerate(cases):
+            with self.subTest(payload=payload):
+                response = self.post(path, payload, HTTP_IDEMPOTENCY_KEY=f"research-invalid-{index:02d}-key")
+                self.assertEqual(response.status_code, 422, response.content)
+                self.assertEqual(response.json()["error"]["code"], "VALIDATION_ERROR")
+
+    @override_settings(BEFOREBUY_RESEARCH_MODE="LIVE")
+    def test_live_target_requires_an_exact_product_url(self):
+        path = f"/api/v1/conversations/{self.conversation['id']}/research"
+        response = self.post(
+            path,
+            {"expected_brief_revision": 1, "targets": [{"source_id": "products.example"}]},
+            HTTP_IDEMPOTENCY_KEY="research-live-no-url-key",
+        )
+        self.assertEqual(response.status_code, 422, response.content)
+
 
 @override_settings(BEFOREBUY_RESEARCH_MODE="OFFLINE")
 class OfflineResearchApiTests(TestCase):

@@ -34,3 +34,16 @@ HTTP 200 extraction نیست؛ extraction permission/license نیست؛ robots �
 Explicit user trigger only؛ 3 domain/job، 5 content page/domain، 2 redirect/request، 20 HTTP request total، 2 MiB decoded/page، 20s/request، 60s/job، outbound concurrency 2/application process، one active job/guest، per-domain pace at least 1s (stricter source policy wins). Redirect/retry/policy requests consume budget. `Retry-After` may be honored only inside remaining deadline; implementation has no unbounded retry. Process-local semaphore is not deployment-global.
 
 Raw response cache expires at creation+24h without sliding read. Offer freshness is source-specific and never inferred from cache presence. Normalized private evidence cannot outlive its owning conversation; backup erasure remains bounded by backup lifecycle.
+
+## Phase 9.1 controlled-pipeline evidence (2026-11-15)
+
+- Public-source enablement remains exactly empty؛ no public request was made in Phase 9.1.
+- A controlled `products.example` policy exists only inside PostgreSQL tests. DNS returns a documentation-safe public
+  address and a test-only connector sends the socket to a loopback `ThreadingHTTPServer`؛ production validation has no
+  localhost flag or private-address exception.
+- The real start API requires an exact product URL، then executes policy → bounded fetch → JSON-LD extraction → variant
+  identity → timed offer/claims → atomic snapshot/events. The test records one request، positive wire/decoded bytes،
+  exact Host/path، one offer and attributed claims.
+- Disabled policies produce `BLOCKED/SOURCE_DISABLED` with zero outbound connection. This verifies plumbing/accounting
+  only؛ it does not establish public permission، freshness، Persian catalog coverage or uncontrolled extraction quality.
+- Provider calls remain zero. `T013`, `T018` and `T019` remain partial for the recorded permission/sports blockers.

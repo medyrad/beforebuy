@@ -4,13 +4,15 @@ from unittest.mock import patch
 from django.test import TestCase
 from django.utils import timezone
 
-from analysis.models import Conversation, GuestContext, ResearchJob, SourceSnapshot, StreamOperation
+from analysis.models import Conversation, GuestContext, ResearchJob, SourcePolicy, SourceSnapshot, StreamOperation
 from analysis.research.jobs import (
     DEFAULT_LIMITS,
     complete_research_job,
     create_research_job,
     publish_research_progress,
+    reconcile_research_job,
     perform_research,
+    submit_research_reserved,
 )
 
 
@@ -166,11 +168,16 @@ class ResearchJobLifecycleTests(TestCase):
         self.assertTrue(claim_operation(self.job.operation_id, owner))
         self.assertTrue(perform_research(self.job.id, owner))
 
+        SourcePolicy.objects.create(
+            hostname="www.philips.com", allowed_ports=[443], allowed_path_prefixes=["/products/"],
+            redirect_hostnames=[], source_role="MANUFACTURER", readiness="DISABLED", live_enabled=False,
+        )
+        targets = [{"source_id": "www.philips.com", "url": "https://www.philips.com/products/example"}]
         live, _ = create_research_job(
             conversation=self.conversation,
             idempotency_key="research-live-disabled-001",
             request_hash="b" * 64,
-            source_ids=["www.philips.com"],
+            targets=targets,
             mode="LIVE",
         )
         live_owner = "research-worker-live-disabled"
@@ -179,7 +186,7 @@ class ResearchJobLifecycleTests(TestCase):
             self.assertTrue(perform_research(live.id, live_owner))
         live.refresh_from_db()
         self.assertEqual(live.status, "NO_SUPPORTED_SOURCES")
-        self.assertEqual(live.coverage["blocked"], ["www.philips.com"])
+        self.assertEqual(live.coverage["blocked"], [{"source_id": "www.philips.com", "code": "SOURCE_DISABLED"}])
         connect.assert_not_called()
 
     def test_conversation_delete_removes_job_and_blocks_late_publication(self):
@@ -191,3 +198,32 @@ class ResearchJobLifecycleTests(TestCase):
         self.conversation.delete()
         self.assertFalse(publish_research_progress(job_id, owner, stage="EXTRACT", completed=1, total=2))
         self.assertFalse(ResearchJob.objects.filter(id=job_id).exists())
+
+    def test_identical_replay_keeps_original_revision_after_brief_changes(self):
+        first = self.job
+        Conversation.objects.filter(id=self.conversation.id).update(brief_revision=1)
+        replay, repeated = create_research_job(
+            conversation=self.conversation, idempotency_key="research-lifecycle-001",
+            request_hash="7" * 64, source_ids=["synthetic-appliance-v1", "blocked-sports-v1"], mode="FIXTURE",
+        )
+        self.assertTrue(repeated)
+        self.assertEqual(replay.id, first.id)
+        self.assertEqual(replay.brief_revision, 0)
+
+    @patch("analysis.research.jobs.release_research_slot")
+    @patch("analysis.research.jobs._executor.submit", side_effect=RuntimeError("executor unavailable"))
+    def test_submission_failure_terminalizes_operation_and_job_together(self, _submit, _release):
+        self.assertFalse(submit_research_reserved(self.job.id))
+        self.job.refresh_from_db()
+        self.job.operation.refresh_from_db()
+        self.assertEqual((self.job.status, self.job.operation.status), ("FAILED", "FAILED"))
+        self.assertEqual((self.job.terminal_code, self.job.operation.terminal_code),
+                         ("SUBMISSION_FAILED", "SUBMISSION_FAILED"))
+
+    def test_stale_lease_reconciliation_converges_operation_and_job(self):
+        from analysis.conversation.streaming import claim_operation
+        self.assertTrue(claim_operation(self.job.operation_id, "stale-reconcile-worker"))
+        StreamOperation.objects.filter(id=self.job.operation_id).update(lease_expires_at=timezone.now())
+        reconciled = reconcile_research_job(self.job.id)
+        self.assertEqual((reconciled.status, reconciled.operation.status), ("INTERRUPTED", "INTERRUPTED"))
+        self.assertEqual(reconciled.terminal_code, "WORKER_INTERRUPTED")

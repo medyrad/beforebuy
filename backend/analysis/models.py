@@ -335,6 +335,7 @@ class SourcePolicy(models.Model):
     allowed_ports = models.JSONField(default=list)
     allowed_path_prefixes = models.JSONField(default=list)
     redirect_hostnames = models.JSONField(default=list)
+    redirect_rules = models.JSONField(default=dict)
     source_role = models.CharField(
         max_length=24,
         choices=[
@@ -384,6 +385,7 @@ class ResearchJob(models.Model):
     request_hash = models.CharField(max_length=64)
     mode = models.CharField(max_length=16, choices=[("FIXTURE", "Fixture"), ("LIVE", "Live")])
     source_ids = models.JSONField(default=list)
+    targets = models.JSONField(default=list)
     limits = models.JSONField(default=dict)
     status = models.CharField(
         max_length=32,
@@ -407,6 +409,8 @@ class ResearchJob(models.Model):
     total_units = models.PositiveIntegerField(default=0)
     request_count = models.PositiveIntegerField(default=0)
     decoded_bytes = models.PositiveBigIntegerField(default=0)
+    wire_bytes = models.PositiveBigIntegerField(default=0)
+    redirect_count = models.PositiveIntegerField(default=0)
     coverage = models.JSONField(default=dict)
     terminal_code = models.CharField(max_length=64, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

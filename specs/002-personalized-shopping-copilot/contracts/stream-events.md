@@ -8,7 +8,7 @@ SSE over same-origin guest session at `/api/v1/operations/{operation_id}/events`
 | `operation.started` | fixture kind/bounds؛ authoritative operation state |
 | `assistant.text.delta` | provisional plain-text chunk، max 1024 UTF-8 bytes |
 | `research.progress` | real stage/completed/total؛ فقط work کامل‌شده، mode و job ID مشخص |
-| `evidence.published` | validated evidence/snapshot IDs |
+| `evidence.published` | source ID، snapshot ID و status همان evidence unit اتمیک؛ پیش از commit دیده نمی‌شود |
 | `choice.updated` | canonical ChoiceSet pointer |
 | `assistant.message.final` | final validated message pointer |
 | `operation.cancelled` | terminal; explicit/user/delete reason |
@@ -31,5 +31,6 @@ HTML، raw provider/source payload or private exception is allowed.
 
 Research eventها همان operation ledger را reuse می‌کنند. start فقط از `POST .../research` است؛ GET/status/SSE work را
 شروع یا تکرار نمی‌کند. research worker با lease سی‌ثانیه‌ای و request حداکثر بیست‌ثانیه‌ای قبل و بعد I/O renew/recheck
-می‌کند. completion، coverage و operation state در یک transaction با lock order `Conversation → StreamOperation → ResearchJob`
-منتشر می‌شوند؛ source failure موفقیت source دیگر را پاک نمی‌کند.
+می‌کند. هر evidence unit و completion با lock order
+`Conversation → StreamOperation → ResearchJob → SourcePolicy` منتشر می‌شوند؛ snapshot/identity/offer/claims/counters و
+`evidence.published`/progress یک commit دارند و source failure موفقیت source دیگر را پاک نمی‌کند.

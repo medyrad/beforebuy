@@ -5,7 +5,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 # Tasks: دستیار شخصی خرید
 
 **Input**: artifacts in `/specs/002-personalized-shopping-copilot/`  
-**Authorization**: Phase 9 authorizes only Milestone B tasks `T013–T023` in addition to completed Milestone A work؛ Milestones C–E remain pending.  
+**Authorization**: Phase 9/9.1 authorizes Milestone B tasks `T013–T023` and focused corrective tasks `T055–T059`؛ Milestones C–E remain pending.  
 **TDD**: behavioral tests MUST fail for the intended missing behavior before paired implementation.
 
 ## Milestone A — Conversation foundation
@@ -43,6 +43,11 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 - [X] T021 [P] [US2] Write failing variant reconciliation tests for region, identifier, bundle, warranty and ambiguity in `backend/tests/unit/test_variant_identity.py`
 - [X] T022 [US2] Implement identity/conflict handling and timed offer observations in `backend/analysis/research/identity.py`
 - [X] T023 [US2] Write failing owner/CSRF start-status-cancel، bounded progress، cache/dedupe، lease renewal، stale publication، partial failure and cleanup integration tests in `backend/tests/integration/test_research_jobs.py` and API tests، then implement coordinator and typed minimal API in `backend/analysis/research/jobs.py` and `backend/analysis/api/research.py` by reusing StreamOperation/Event
+- [X] T055 [P] [US2] Write failing API/PostgreSQL regressions for typed product targets، boolean/malformed validation، atomic revision/confirmation acceptance، replay after brief change and guest-wide admission in `backend/tests/api/test_research_api.py` and `backend/tests/integration/test_research_concurrency.py`
+- [X] T056 [P] [US2] Write failing safe-transport regressions for bounded DNS/header/body، wire/decoded gzip، normalized paths، per-destination redirects and capacity/deadline waits in `backend/tests/unit/test_safe_fetch.py`
+- [X] T057 [P] [US2] Write failing production-path controlled-source tests for fetch→extract→identity→offer/claims→events، rollback، cache/cancel، mixed outcomes and lifecycle reconciliation in `backend/tests/integration/test_research_pipeline.py`
+- [X] T058 [US2] Connect validated targets to SourcePolicy، shared job budgets، SafeFetcher، deterministic extraction and guarded atomic evidence publication; synchronize ResearchJob/StreamOperation terminal transitions without enabling a public source
+- [X] T059 [US2] Reassess T020–T023، run focused/full PostgreSQL and NGINX/browser verification، archive Phase 9 handoff and update contracts/tooling/quickstart/handoff with controlled-versus-public readiness truth
 
 **Checkpoint B**: only approved fixture domains yield citations; access failures remain explicit.
 
@@ -87,7 +92,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 ## Dependencies
 
-`A → B → C`; memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 blocks live source access. T034 blocks credential implementation. T037/T040 and official region support block any live call. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
+`A → B → C`; T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 blocks public live source access. T034 blocks credential implementation. T037/T040 and official region support block any live call. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.
 
 ## Implementation strategy
 

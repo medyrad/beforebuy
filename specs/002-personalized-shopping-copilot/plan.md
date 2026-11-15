@@ -70,6 +70,8 @@ NGINX web ── /api/ ──> Django/DRF
 - research executor و admission از fixture conversation executor جداست، اما PostgreSQL operation/event همان source of truth می‌ماند. outbound semaphore دو request در هر process است، نه global؛ یک active research job per guest با row/constraint logic enforce می‌شود.
 - safe fetch ابتدا exact policy/path را می‌سنجد، DNS را resolve و همهٔ addressها را public validate می‌کند و connection را به یک IP تأییدشده pin می‌کند؛ TLS SNI/certificate و Host hostname اصلی‌اند و proxy environment مصرف نمی‌شود. redirect از ابتدا دوباره validate می‌شود.
 - budget اولیه: 3 domain، 5 content page/domain، 2 redirect/request، 20 total HTTP request، 2 MiB decoded/page، 20s/request، 60s/job، pacing یک ثانیه/domain. raw cache 24h non-sliding و freshness مستقل است.
+- Phase 9.1 target contract برابر source ID + exact product URL است؛ domain-only discovery پیاده نمی‌شود. acceptance زیر Guest→Conversation lock و evidence publication زیر Conversation→Operation→ResearchJob→SourcePolicy lock کوتاه انجام می‌شود؛ fetch/extract بیرون transaction است.
+- یک `FetchBudget` از limits persisted برای کل job sequential ساخته می‌شود و request/redirect/wire/decoded measurement را میان sourceها حمل می‌کند. test transport connector می‌تواند socket محلی کنترل‌شده را جایگزین کند، اما resolver/policy production public-address validation را دور نمی‌زند و runtime flag برای تضعیف SSRF وجود ندارد.
 - OpenAI built-in web search در MVP منبع بازار authoritative نیست.
 - model از catalog allowlisted پس از revalidation capability/price برای ID دقیق انتخاب می‌شود.
 
