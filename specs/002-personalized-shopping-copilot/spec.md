@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Bounded UX redesign T086–T092 authorized; local verification and product-lead visual review remain distinct from live/provider/public-release gates
+**Status**: Settings correction T093–T095/T097 authorized after bounded UX T086–T092; T096/free-provider integration and live/public gates remain pending
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و credential مجزای provider متعلق به کاربر.
 
@@ -249,6 +249,12 @@
 - SSE برای downstream server-to-browser کافی فرض شده و فقط با evidence implementation تغییر می‌کند.
 - eligibility مستقیم OpenAI برای users/backend ایران تأیید نشده است؛ GapGPT selected path نیز تا credential محلی، validation واقعی و مجوز هزینه live-verified نیست.
 - retention مصوب Milestone A برای conversation/message/current brief برابر 90 روز پس از eligible action و برای upload/event برابر 24 ساعت است؛ در Milestone B raw research حداکثر 24 ساعت و evidence خصوصی حداکثر تا expiry conversation است. retention memory/credential فقط در milestone مربوط تصمیم‌گیری می‌شود.
+
+## Settings correction authorization (2026-11-16)
+
+- **FR-088**: Provider transitions MUST invalidate previous credential state before loading the new provider; failed loading MUST expose retry and MUST NOT permit saving/deleting a different provider's credential. Settings remain recoverable after revision conflicts. Restore the existing local encryption mount without rotating keys or changing data.
+  Mutations MUST be serialized before React re-render, and obsolete async continuations MUST be ignored after leaving/reloading settings. Test rapid selection, duplicate save/delete and failed provider loading. Offline startup without the optional secret remains supported.
+- **FR-089**: Research free API onboarding using primary sources, distinguishing quotas from eligibility and measured quality. Do not activate an unverified Iran route, automatic paid fallback or provider calls. A new usable integration requires an eligible fixed model/protocol/privacy contract; unresolved requirements remain explicitly pending.
 
 ## Out of Scope
 

@@ -4,7 +4,16 @@
 
 ## Summary
 
-Current bounded UX authorization: T086–T092 only. FR-082–087 supersede the historical default-route restriction,
+Current settings correction scope: T093–T095 and T097 (FR-088/089); T096 is deferred. Clear credential state on every provider transition,
+provide recoverable reload on partial failures, guard save/delete by provider identity and serialize updates.
+Use a synchronous ref lock for same-render events and a lifecycle generation for every asynchronous continuation;
+late responses cannot release the current lock or load/publish another credential. No new provider in delivery.
+Restore the existing local keyring through the secret overlay, never generate a replacement. Add a scoped startup
+wrapper requiring the externally configured keyring path so subsequent documented starts retain the mount.
+Free-provider research is separate from approval: no live route until Iran eligibility and fixed model/data contract
+are established. Existing mock/OFFLINE and spending gates remain unchanged.
+
+Historical bounded UX authorization: T086–T092 only. FR-082–087 supersede the historical default-route restriction,
 not retention or live gates. Add JSON conversational state to ShoppingBrief (pending budget) and reply actions to
 Message. Acceptance validates question/revision under existing locks, records explicit bounded fields and advances
 revision before operation creation. Final publication binds actions to its own message; context includes pending

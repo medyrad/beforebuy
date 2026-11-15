@@ -1,3 +1,103 @@
+# اصلاح تنظیمات ارائه‌دهنده — 2026-11-16
+
+مبنای این اصلاح: `9f9e254fdfa1342ccbe19bbbf536bc09f51ba10d`، شاخهٔ `002-personalized-shopping-copilot`.
+تحویل نهایی این اصلاح شامل commit/push روی همین شاخه است؛ hash محلی و hash مشاهده‌شدهٔ remote در پاسخ تحویل
+ثبت می‌شود. تحویل قبلی UX و شواهد اجرای قبلی در ادامه حفظ شده‌اند.
+
+## تکمیل نهایی تنظیمات
+
+- قفل هم‌زمان `ref` جلوی دو mutation پیش از render را می‌گیرد. generation مربوط به lifecycle تمام ادامه‌های
+  async پس از خروج/reload را باطل می‌کند؛ پاسخ قدیمی نه credential منتشر می‌کند و نه قفل جدید را آزاد می‌کند.
+  فرم فقط با provider منطبق قابل ذخیره/حذف است؛ هنگام تغییر یا حذف پاک و در خطا قابل بازیابی است.
+- سه تست جدید پیش از اصلاح شکست واقعی داشتند: دو PATCH، دو PUT، و ادامهٔ GET پس از unmount.
+  پس از اصلاح، suite متمرکز `AssistantSettings.test.tsx` هفت تست موفق دارد، شامل double-delete و مقصد OpenAI.
+- ESLint دو فایل تغییرکرده موفق بود. تصویر web فقط یک‌بار برای کد جدید ساخته شد؛ TypeScript و Vite موفق.
+  نتیجه‌های backend/فرانت‌اند نامرتبط قبلی استفاده شدند، نه اینکه اجرای تازه ادعا شود.
+- اجرای اول مرورگر نهایی در دو اندازه هنگام بارگذاری تنظیمات timeout شد؛ هم‌زمان curl محلی نیز timeout داشت.
+  بعداً API و gateway پاسخ 200 دادند، PostgreSQL آماده بود و بررسی محدود لاگ‌ها خطای storage/I/O نشان نداد.
+  بار CPU سرویس‌های دیگر مشاهده شد ولی علت قطعی اعلام نشد؛ هیچ سرویس نامرتبط یا storage تغییر نکرد.
+- بازاجرای همان `copilot-credential-switch.spec.ts` بدون تغییر assertionها: 2/2 موفق در 52.4 ثانیه، عرض‌های
+  390 و1440 روی NGINX واقعی. هر تست browser context/مالک مهمان تازه، کلید ساختگی، reload و حذف خودش را داشت؛
+  key/trace/video/screenshot واقعی ثبت نشد. شواهد run قبلی زیر با این اجرای تازه اشتباه نشوند.
+
+فرمان‌های بررسی متمرکز این تحویل (node نسخهٔ 20.19.0 محلی):
+
+```sh
+# frontend/
+node node_modules/vitest/vitest.mjs run src/features/copilot/memory/AssistantSettings.test.tsx --maxWorkers=1
+node node_modules/eslint/bin/eslint.js src/features/copilot/memory/AssistantSettings.tsx src/features/copilot/memory/AssistantSettings.test.tsx
+# repository root, after the single web build/recreation
+NODE_PATH=$PWD/frontend/node_modules PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080 node frontend/node_modules/@playwright/test/cli.js test --config frontend/playwright.config.ts tests/e2e/copilot-credential-switch.spec.ts --reporter=list
+```
+
+- API با فرمان canonical زیر و گزینه‌های `--no-deps --force-recreate api` دوباره ساخته شد؛ inspect وجود
+  `/run/secrets/copilot_master_keyring` و بررسی `keyring()` دسترس‌پذیری رمزنگاری را تأیید کرد.
+  کلید اصلی ساخته/تعویض یا چاپ نشد. startup یک‌بارهٔ بدون overlay و با `COPILOT_MASTER_KEY_FILE=` نیز
+  `python backend/manage.py check` را با صفر مشکل گذراند؛ کانتینر اصلی دست‌نخورده در حالت دارای secret ماند.
+- حالت مشاهده‌شده: AI=mock، research=OFFLINE، مجوز Phase12=false، نرخ تبدیل و همهٔ capها صفر؛ margin=0.15.
+  هیچ provider call/purchase انجام نشد. OpenRouter فقط لینک اطلاعاتی است، نه گزینهٔ انتخاب یا اتصال آماده.
+- Spec Kit: FR-088/089 به T093–T097 نگاشت دارند؛ T096 خارج تحویل و باز است؛ بررسی محدود تعارض بحرانی ندارد،
+  checklist برابر 16 checked/0 unchecked و extension hook موجود نیست. T039 feature001 باز مانده است.
+
+فرمان canonical از ریشه، با همان فایل موجود در این دستگاه:
+
+```sh
+COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
+```
+
+برای نصب آفلاین بدون ذخیرهٔ credential، `docker compose -f compose.yaml up -d` با AI mock و research OFFLINE
+پشتیبانی می‌شود؛ آن را برای بازسازی کانتینری که باید ذخیرهٔ کلیدش فعال بماند استفاده نکنید.
+
+### پیش‌نیازهای یک گفتگوی واقعی GapGPT — هنوز اجرا نشده
+
+1. حساب دارای دسترسی/اعتبار کافی برای `gapgpt-deepseek-v4.1-flash`؛ ذخیرهٔ کلید GapGPT فقط در تنظیمات همان
+   مالک مرورگر، با secret mount موجود. کلید واقعی این کاربر بررسی نشده است.
+2. مجوز صریح جدید هزینه برای validation، گفتگو و retry؛ مبلغ پیشنهادی قبلی مجوز نیست. تنظیم
+   `COPILOT_PHASE12_SPENDING_AUTHORIZED=1`، سقف کل `COPILOT_PHASE12_TOTAL_CAP_TOMAN`، نرخ تاریخ‌دار
+   `COPILOT_USD_TO_TOMAN_RATE`، حاشیهٔ محافظه‌کارانه `COPILOT_EXCHANGE_MARGIN_RATIO` و سقف‌های مثبت و کافی
+   `COPILOT_OPERATION_CAP_MICROUSD`، `COPILOT_SESSION_CAP_MICROUSD`، `COPILOT_DAILY_CAP_MICROUSD`.
+   ledger قبلی/مصرف موجود حفظ شود؛ هیچ مبلغی در این تحویل مجاز یا reset نشده است.
+3. پس از مجوز، اقدام صریح «بررسی صریح مدل‌های حساب» باید پاسخ واقعی معتبر بدهد و همان revision را VALIDATED کند؛
+   این مرحله خودش تماس مولد قابل‌هزینه است، نه بررسی رایگان. تغییر دستی وضعیت دیتابیس ممنوع است.
+4. فقط پس از این شروط، `COPILOT_AI_MODE=live` و بازسازی API با فرمان canonical؛ research همچنان OFFLINE.
+   گفتگو متنی/مصنوعی بدون تصویر و دادهٔ حساس، با provider/model صریح و بدون fallback؛ clarification محلی
+   را پاسخ مدل واقعی نشمارید. evidence تماس/usage/cost و پاسخ نهایی را ثبت کنید؛ کیفیت انسانی و انتشار عمومی gate جدا دارند.
+   مدت دقیق نگه‌داری API نزد provider همچنان unresolved است؛ قبل از استفاده از دادهٔ شخصی باید روشن شود.
+
+## نتیجهٔ اصلاح فعلی
+
+- علت ذخیره‌نشدن کلید: کانتینر API فقط `/app` داشت و mount فایل رمزنگاری اصلی حذف شده بود.
+  همان `/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key` با مجوز 0600 دوباره در
+  `/run/secrets/copilot_master_keyring` mount شد؛ هیچ کلید اصلی/اعتبارنامهٔ واقعی تعویض یا خوانده و چاپ نشد.
+- خطای جابه‌جایی: پس از موفقیت PATCH و شکست GET کلید، فرم ارائه‌دهندهٔ قبلی باقی می‌ماند.
+  اکنون وضعیت کلید پاک می‌شود، فرم فقط برای provider منطبق نمایش/ارسال می‌شود و بازیابی تنظیمات ممکن است.
+  پیام ذخیرهٔ موفق از فعال‌بودن اتصال زنده تفکیک شده است.
+- `scripts/dev-with-credentials.sh` برای حفظ secret overlay در startupهای بعدی اضافه شد؛ دستور در README و
+  `docs/backend-operations.md` آمده است. مسیر خالی، نسبی یا فایل ناموجود قبل از Docker رد می‌شود.
+- راهنمای OpenRouter و لینک رسمی ساخت حساب/کلید در تنظیمات اضافه شد؛ **اتصال رایگان هنوز پیاده‌سازی نشده**.
+  جزئیات مقایسهٔ OpenRouter/Groq و سؤال‌های لازم از پشتیبانی در
+  `specs/002-personalized-shopping-copilot/free-provider-readiness.md` است. اجازهٔ ارائهٔ سرویس به کاربران/سرور
+  ایران و قرارداد مدل رایگان/داده مشخص نشده؛ T096 باز است. کلید OpenRouter را در کادر OpenAI وارد نکنید.
+
+## شواهد تازه
+
+- تست regression ابتدا به‌علت باقی‌ماندن فرم قبلی شکست خورد؛ بعد از اصلاح موفق شد.
+- Vitest: 8 فایل، 28 تست، همگی موفق؛ ESLint و TypeScript exit 0.
+- build تصویر web با TypeScript/Vite موفق؛ فقط API با overlay و سپس web محلی بازسازی شدند؛ DB/volume دست‌نخورده.
+- `copilot-credential-switch.spec.ts`: دو تست واقعی Chrome/NGINX در عرض 390 و1440 موفق: ذخیرهٔ کلید ساختگی
+  OpenAI، جدایی کلید GapGPT، رفت‌وبرگشت provider، حفظ پس از reload، حذف کلید ساختگی.
+  اجرای اول به‌علت locator دقیق label که متن optionها را نیز می‌خواند شکست خورد؛ با locator نقش combobox
+  و نام دسترس‌پذیر صحیح اصلاح شد. assertionهای رفتار ضعیف نشده‌اند.
+- تست مرورگر trace/video/screenshot ندارد؛ هیچ اعتبارنامهٔ واقعی وارد تست نشد. backend کد جدید ندارد؛
+  سوئیت کامل قبلی دوباره اجرا نشد، ولی مسیر واقعی ذخیره/بازیابی/حذف از API و DB در تست مرورگر اجرا شد.
+- Runtime: encryption available=true، AI=mock، research=OFFLINE. صفر تماس inference/validation با provider؛
+  فقط مستندات عمومی برای تحقیق خوانده شد. هزینهٔ ارزیابی جدید صفر؛ مجوزهای هزینه reset نشده‌اند.
+- بررسی Spec Kit محدود: FR-088/089 به T093–T096 نگاشت شدند؛ تناقض بحرانی صفر؛
+  checklist موجود 16 checked/0 unchecked، extension hook موجود نیست. T039 feature001 و تمام gateهای live/public بازند.
+- حذف نامرتبط `test.txt` و چهار screenshot از قبل دست‌نخورده‌اند؛ secret، dump یا runtime artifact به Git افزوده نشده.
+
+---
+
 # تحویل بازطراحی محدود UX — Beforebuy
 
 تاریخ: 2026-11-16؛ شاخه: `002-personalized-shopping-copilot`.

@@ -165,6 +165,15 @@ quality, account model access and live market coverage remain unevaluated.
 - [ ] T048 [E] Prepare cutover/rollback evidence per `migration-coexistence.md`; bounded UX authorization now approves the local default-route change only; general pilot cutover and legacy retirement remain separately gated
 - [ ] T050 [E] Write failing owner-scoped export tests and implement a minimal JSON export for conversation, current brief, citations and confirmed memory in `backend/tests/api/test_copilot_export.py` and `backend/analysis/api/export.py`; exclude credential ciphertext/plaintext, raw cache and private operational metadata
 
+## Settings correction (2026-11-16)
+
+- [x] T097 [US5] Finish FR-088: red/green rapid switching, duplicate save/delete and obsolete response regressions; recreate API with canonical secret-overlay startup, verify isolated synthetic storage and no-secret offline startup; update handoff for related-only Git delivery (remote hash reported in final delivery). T096 is explicitly outside this delivery.
+
+- [x] T093 [US5] Reproduce provider-switch partial failure; test then fix provider-bound credential state, retry and safe OpenAI saving in `frontend/src/features/copilot/memory/AssistantSettings.tsx` and its tests (FR-088).
+- [x] T094 [US5] Restore the existing protected keyring mount, add a repeatable secret-aware local startup command and verify synthetic key storage without provider calls; preserve existing data/keyring (FR-088).
+- [x] T095 [US4] Compare OpenRouter/Groq official free API terms/quotas/eligibility, record blockers and onboarding requirements; verify affected UI and update handoff (FR-089). Live integration stays pending without an eligible contract.
+- [ ] T096 [US4] After documented Iran eligibility and a fixed free-model/privacy contract, implement the requested provider-bound connection/settings and stubbed adapter tests. Blocked on `free-provider-readiness.md` questions; external sign-in links do not complete integration (FR-089).
+
 ## Dependencies
 
 `A → B evidence models/controlled fixtures → offline C`; public extraction and T066 gate live coverage, not offline C. T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 gates general source integration; FR-055 separately authorizes the narrow factual pilot. T034 blocks credential implementation. T037/T040 and official region support block live AI calls. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.

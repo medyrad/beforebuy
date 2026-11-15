@@ -1,5 +1,29 @@
 # عملیات backend و بستهٔ production تا M4
 
+## Credential mount recovery — 2026-11-16
+
+The running API had only `/app`, no `/run/secrets/copilot_master_keyring`; `keyring()` was unavailable.
+The original mode-0600 `/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key` remained intact.
+Recreated API with the existing secret overlay, without database recreation, migrations, rotation or real-key changes:
+
+```sh
+export COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key
+bash scripts/dev-with-credentials.sh up -d --no-deps api
+# Use this same wrapper for future Compose starts to retain the secret mount.
+```
+
+The wrapper refuses missing, relative or unreadable paths before invoking Docker. It does not generate keys.
+Canonical full startup: `COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d`.
+Final delivery re-ran it with `--no-deps --force-recreate api`; mount and encryption availability remained present.
+No-secret offline startup was checked with a disposable `docker compose run --rm --no-deps` API process,
+`COPILOT_MASTER_KEY_FILE=` and mock/OFFLINE, running Django `check` successfully. No database reset or volume deletion.
+Runtime `keyring()` now succeeds; `COPILOT_AI_MODE=mock`, `BEFOREBUY_RESEARCH_MODE=OFFLINE`.
+Frontend rebuild/recreation uses `build web`, then `up -d --no-deps web` through the wrapper.
+No secret contents printed or embedded; existing volumes and credentials are preserved. Browser verification uses
+fresh guest contexts with disposable synthetic credentials only. Do not collect traces/screenshots of key entry.
+
+Free-provider integration is pending; see `specs/002-personalized-shopping-copilot/free-provider-readiness.md`.
+
 ## Bounded UX redesign — local operation and rollback (2026-11-16)
 
 - Default `/` and compatible `/copilot` serve the new conversation UI. `/legacy`, `/?analysis=<id>` and

@@ -70,3 +70,19 @@ uv tool install specify-cli \
 ```
 
 مهارت‌های Spec Kit با نام‌های `$speckit-*` در Codex فراخوانی می‌شوند. در شروع فاز بعد، ابتدا `AGENTS.md`، اسناد بالا و specification مربوط به همان feature را بخوانید. هیچ workflow برنامه‌ریزی موازی با Spec Kit ایجاد نکنید.
+
+## Local credential-storage startup
+
+If using saved copilot API keys, use the existing external encryption keyring on **every** Compose startup/recreation:
+
+```sh
+export COPILOT_MASTER_KEYRING_PATH=/absolute/protected/path/to/existing.key
+bash scripts/dev-with-credentials.sh up -d
+```
+
+Do not generate a replacement for an existing keyring. Plain `docker compose up` omits the secret overlay and can
+recreate the API without credential encryption support. The wrapper changes neither AI mode nor research mode.
+For frontend-only updates use `bash scripts/dev-with-credentials.sh up -d --no-deps web` after building web.
+For offline use without credential storage, `docker compose -f compose.yaml up -d` remains supported with
+`COPILOT_AI_MODE=mock` and `BEFOREBUY_RESEARCH_MODE=OFFLINE`; do not use that command to recreate an API whose
+credential storage you intend to keep available. Neither command enables live AI.

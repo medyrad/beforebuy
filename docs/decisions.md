@@ -347,3 +347,10 @@ questionnaire، rubric، feedback و retention lifecycle در `specs/001-purchas
 - ChoiceSet immutable JSON با itemهای embedded، revision/epoch و freshness است؛ owner/expiry/revision در publication زیر lock بازبینی می‌شود. retention و حذف از conversation ارث می‌رسند؛ read/compare/demo تمدید نمی‌کنند.
 - نمونه‌های صریح سه دسته در Product/Variant/Offer/Claim عادی ذخیره و از همان API/engine/UI مصرف می‌شوند. synthetic/captured به بازار فعلی یا VERIFIED_SOURCE ارتقا نمی‌یابند. بارگذاری نمونه نیاز تأییدشده را تغییر نمی‌دهد.
 - یک محصول موردنظر + حداکثر سه محصول جایگزین؛ merchant offerها جدا. memory، credential settings، provider و deployment خارج این فازند. پوشش live بازار و AI همچنان باز است.
+
+## Settings correction and free API review — 2026-11-16
+
+- Confirmed: existing local credential saving was unavailable because the API container lacked the original keyring mount; restore it without rotation. Provider selection must never retain the previous provider's editable credential on partial failure.
+- Approved scope: bug fixes, existing local mount restoration, synthetic verification and primary-source free API research. AI stays mock, research OFFLINE; no live authorization inferred.
+- Delivery refinement: synchronously serialize settings mutations and discard obsolete lifecycle continuations; verify rapid changes/double submission explicitly. Current request authorizes related commit/push, not another provider or live calls.
+- Proposed, not approved: OpenRouter as a free-API candidate. Iran eligibility and an exact free model/upstream privacy contract remain unresolved; see `specs/002-personalized-shopping-copilot/free-provider-readiness.md`. No free runtime adapter or account validation claimed.

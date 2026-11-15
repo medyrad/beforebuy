@@ -1,5 +1,8 @@
 # Path items referenced by openapi.yaml. All paths are same-origin, guest-owned;
 # unsafe methods require CSRF and JSON object bodies (non-object: 422).
+# UI transitions invalidate previous provider credentials before fetching the next state;
+# partial failure offers reload, never cross-provider save/delete. Storage is independent
+# of live eligibility. Free-API onboarding links are not a supported provider enum.
 settings:
   get:
     responses:
