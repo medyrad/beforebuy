@@ -47,21 +47,25 @@ NGINX web ── /api/ ──> Django/DRF
                          └─ PostgreSQL
 ```
 
-- REST command state را می‌سازد؛ SSE فقط event همان operation را می‌دهد. reconnect با `Last-Event-ID` و GET state reconcile می‌شود.
+- REST command state را می‌سازد؛ SSE فقط event همان operation را می‌دهد. reconnect با `Last-Event-ID` و GET state reconcile می‌شود. `next_sequence - 1` بالاترین sequence صادرشده است و replay validation به retained row اول متکی نیست.
 - execution mechanism در Milestone A یک `BoundedThreadPoolExecutor` process-local با دو worker و queue ظرفیت چهار است.
   `POST message` ابتدا Message/StreamOperation را atomic ثبت می‌کند و فقط با `transaction.on_commit` submit می‌شود.
   executor هیچ source of truth ندارد: worker با conditional update در PostgreSQL operation `PENDING` را claim،
-  `lease_owner` و `lease_expires_at` ثبت و eventها را در transactionهای کوتاه publish می‌کند. حداکثر دو operation
+  `lease_owner` و `lease_expires_at` ثبت و پیش از publication آن را تمدید/بازبینی می‌کند. final message، دو final event و
+  state completion در یک transaction با lock order `Conversation → StreamOperation` منتشر می‌شوند. حداکثر دو operation
   `PENDING|RUNNING` برای هر guest پذیرفته می‌شود؛ overflow پیش از ساخت operation با `429` رد می‌شود.
 - هر application process executor مستقل دارد، اما claim/sequence/cancel/token در PostgreSQL مشترک است. process crash
   ممکن است `PENDING` ثبت‌شده اما submit‌نشده یا `RUNNING` leaseدار باقی بگذارد. status/reconciliation و cleanup، lease
   منقضی را به terminal `INTERRUPTED` تبدیل می‌کنند؛ operation خودکار restart نمی‌شود و publish دوباره مجاز نیست.
   controlled retry فقط operation تازه با idempotency key تازه می‌سازد.
-- browser disconnect فقط subscriber را قطع می‌کند و operation ادامه می‌یابد؛ cancel صریح flag دیتابیس را فوراً ثبت
-  می‌کند و generator میان deltaها آن را می‌سنجد. SSE هیچ execution را start/restart نمی‌کند و lock در generation یا
-  stream wait نگه داشته نمی‌شود.
+- browser disconnect فقط subscriber را قطع می‌کند و operation ادامه می‌یابد؛ cancel صریح زیر همان lock order فوراً
+  terminal می‌شود. SSE هیچ execution را start/restart نمی‌کند و lock در generation یا stream wait نگه داشته نمی‌شود.
+  هر connection حداکثر 45 ثانیه باز است، expiry/stale state را authoritative reconcile می‌کند و سپس client با همان
+  Last-Event-ID دوباره وصل می‌شود؛ gap به REST reconciliation ختم می‌شود، نه regeneration.
 - Gunicorn از worker class `gthread` با دو process و چهار request thread استفاده می‌کند؛ executor دو thread جدا دارد.
-  بنابراین دو stream کند cancel/status را پشت pool stream قفل نمی‌کنند. این bound در proxy smoke آزموده می‌شود.
+  admission semaphore جداگانه در هر process فقط دو subscriber SSE را می‌پذیرد و دو request thread را برای cancel/status
+  آزاد می‌گذارد؛ thread count به‌تنهایی admission control محسوب نمی‌شود. overflow با `429 STREAM_CAPACITY_REACHED` رد
+  می‌شود و release در close/disconnect idempotent است. این bound در proxy smoke آزموده می‌شود.
 - source response untrusted است؛ fetch/extract از prompt boundary جداست.
 - OpenAI built-in web search در MVP منبع بازار authoritative نیست.
 - model از catalog allowlisted پس از revalidation capability/price برای ID دقیق انتخاب می‌شود.

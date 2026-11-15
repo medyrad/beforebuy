@@ -196,9 +196,18 @@ docker compose up --build -d --wait
 
 رابط جدید در `http://127.0.0.1:58080/copilot` و feature 001 در `http://127.0.0.1:58080/` است. NGINX مسیر SSE را
 با buffering/cache/gzip خاموش و read timeout محدود عبور می‌دهد؛ Gunicorn با دو process از نوع `gthread` و چهار
-request thread در هر process اجرا می‌شود تا cancel/status پشت subscriberهای stream نمانند. executor fixture دو worker
-و queue چهار‌تایی per process دارد و durable نیست: restart/lease expiry نتیجه را `INTERRUPTED` می‌کند و خودکار از نو
-اجرا نمی‌کند. این تنظیم فقط prerequisite لازم T009 است؛ T043 و production rehearsal هنوز بازند.
+request thread در هر process اجرا می‌شود. admission صریح فقط دو subscriber SSE را در هر process می‌پذیرد و overflow
+را با `429 STREAM_CAPACITY_REACHED` رد می‌کند؛ بنابراین دو thread برای status/cancel باقی می‌ماند و صرف thread count
+به‌عنوان admission control تلقی نمی‌شود. هر connection حداکثر 45 ثانیه باز است، heartbeat حداکثر هر 15 ثانیه می‌آید
+و reconnect از آخرین event بدون اجرای دوباره انجام می‌شود. disconnect/close slot را idempotent آزاد می‌کند.
+
+`next_sequence - 1` بالاترین sequence صادرشده است. replay آینده با `INVALID_REPLAY_SEQUENCE` و history ناقص یا کاملاً
+purgeشده با `REPLAY_GAP` و REST reconciliation URL پاسخ می‌گیرد. purge پس از شروع response یک `stream.replay_gap`
+غیرپایدار می‌فرستد و client از operation REST reconcile می‌کند. executor fixture دو worker و queue چهار‌تایی per
+process دارد و durable نیست: submit failure به `FAILED/SUBMISSION_FAILED` و restart/lease expiry به `INTERRUPTED`
+می‌رسد؛ هیچ‌کدام خودکار از نو اجرا نمی‌شوند. final message، final event، completion event و `COMPLETED` در یک transaction
+با lock order `Conversation → StreamOperation` commit می‌شوند. این تنظیم فقط تکمیل Milestone A است؛ T043 و production
+rehearsal کامل همچنان بازند.
 
 ## backup، restore و حذف
 

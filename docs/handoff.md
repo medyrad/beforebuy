@@ -1,139 +1,110 @@
-# تحویل Phase 8 — Milestone A conversational foundation
+# تحویل Phase 8.1 — اصلاحات bounded streaming در Milestone A
 
 **تاریخ:** ۱۵ نوامبر ۲۰۲۶  
-**baseline بازبینی‌شده:** `0292c71f53b676996a6a8f776ec5d6865c47675f`  
+**baseline بازبینی‌شده:** `9658dc93d5df058589b5dd143dab37ebcd160938`  
 **branch:** `002-personalized-shopping-copilot`  
-**وضعیت:** Milestone A پیاده و verify شده؛ فقط fixture streaming، بدون AI زنده یا پژوهش بازار  
-**taskهای کامل feature 002:** `T001–T012`, `T049`  
-**taskهای باز:** `T013–T048`, `T050`؛ از جمله `T043` کامل نشده است  
-**feature 001:** `T039` قدیمی همچنان pending و مستقل است
+**وضعیت:** اصلاحات streaming در Milestone A verify شده؛ فقط fixture، بدون AI زنده یا پژوهش بازار  
+**taskهای اصلاحی کامل:** `T051`, `T052`, `T053`, `T054`  
+**taskهای بعدی:** `T013–T048`, `T050` باز؛ Milestone B شروع نشده و feature 001 `T039` همچنان pending است
 
-## نتیجه
+## دامنه و نتیجه
 
-مسیر غیراصلی `/copilot` اکنون یک shell فارسی/RTL واقعی برای conversation، brief قابل‌ویرایش، upload محافظت‌شده و
-پاسخ incremental از generator قطعی fixture دارد. مسیر `/` و همهٔ رفتار feature 001 حفظ شده‌اند. Choice Desk در A
-عمداً readiness خالی و صادقانه است: product، قیمت بازار، review، ranking، offer یا citation ساختگی نمایش داده نمی‌شود.
-هیچ provider call، research-network call، crawl، persistent memory یا credential storage اجرا/اضافه نشده است.
+Phase 8.1 فقط مرز final publication، lifecycle/replay در SSE و admission/failure executor را اصلاح کرد. هیچ crawl،
+source expansion، ranking، Choice Desk جدید، memory، credential، provider call، AI زنده، deployment عمومی یا migration
+داده‌ای اجرا نشد. حذف نامرتبط `test.txt` حفظ و از stage این phase کنار گذاشته می‌شود. handoff قبلی بدون حذف محتوا در
+`docs/archive/phase-8-handoff.md` آرشیو شد.
 
-## Spec Kit و تحلیل
+## یافته‌های بازبینی
 
-- prerequisite رسمی با `--require-spec --require-tasks --include-tasks` feature 002 و artifacts را پیدا کرد؛ checklist
-  requirements برابر `16/16` checked بود.
-- `speckit-analyze` پیش از implementation دو finding سطح High پیدا کرد: retention هنوز در یک artifact proposal بود و
-  ownership cleanup کامل نبود. هر دو در spec/plan/data model/decisions/tasks اصلاح شدند. تحلیل همگرایی نهایی روی 40 FR،
-  8 SC و 50 task، تعارض Critical/High، placeholder و task بدون هدف در scope جاری پیدا نکرد؛ coverage task برای
-  requirementهای feature کامل باقی ماند.
-- `speckit-implement` فقط authorization صریح `T001–T012` و `T049` را اجرا کرد. taskهای بعدی و T043 باز ماندند.
-- Phase 7 handoff بدون حذف محتوا به `docs/archive/phase-7-handoff.md` منتقل شد.
+همهٔ findingهای consequential تأیید شدند:
 
-## اصلاح design، contract و lifecycle
+- FINAL message پیش از دو final event commit می‌شد و می‌توانست روی operation ناموفق/لغوشده باقی بماند.
+- publication lease owner/expiry و expiry conversation را در هر مرز دوباره اعتبارسنجی نمی‌کرد و lease تمدید نمی‌شد.
+- reconciler از snapshot قدیمی تصمیم می‌گرفت و امکان interrupt کردن claim/renew تازه وجود داشت.
+- SSE عمر نامحدود، admission صریح و reconciliation در stream باز نداشت.
+- replay فقط retained row اول را می‌دید؛ all-purged و future sequence می‌توانستند 200 خالی و UI منتظر بسازند.
+- executor submit failure slot را پس نمی‌داد و operation را `PENDING` رها می‌کرد؛ stale pending نیز quota را نگه می‌داشت.
+- client روی `EventSource.onerror` اتصال را می‌بست و REST authoritative reconciliation/reconnect نداشت.
 
-- Concept 2 به off-white/cool-gray با accent محدود indigo، Vazirmatn موجود، navigation در لبهٔ راست، conversation در
-  راست و Choice Desk بزرگ‌تر در چپ با نسبت تقریبی 5/7 بازگردانده شد. mobile switch state draft را حفظ می‌کند.
-- shortlist آینده دقیق شد: محصول انتخابی کاربر، اگر موجود باشد، به‌علاوهٔ حداکثر سه alternative؛ merchant offerها
-  فهرست جدا هستند. UI کامل comparison همچنان Milestone C است.
-- OpenAPI 3.1 در `/api/v1` برای session موجود، conversation CRUD/list، brief CAS/confirm، message idempotency، operation
-  status/SSE/cancel و upload access/delete schema و example اجرایی دارد. routeهای milestone بعدی فقط planned هستند.
-- retention مصوب A: conversation/message/current brief تا 90 روز پس از آخرین accepted user message یا brief
-  edit/confirmation؛ upload و event حداکثر 24 ساعت. read/list/SSE/replay/background anchor را تمدید نمی‌کند. replay gap
-  با `409 REPLAY_GAP` و REST reconcile می‌شود، نه regeneration. حذف conversation publication دیرهنگام را باطل می‌کند.
-- cleanup همان command موجود است و اکنون expired conversation/upload bytes/events را نیز پاک می‌کند، اما owner دارای
-  conversation فعال را حذف نمی‌کند. backup فوری پاک‌شده ادعا نمی‌شود و feature 001 expiry تغییر نکرده است.
+هیچ findingی به‌عنوان false positive رد نشد. نیاز به migration جدید نیز رد شد: `next_sequence` موجود همان authoritative
+highest-sequence boundary لازم را فراهم می‌کند.
 
-## مدل اجرا و محدودیت restart
+## Spec Kit
 
-`POST message` در transaction کوتاه Message و StreamOperation را ثبت می‌کند و فقط با `transaction.on_commit` به
-executor process-local می‌سپارد. هر process دو worker و queue ظرفیت چهار دارد؛ برای هر guest حداکثر دو operation
-`PENDING|RUNNING` پذیرفته می‌شود. worker با conditional update در PostgreSQL claim و lease می‌گیرد. event sequence،
-cancel flag، revision/generation guard و terminal state در PostgreSQL shared truth هستند؛ هیچ lock در generation یا
-انتظار stream نگه‌داری نمی‌شود.
+- سه requirement محدود `FR-041–FR-043` و چهار task اصلاحی `T051–T054` اضافه شدند؛ taskهای تاریخی renumber نشدند.
+- `$speckit-analyze` پس از prerequisite رسمی و checklist `16/16`، در scope اصلاحی تعارض Critical/High، placeholder یا
+  requirement بدون task پیدا نکرد.
+- `$speckit-implement` فقط `T051–T054` را اجرا کرد. Milestoneهای بعدی و `T043` کامل علامت نخورده‌اند.
 
-این executor durable نیست. process crash/restart یا lease stale operation را `INTERRUPTED` می‌کند، خودکار restart
-نمی‌کند و publish دوباره نمی‌پذیرد. retry کنترل‌شده operation تازه و idempotency key تازه می‌سازد. browser disconnect
-execution را لغو نمی‌کند؛ cancel صریح endpoint مستقل دارد. Gunicorn با 2 worker از نوع `gthread` و 4 request thread
-در هر worker اجرا می‌شود تا status/cancel پشت subscriberهای SSE نمانند.
+## finalization و lock order
 
-## backend و migration
+lock order همهٔ مسیرهای اصلاح‌شده `Conversation → StreamOperation` است. lookup اولیهٔ `conversation_id` lock نیست؛ سپس
+conversation و operation در transaction کوتاه lock می‌شوند. message acceptance همچنان ابتدا GuestContext و بعد
+Conversation را می‌گیرد و هیچ مسیر معکوس Conversation→GuestContext وجود ندارد. generation یا انتظار SSE lock نگه نمی‌دارد.
 
-- migration غیرمخرب `0005_copilot_milestone_a.py` مدل‌های Conversation، ShoppingBrief، Message، StreamOperation،
-  StreamEvent و UploadedImage را اضافه می‌کند. upgrade test از schema `0004` یک Analysis feature 001 را سالم نگه داشت.
-- owner/session/CSRF موجود reuse شد؛ foreign و expired IDها disclosure نمی‌دهند. brief revision CAS، digitهای فارسی/
-  عربی/لاتین، تومان، صفر در برابر unknown، self/gift/household، contradiction و unknown صریح هستند.
-- generator فقط fixture قطعی و بی‌ادعای بازار است. unsupported free text پاسخ روشن development-mode می‌گیرد؛ NLP
-  عمومی یا keyword assistant پنهان وجود ندارد.
-- SSE eventهای versioned و monotonic، replay/deduplication، provisional/final، heartbeat comment، cancel/fail/
-  interrupted و stale publication guard دارد. GET/SSE execution را شروع یا تکرار نمی‌کنند.
-- upload: حداکثر 3 فایل فعال در conversation، raw ≤5 MiB، هر محور ≤4096 و ≤12MP؛ فقط decoded JPEG/PNG/WebP، تک‌فریم،
-  decode/re-encode و حذف metadata. SVG/HTML/invalid/multiframe/decompression-bomb رد می‌شود. bytes sanitized در PostgreSQL
-  named volume هستند و فقط endpoint owner-scoped ارائه می‌شوند؛ filename اصلی نگه‌داری نمی‌شود.
+`finalize_operation` در یک transaction موارد زیر را دوباره می‌سنجد: وجود/expiry conversation، `RUNNING` بودن، revision،
+cancel، lease owner و تازه‌بودن lease. سپس FINAL Message، `assistant.message.final`، `operation.completed`، pointer نهایی،
+`next_sequence` و state `COMPLETED` را با هم commit می‌کند. failure تزریقی در ساخت event دوم همه را rollback می‌کند.
+mutationی که lock/commit را اول بگیرد برنده است: cancel/edit/delete زودتر مانع final می‌شود؛ completion زودتر باعث 409
+برای cancel بعدی است. worker با owner عوض‌شده یا lease منقضی هیچ event، حتی failure event، منتشر نمی‌کند.
 
-## frontend و Docker
+brief edit با revision mismatch به `INTERRUPTED/STALE_BRIEF` می‌رسد؛ explicit cancel به‌صورت فوری و اتمیک event
+`operation.cancelled` و state `CANCELLED` می‌سازد. delete با lock conversation cascade می‌کند. event پس از expiry
+conversation ساخته نمی‌شود.
 
-- `CopilotApp` و client/types/icons در `frontend/src/features/copilot/conversation/` اضافه شدند. `/copilot` مستقل است و
-  `/` همان LegacyApp باقی مانده است.
-- UI شامل history/create/open، brief ribbon/editor، composer، image status، incremental reply و send/stop/retry است؛
-  development/fixture و «بدون AI زنده» همیشه قابل مشاهده‌اند. text به‌صورت React text render می‌شود و HTML اجرا نمی‌شود.
-- `compose.yaml` stack offline کامل db/api/web را پشت NGINX روی loopback ارائه می‌کند. web/API/database به‌ترتیب
-  `127.0.0.1:58080`, `127.0.0.1:58000`, `127.0.0.1:55439` هستند. volume موجود reset یا حذف نشد.
-- NGINX فقط prerequisite SSE مربوط T009 را جلو آورد: buffering/cache/gzip برای event stream خاموش و timeout محدود است.
-  full graceful-shutdown/production rehearsal در T043 همچنان باز است.
+## stale operation، SSE و replay
 
-startup دقیق، پس از بازبینی `.env`:
+- claim lease سی‌ثانیه‌ای می‌سازد؛ هر publication معتبر lease را تمدید می‌کند. reconciler فقط پس از re-read زیر lock
+  دربارهٔ pending قدیمی، lease منقضی، cancel، revision یا expiry تصمیم می‌گیرد.
+- هر SSE حداکثر 45 ثانیه، heartbeat حداکثر 15 ثانیه و poll برابر 80ms دارد. دو subscriber در هر application process
+  admitted می‌شوند و slot در terminal، timeout، disconnect یا response close دقیقاً یک بار آزاد می‌شود.
+- Gunicorn دو worker × چهار gthread دارد، ولی این به‌تنهایی policy نیست؛ semaphore دو subscriber در هر process دو
+  request thread را برای status/cancel آزاد نگه می‌دارد. subscriber سوم `429 STREAM_CAPACITY_REACHED` می‌گیرد.
+- `next_sequence - 1` highest issued است. no-history معتبر است؛ latest terminal فوراً می‌بندد؛ future sequence با
+  `409 INVALID_REPLAY_SEQUENCE` و partial/all-purged history با `409 REPLAY_GAP` پاسخ می‌گیرد. هر دو 409 REST URL دارند.
+- purge race پس از شروع response، control event غیرپایدار `stream.replay_gap` می‌دهد. client EventSource را می‌بندد و
+  operation را از REST poll می‌کند؛ خطای عادی stream ابتدا REST را می‌خواند و برای state فعال native reconnect را باز
+  می‌گذارد. هیچ مسیر reconciliation generator را دوباره اجرا نمی‌کند.
 
-```bash
-docker compose up -d db
-docker compose run --rm api python backend/manage.py migrate --noinput
-docker compose up --build -d --wait
-```
+## executor admission و failure
 
-Browser: `http://127.0.0.1:58080/copilot`؛ legacy: `http://127.0.0.1:58080/`.
+reservation پیش از acceptance گرفته می‌شود؛ outer transaction callback submit را فقط پس از commit اجرا می‌کند.
+rollback/replay reservation را برمی‌گرداند، submit failure operation را با event صریح `FAILED/SUBMISSION_FAILED`
+terminal می‌کند و slot را دقیقاً یک بار آزاد می‌کند، و worker در همهٔ exit pathها slot خود را آزاد می‌کند. queued cancel
+فوراً terminal می‌شود؛ worker دیرتر claim نمی‌کند. quota فقط PENDING تازه یا RUNNING با lease تازه را می‌شمارد، بنابراین
+stale pending مانع پذیرش کار تازه نمی‌شود؛ خود stale operation هنگام status/SSE authoritative reconcile می‌شود.
 
-## dependency و tooling
+## verification اجراشده
 
-- تنها dependency runtime تازه `Pillow==13.0.0` با license MIT-CMU برای decode/sanitize image است؛ در `uv.lock` قفل شد.
-- queue، Redis، Celery، WebSocket framework، provider framework، UI framework یا object storage افزوده نشد.
-- Playwright `1.65.1` با image رسمی pinned به digest
-  `sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579` فقط برای test استفاده شد.
-- skill `frontend-design` در catalog native همین session کشف و invoke شد؛ overlay پروژه Persian/RTL/accessibility را مقدم کرد.
+- RED متمرکز پیش از implementation: 17 test کشف شد؛ 3 failure و 2 import/error دقیقاً برای all-expired replay، future
+  sequence، admission API، submit failure و helperهای lease/finalization ثبت شد.
+- regression متمرکز PostgreSQL پس از اصلاح: 30 test، passed 30، failed/error/skipped صفر. barrierهای
+  threading در خود final-publication boundary و mutationهای واقعی brief/cancel/delete API استفاده شدند؛ sleep-only نیستند.
+- backend canonical نهایی: `Found 179 test(s)`، `Ran 179 tests in 51.034s`، `OK`؛ passed 179، failed/error/skipped صفر.
+- migration drift: `makemigrations --check --dry-run` → `No changes detected`. compileall و `git diff --check` موفق.
+- frontend: 4 file و 15 test، passed 15؛ typecheck، ESLint و build موفق. bundle اصلی JS `265.01 kB` و gzip `82.00 kB`.
+- browser از image رسمی Playwright 1.65.1 و stack بازسازی‌شدهٔ NGINX/API: 3/3 passed در 11.8s؛ desktop/mobile،
+  accessibility و legacy route. اجرای اول با hostname روش test (`host.docker.internal`) طبق انتظار Django با
+  `DisallowedHost` رد شد؛ بدون تضعیف host validation، اجرای صحیح `--network host` روی `127.0.0.1` کامل موفق شد.
+- NGINX cancel smoke واقعی: started event مشاهده شد؛ cancel response و REST هر دو `CANCELLED`، terminal event دقیقاً یک،
+  reconnect از latest برابر zero-byte clean close.
+- NGINX disconnect/reconnect smoke واقعی: stream اول یک `operation.started` داشت؛ reconnect از همان ID started را تکرار
+  نکرد، `operation.completed` را گرفت و REST `COMPLETED` بود. generator دوباره اجرا نشد.
+- provider/research call صفر و هزینه صفر؛ development/backup volume حذف یا reset نشد.
 
-## verification با خروجی بازبینی‌شده
+## محدودیت‌ها و gateهای باقی‌مانده
 
-- backend canonical PostgreSQL: `Found 164 test(s)`، `Ran 164 tests in 21.649s`، `OK`؛ passed `164`، skipped `0`،
-  failed `0`، errors `0`. شامل regressionهای feature 001، model/constraint، ownership/CSRF، cleanup، money/CAS، upload،
-  SSE/replay/idempotency، raceهای PostgreSQL و migration upgrade است.
-- migration consistency: `makemigrations --check --dry-run` → `No changes detected`. full suite database خالی را از
-  `0001` تا `0005` migrate کرد؛ development DB موجود فقط `0005` را با `OK` گرفت و data/volume reset نشد.
-- frontend: 4 test file و 13 test؛ passed `13`، skipped/failed/errors `0`. TypeScript typecheck، ESLint و production
-  Vite build موفق؛ bundle اصلی JS برابر 264.46 kB و gzip برابر 81.85 kB بود.
-- Playwright از image رسمی و مسیر واقعی NGINX/API: 3 test در 14.6s، passed `3`، skipped/failed `0؛` viewportهای
-  `1440×1000` و `390×844`، keyboard/focus، reduced motion، state-preserving mobile navigation، mixed bidi/long Persian،
-  direct refresh، legacy `/` و axe serious/critical برابر صفر.
-- proxy streaming smoke واقعی: first event حدود `440ms` پیش از terminal مشاهده شد؛ دو subscriber همان operation را
-  دیدند، subscriber count `2`، final message ذخیره‌شده `1`، status هنگام stream `RUNNING` و terminal `COMPLETED` بود.
-  این fixture evidence است، نه AI زنده.
-- Compose پس از rebuild هر سه service را healthy نشان داد؛ API/DB ports فقط loopback منتشر شدند. هیچ provider یا
-  research-network call اجرا نشد؛ هزینه provider صفر است.
-- `git diff --check` بدون خطا و OpenAPI schema/examples/operation IDs در backend suite parse و validate شدند.
+1. executor process-local و غیردوام‌دار است؛ restart کار را resume نمی‌کند و فقط `INTERRUPTED` + retry صریح دارد.
+2. admission per-process است، نه global. بدون Redis/queue جدید، توزیع subscriber میان processها تضمین دقیق global ندارد.
+3. SSE thread را تا 45 ثانیه اشغال می‌کند؛ policy دو subscriber ظرفیت cancel/status را حفظ می‌کند ولی جای durable async
+   infrastructure نیست.
+4. `T043` برای production graceful shutdown/rehearsal کامل، و تمام Milestoneهای B–E باز هستند.
+5. AI زنده، source permission، target-host verification، public release و feature 001 `T039` gateهای مستقل و بازند.
 
-## بررسی بصری و screenshot
+## Git و working tree
 
-- `docs/screenshots/copilot-phase8-desktop-1440.png`: navigation تیره در راست، conversation panel راست، Choice Desk
-  بزرگ‌تر چپ، brief بالای Desk، متن fixture و `<script>` به‌صورت inert text، بدون card/price/ranking ساختگی.
-- `docs/screenshots/copilot-phase8-mobile-390.png`: Desk تک‌ستونه، متن خوانا بدون overflow افقی، switch پایین با focus
-  indigo واضح و state draft حفظ‌شده. رنگ saffron وارد design جدید نشده است.
+فقط code/test/spec/contract/operations/handoff مرتبط Phase 8.1 stage می‌شود. `.env`، secret، database، dump، log، cache،
+`node_modules`، Playwright runtime artifacts و حذف نامرتبط `test.txt` وارد commit نمی‌شوند. branch جاری به remote موجود
+push می‌شود؛ merge، force-push یا remote جدید مجاز نیست.
 
-## محدودیت‌ها و gateهای باز
-
-1. فقط generator fixture است؛ AI زنده، OpenAI/AvalAI، crawl، source extraction، market offer و ranking وجود ندارد.
-2. Milestoneهای B–E (`T013–T048`, `T050`) بازند؛ T043 فقط prerequisite کوچک گرفته و complete نیست.
-3. memory، user key، encryption و export هنوز پیاده نشده‌اند. retention آن entityها همچنان نیازمند تصمیم milestone مربوط است.
-4. public deployment، target-host verification، source terms/permission، direct OpenAI region eligibility و spending
-   authorization gateهای جدا هستند.
-5. feature 001 `T039` با fixture feature 002 کامل نمی‌شود و همچنان live evidence + human review می‌خواهد.
-
-## working tree و محرمانگی
-
-حذف نامرتبط `test.txt` از ابتدای کار حفظ شده و در commit Phase 8 stage نمی‌شود. هیچ `.env`، credential، secret، dump،
-database file، cache، `node_modules` یا runtime report وارد Git نمی‌شود.
-
-**Milestone A implemented and verified — fixture streaming only**
+**Milestone A streaming corrections verified — fixture-only.**

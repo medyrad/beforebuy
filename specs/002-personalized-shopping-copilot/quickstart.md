@@ -8,7 +8,10 @@
 3. Create a conversation, explicitly edit/confirm its brief, send a message and observe real fixture deltas through
    NGINX. The UI must display «حالت توسعه / fixture» and must not show invented products, prices or citations.
 4. Stop an active operation, reconnect, and verify REST reconciliation. GET/SSE never start or restart work. A service
-   restart may terminalize an in-flight fixture as `INTERRUPTED`; it never silently resumes.
+   restart may terminalize an in-flight fixture as `INTERRUPTED`; it never silently resumes. Each SSE connection is
+   bounded to 45 seconds and reconnects from its last event. Missing retained history or a purge race reconciles with
+   `GET /api/v1/operations/{id}` instead of re-running the fixture. Only two subscribers per process are admitted so
+   status/cancel requests retain request-thread capacity.
 5. Upload at most three JPEG/PNG/WebP images, each ≤5 MiB, ≤4096px per side and ≤12MP. Bytes are decoded/re-encoded,
    metadata removed, stored in PostgreSQL, owner-authorized and expired within 24h.
 6. Run the canonical backend suite from the repository root with `./scripts/test-backend.sh`; run frontend checks inside

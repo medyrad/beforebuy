@@ -62,6 +62,7 @@ export function CopilotApp() {
   const [pane, setPane] = useState<MobilePane>('conversation')
   const sourceRef = useRef<EventSource | null>(null)
   const seenRef = useRef(new Set<string>())
+  const reconcileTimerRef = useRef<number | null>(null)
 
   const refreshList = async () => setItems((await copilotApi.list()).items)
   const open = async (id: string) => { setConversation(await copilotApi.get(id)); setUploads([]); setDraftReply(''); setError(null) }
@@ -73,12 +74,17 @@ export function CopilotApp() {
       catch (reason) { setError(errorText(reason)) }
       finally { setLoading(false) }
     })()
-    return () => sourceRef.current?.close()
+    return () => {
+      sourceRef.current?.close()
+      sourceRef.current = null
+      if (reconcileTimerRef.current !== null) window.clearTimeout(reconcileTimerRef.current)
+    }
   }, [])
 
   const create = async () => { if (loading) return; const item = await copilotApi.create(); await refreshList(); await open(item.id) }
-  const follow = (url: string) => {
+  const follow = (url: string, followedOperationId: string) => {
     sourceRef.current?.close(); seenRef.current.clear(); setDraftReply('')
+    if (reconcileTimerRef.current !== null) window.clearTimeout(reconcileTimerRef.current)
     const source = new EventSource(url); sourceRef.current = source
     source.addEventListener('operation.started', () => setOperationStatus('RUNNING'))
     source.addEventListener('assistant.text.delta', (rawEvent) => {
@@ -92,7 +98,24 @@ export function CopilotApp() {
       setOperationStatus(status)
       setDraftReply('')
       source.close()
+      if (sourceRef.current === source) sourceRef.current = null
       void refresh()
+    }
+    const reconcile = async (pollUntilTerminal: boolean) => {
+      try {
+        const current = await copilotApi.operation(followedOperationId)
+        if (['COMPLETED', 'FAILED', 'CANCELLED', 'INTERRUPTED'].includes(current.status)) {
+          finish(current.status)
+          return
+        }
+        setOperationStatus(current.status)
+        setError('stream قطع شد؛ وضعیت authoritative بازیابی شد و اتصال دوباره برقرار می‌شود.')
+        if (pollUntilTerminal && sourceRef.current === source) {
+          reconcileTimerRef.current = window.setTimeout(() => void reconcile(true), 500)
+        }
+      } catch (reason) {
+        setError(errorText(reason))
+      }
     }
     source.addEventListener('operation.completed', () => finish('COMPLETED'))
     source.addEventListener('operation.cancelled', () => finish('CANCELLED'))
@@ -100,7 +123,12 @@ export function CopilotApp() {
       const event = rawEvent as MessageEvent<string>
       finish((JSON.parse(event.data) as { code?: string }).code === 'WORKER_INTERRUPTED' ? 'INTERRUPTED' : 'FAILED')
     })
-    source.onerror = () => { source.close(); if (operationStatus === 'RUNNING') setError('stream قطع شد؛ وضعیت authoritative را دوباره دریافت کنید.') }
+    source.addEventListener('stream.replay_gap', () => {
+      source.close()
+      setDraftReply('')
+      void reconcile(true)
+    })
+    source.onerror = () => { void reconcile(false) }
   }
   const submitMessage = async (messageText: string, uploadIds: string[]) => {
     if (!conversation || !messageText || operationStatus === 'RUNNING') return
@@ -108,7 +136,7 @@ export function CopilotApp() {
     try {
       const accepted = await copilotApi.send(conversation.id, messageText, conversation.brief_revision, uploadIds, newIdempotencyKey())
       setLastSubmittedText(messageText)
-      setText(''); setUploads([]); setOperationId(accepted.operation.id); setOperationStatus(accepted.operation.status); follow(accepted.events_url); await refresh()
+      setText(''); setUploads([]); setOperationId(accepted.operation.id); setOperationStatus(accepted.operation.status); follow(accepted.events_url, accepted.operation.id); await refresh()
     } catch (reason) { setError(errorText(reason)) }
   }
   const send = async (event: FormEvent) => {

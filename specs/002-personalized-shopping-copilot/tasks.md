@@ -5,7 +5,7 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 # Tasks: دستیار شخصی خرید
 
 **Input**: artifacts in `/specs/002-personalized-shopping-copilot/`  
-**Authorization**: Phase 8 authorizes only `T001–T012` and `T049`; all later tasks remain pending.  
+**Authorization**: Phase 8.1 authorizes only corrective tasks `T051–T054` in addition to completed Milestone A work؛ all later milestone tasks remain pending.  
 **TDD**: behavioral tests MUST fail for the intended missing behavior before paired implementation.
 
 ## Milestone A — Conversation foundation
@@ -23,6 +23,10 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 - [X] T011 [P] [US1] Write failing React component tests for Persian conversation, brief ribbon, upload validation, stop/error and bidi in `frontend/src/features/copilot/conversation/*.test.tsx`
 - [X] T012 [US1] Implement fixture-only conversation shell and API client in `frontend/src/features/copilot/conversation/` without changing default feature 001 route
 - [X] T049 [US1] Write failing upload API tests for owner isolation, CSRF, MIME/signature, size/count, metadata stripping, retention and delete races in `backend/tests/api/test_copilot_uploads.py`, then implement the bounded backend upload boundary in `backend/analysis/api/uploads.py` without object-storage dependency
+- [X] T051 [P] [US4] Write failing PostgreSQL regressions for final-boundary cancel/edit/delete precedence، atomic rollback، lost lease، fresh-lease reconciliation، bounded stream expiry/replay/purge، executor submission/capacity and concurrent subscriber admission in `backend/tests/`
+- [X] T052 [US4] Implement consistent `Conversation → StreamOperation` locking، renewable owned leases، atomic final publication، authoritative stale/cancel reconciliation and exactly-once executor reservation release in `backend/analysis/conversation/` and mutation APIs
+- [X] T053 [US4] Implement bounded/admitted SSE، authoritative replay validation/control gap، REST client reconciliation and reconnect without regeneration in `backend/analysis/api/operations.py` and `frontend/src/features/copilot/conversation/`
+- [X] T054 [US4] Verify focused/full PostgreSQL suites، migration drift، frontend/browser and real NGINX cancel/reconnect/admission; update stream/OpenAPI/quickstart/operations/handoff evidence without beginning Milestone B
 
 **Checkpoint A**: fixture conversation/brief/stream works independently; no provider or research network.
 

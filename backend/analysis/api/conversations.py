@@ -180,10 +180,13 @@ class MessageSubmitView(CsrfProtectedAPIView):
         if not reserve_execution_slot():
             return error("PROCESS_CAPACITY_REACHED", "ظرفیت fixture موقتاً پر است.", 429)
         try:
-            operation, replay = accept_message(
-                conversation_id=conversation_id, guest=guest, text=text, upload_ids=upload_ids,
-                expected_revision=expected, idempotency_key=key,
-            )
+            with transaction.atomic():
+                operation, replay = accept_message(
+                    conversation_id=conversation_id, guest=guest, text=text, upload_ids=upload_ids,
+                    expected_revision=expected, idempotency_key=key,
+                )
+                if not replay:
+                    transaction.on_commit(lambda operation_id=operation.id: submit_reserved(operation_id))
         except Conversation.DoesNotExist:
             release_execution_slot()
             raise CopilotUnavailable
@@ -197,7 +200,7 @@ class MessageSubmitView(CsrfProtectedAPIView):
         if replay:
             release_execution_slot()
         else:
-            transaction.on_commit(lambda: submit_reserved(operation.id))
+            operation.refresh_from_db()
             extend_guest_session_for_eligible_action(request, operation.conversation.expires_at)
         return Response({
             "operation": serialize_operation(operation),

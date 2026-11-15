@@ -153,7 +153,8 @@ paths:
               example: "id: 9ea71b3a-b30d-4dfb-bbf3-b7f26777f5c1:1\nevent: operation.started\ndata: {\"schema_version\":\"COPILOT-STREAM-v1\",\"sequence\":1}\n\n"
         '400': {description: Malformed or foreign replay ID, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: INVALID_REPLAY_ID, message: Last-Event-ID is invalid.}}}}}
         '404': {$ref: '#/components/responses/Unavailable'}
-        '409': {description: Replay gap; reconcile via REST without regeneration, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: REPLAY_GAP, message: Retained events do not cover that sequence.}}}}}
+        '409': {description: Replay gap or future sequence; reconcile via REST without regeneration, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: REPLAY_GAP, message: Retained events do not cover that sequence., reconcile_url: /api/v1/operations/9ea71b3a-b30d-4dfb-bbf3-b7f26777f5c1}}}}}
+        '429': {description: Per-process SSE subscriber admission is full; retry later while status/cancel capacity remains available, content: {application/json: {schema: {$ref: '#/components/schemas/Problem'}, example: {error: {code: STREAM_CAPACITY_REACHED, message: Stream capacity is temporarily full.}}}}}
   /operations/{operationId}/cancel:
     post:
       summary: Cancel independently of the SSE connection

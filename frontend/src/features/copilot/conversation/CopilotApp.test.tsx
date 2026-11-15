@@ -20,7 +20,8 @@ class FakeEventSource {
     this.listeners.set(type, listener as (event: MessageEvent<string>) => void)
   }
   emit(type: string, data = '{}') { this.listeners.get(type)?.(new MessageEvent(type, { data, lastEventId: `op:${type}` })) }
-  close() {}
+  closed = false
+  close() { this.closed = true }
 }
 
 describe('Copilot milestone A shell', () => {
@@ -31,6 +32,7 @@ describe('Copilot milestone A shell', () => {
       const data = url.endsWith('/session') ? { expires_at: conversation.expires_at }
         : url.endsWith('/messages') && init?.method === 'POST' ? { operation: { id: 'op', status: 'PENDING' }, message_id: 'message', events_url: '/events' }
         : url.endsWith('/cancel') ? { id: 'op', status: 'CANCELLED' }
+        : url.endsWith('/operations/op') ? { id: 'op', conversation_id: conversation.id, status: 'RUNNING', expected_brief_revision: 0, final_message_id: null, terminal_code: null }
         : url.includes('/conversations/') ? conversation
         : { items: [conversation], next_cursor: null }
       return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } })
@@ -86,5 +88,30 @@ describe('Copilot milestone A shell', () => {
     const messageCalls = vi.mocked(fetch).mock.calls.filter(([input, init]) =>
       String(input).endsWith('/messages') && init?.method === 'POST')
     expect(messageCalls).toHaveLength(2)
+  })
+
+  it('reconciles stream errors through REST without regenerating active work', async () => {
+    const user = userEvent.setup()
+    render(<CopilotApp />)
+    await user.type(await screen.findByRole('textbox', { name: 'پیام شما' }), 'پیام reconnect')
+    await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
+    FakeEventSource.current?.emit('operation.started')
+    FakeEventSource.current?.onerror?.(new Event('error'))
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/operations/op'))).toBe(true))
+    expect(FakeEventSource.current?.closed).toBe(false)
+    const messageCalls = vi.mocked(fetch).mock.calls.filter(([input, init]) =>
+      String(input).endsWith('/messages') && init?.method === 'POST')
+    expect(messageCalls).toHaveLength(1)
+  })
+
+  it('uses REST reconciliation for an in-stream replay gap', async () => {
+    const user = userEvent.setup()
+    render(<CopilotApp />)
+    await user.type(await screen.findByRole('textbox', { name: 'پیام شما' }), 'پیام gap')
+    await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
+    FakeEventSource.current?.emit('operation.started')
+    FakeEventSource.current?.emit('stream.replay_gap', JSON.stringify({ reconcile_url: '/api/v1/operations/op' }))
+    await waitFor(() => expect(vi.mocked(fetch).mock.calls.some(([input]) => String(input).endsWith('/operations/op'))).toBe(true))
+    expect(FakeEventSource.current?.closed).toBe(true)
   })
 })

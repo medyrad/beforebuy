@@ -146,6 +146,9 @@
 - **FR-038**: message submission MUST یک `Idempotency-Key` bounded بپذیرد؛ همان key و canonical payload همان operation را برگرداند و reuse با payload متفاوت conflict بدهد. GET و SSE MUST generation را start/restart نکنند.
 - **FR-039**: Milestone A MUST فقط fixture generator صریح و deterministic را با executor محدود، PostgreSQL claim/lease، interruption terminal، cancellation مستقل و stale-publication guard اجرا کند؛ crash/restart durability تضمین نمی‌شود.
 - **FR-040**: image upload MUST raw body حداکثر 5 MiB، حداکثر سه فایل فعال در هر conversation، dimension حداکثر 4096 در هر محور و 12MP را enforce، decoded JPEG/PNG/WebP را re-encode و metadata را حذف کند؛ SVG/HTML، multi-frame و decompression-bomb رد شوند و bytes فقط owner-scoped سرو شوند.
+- **FR-041**: final publication MUST در یک transaction و با lock order ثابت `Conversation → StreamOperation`، اعتبار expiry/revision/cancel/lease-owner را دوباره بررسی کند و FINAL message، `assistant.message.final`، `operation.completed` و state `COMPLETED` را با هم commit یا همگی rollback کند؛ mutationی که زودتر commit شود برنده است و worker دیررس MUST NOT publish کند.
+- **FR-042**: SSE MUST عمر connection حداکثر 45 ثانیه، heartbeat حداکثر هر 15 ثانیه، admission صریح حداکثر دو subscriber هم‌زمان در هر process و cleanup idempotent داشته باشد؛ expiry یا operation stale باید از state تازه و زیر lock reconcile و terminal/close شود و reconnect MUST generation را تکرار نکند.
+- **FR-043**: replay MUST با `next_sequence` authoritative میان no-history، partial/all-purged history، latest و future sequence تمایز بگذارد؛ foreign/malformed ID با `INVALID_REPLAY_ID`، future با `INVALID_REPLAY_SEQUENCE` و هر gap لازم با `REPLAY_GAP` و REST reconciliation URL پاسخ داده شود. purge پس از شروع stream MUST control event غیرپایدار `stream.replay_gap` بدهد و client از REST بدون regeneration reconcile کند.
 
 ### Key Entities *(include if feature involves data)*
 

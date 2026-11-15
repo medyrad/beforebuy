@@ -104,3 +104,21 @@ class ConversationApiTests(TestCase):
         self.assertEqual(response.status_code, 204)
         self.assertFalse(Conversation.objects.filter(id=conversation["id"]).exists())
         self.assertEqual(self.client.get(f"/api/v1/conversations/{conversation['id']}").status_code, 404)
+
+    @patch("analysis.conversation.streaming._executor.submit", side_effect=RuntimeError("executor unavailable"))
+    def test_executor_submission_failure_is_terminal_and_releases_capacity(self, _submit):
+        conversation = self.post("/api/v1/conversations", {}).json()
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.post(
+                f"/api/v1/conversations/{conversation['id']}/messages",
+                {"text": "ثبت می‌شود اما اجرا نمی‌شود", "expected_brief_revision": 0, "upload_ids": []},
+                HTTP_IDEMPOTENCY_KEY="submission-failure-001",
+            )
+        self.assertEqual(response.status_code, 202, response.content)
+        operation = StreamOperation.objects.get(id=response.json()["operation"]["id"])
+        self.assertEqual(operation.status, "FAILED")
+        self.assertEqual(operation.terminal_code, "SUBMISSION_FAILED")
+        self.assertTrue(operation.events.filter(event_type="operation.failed").exists())
+        from analysis.conversation.streaming import reserve_execution_slot, release_execution_slot
+        self.assertTrue(reserve_execution_slot())
+        release_execution_slot()

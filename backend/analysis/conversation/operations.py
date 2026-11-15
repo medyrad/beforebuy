@@ -3,6 +3,7 @@ import json
 from datetime import timedelta
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from analysis.models import Conversation, GuestContext, Message, StreamOperation, UploadedImage
@@ -35,8 +36,10 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
         return existing, True
     if conversation.brief_revision != expected_revision:
         raise OperationConflict("STALE_BRIEF_REVISION", "نسخهٔ brief تغییر کرده است.")
-    active = StreamOperation.objects.filter(
-        conversation__guest_context=guest, status__in=["PENDING", "RUNNING"]
+    now = timezone.now()
+    active = StreamOperation.objects.filter(conversation__guest_context=guest).filter(
+        Q(status="PENDING", created_at__gt=now - timedelta(seconds=30))
+        | Q(status="RUNNING", lease_expires_at__gt=now)
     ).count()
     if active >= 2:
         raise OperationConflict("OPERATION_LIMIT_REACHED", "ابتدا عملیات جاری را متوقف کنید.")
@@ -54,7 +57,6 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
         request_hash=request_hash,
         expected_brief_revision=expected_revision,
     )
-    now = timezone.now()
     expiry = now + timedelta(days=90)
     conversation.last_eligible_activity_at = now
     conversation.expires_at = expiry

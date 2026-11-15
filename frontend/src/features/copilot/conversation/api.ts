@@ -40,6 +40,7 @@ export const copilotApi = {
     body: JSON.stringify({ text, expected_brief_revision: revision, upload_ids: uploadIds }),
   }),
   cancel: (id: string) => call<Operation>(`/api/v1/operations/${id}/cancel`, { method: 'POST', body: '{}' }),
+  operation: (id: string) => call<Operation>(`/api/v1/operations/${id}`),
   upload: (conversationId: string, image: File) => {
     const body = new FormData(); body.set('conversation_id', conversationId); body.set('image', image)
     return call<Upload>('/api/v1/uploads', { method: 'POST', body })
