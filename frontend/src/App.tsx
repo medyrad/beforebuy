@@ -51,7 +51,7 @@ function LegacyApp() {
   const loadSequence = useRef(0)
 
   const navigate = (next: View, id?: string) => {
-    const url = id ? `/?analysis=${encodeURIComponent(id)}` : next === 'history' ? '/?view=history' : '/'
+    const url = id ? `/legacy?analysis=${encodeURIComponent(id)}` : next === 'history' ? '/legacy?view=history' : '/legacy'
     window.history.pushState({}, '', url)
     setView(next)
   }
@@ -120,7 +120,7 @@ function LegacyApp() {
       const value = editing && analysis ? await api.update(analysis, input) : await api.create(input)
       await refreshHistory()
       setAnalysis(value); setEditing(false); setView('report')
-      window.history.replaceState({}, '', `/?analysis=${encodeURIComponent(value.id)}`)
+      window.history.replaceState({}, '', `/legacy?analysis=${encodeURIComponent(value.id)}`)
     } catch (error) {
       if (error instanceof ApiError) setFormErrors(error.fieldErrors)
       const message = messageFor(error)
@@ -185,7 +185,7 @@ function LegacyApp() {
 
   return <>
     <a className="skip-link" href="#main">رفتن به محتوای اصلی</a>
-    <header className="site-header"><button className="brand" onClick={() => navigate('home')} aria-label="صفحهٔ آغاز قبل از خرید"><span className="brand-mark">ب</span><span>قبل از خرید</span></button><nav aria-label="ناوبری اصلی"><button onClick={start}>تحلیل جدید</button><button onClick={() => navigate('history')}>تاریخچه</button></nav></header>
+    <header className="site-header"><button className="brand" onClick={() => navigate('home')} aria-label="صفحهٔ آغاز قبل از خرید"><span className="brand-mark">ب</span><span>قبل از خرید</span></button><nav aria-label="ناوبری اصلی"><a href="/">دستیار خرید جدید</a><button onClick={start}>تحلیل جدید</button><button onClick={() => navigate('history')}>تاریخچه</button></nav></header>
     <main id="main" tabIndex={-1}>
       {notice && <div className="notice" role="status"><span>{notice}</span><button type="button" onClick={() => setNotice(null)} aria-label="بستن پیام">×</button></div>}
       {historyError && view === 'home' && <div className="form-banner error" role="alert">{historyError}</div>}
@@ -199,6 +199,7 @@ function LegacyApp() {
 }
 
 export default function App() {
-  const isCopilot = window.location.pathname === '/copilot' || window.location.pathname.startsWith('/copilot/')
-  return isCopilot ? <CopilotApp /> : <LegacyApp />
+  const query = new URLSearchParams(window.location.search)
+  const legacy = window.location.pathname === '/legacy' || query.has('analysis') || query.get('view') === 'history'
+  return legacy ? <LegacyApp /> : <CopilotApp />
 }

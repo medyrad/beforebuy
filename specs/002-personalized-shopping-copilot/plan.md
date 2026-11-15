@@ -4,6 +4,14 @@
 
 ## Summary
 
+Current bounded UX authorization: T086–T092 only. FR-082–087 supersede the historical default-route restriction,
+not retention or live gates. Add JSON conversational state to ShoppingBrief (pending budget) and reply actions to
+Message. Acceptance validates question/revision under existing locks, records explicit bounded fields and advances
+revision before operation creation. Final publication binds actions to its own message; context includes pending
+state for stale protection. Model prose is not converted into arbitrary actions. Clear history reuses ownership
+and deletion semantics. Frontend uses a viewport flex/grid shell, independently scrolling thread/desk, native dialog
+history and generation tokens for asynchronous completions. Existing React, SVG, Vazirmatn and Playwright suffice.
+
 Beforebuy در feature جدید از flow ثابت تلفن به shopping copilot فارسی/RTL تبدیل می‌شود: brief گفت‌وگویی، پژوهش on-demand محدود، evidence field-level، رتبه‌بندی deterministic و Choice Desk. معماری modular monolith و same-origin حفظ می‌شود. Milestone A conversation/brief، upload و streaming fixture را پیاده کرده و Milestone B pipeline کنترل‌شده را متصل کرده است. Phase 9.2 فقط Torob و direct merchantهای محدود را از همان pipeline فعال، offer normalization/dedup را اضافه و یک offer panel حداقلی در Choice Desk نشان می‌دهد؛ ranking محصول، memory و provider همچنان milestoneهای بعدی‌اند.
 
 ## Phase 12 execution boundary

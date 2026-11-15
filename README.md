@@ -1,12 +1,13 @@
-# Purchase Regret Predictor
+# Beforebuy — همراه خرید
 
-دستیار مستقل تصمیم‌گیری برای خرید است که به کاربر کمک می‌کند بسنجد آیا خرید یک تلفن همراه با نیازها، بودجه و شرایط فعلی او سازگار است یا نه. این محصول قرار نیست پشیمانی آینده را با دقت اعتبارسنجی‌شده پیش‌بینی کند؛ خروجی آن باید تصمیم‌یار، توضیح‌پذیر و متکی به اطلاعات ارائه‌شده باشد.
+دستیار گفت‌وگویی فارسی برای روشن‌کردن نیاز خرید و مقایسهٔ مبتنی بر شواهد است؛ ادعای پیش‌بینی علمی پشیمانی یا پوشش همهٔ بازار ندارد.
 
 ## وضعیت فعلی
 
-**Phase 6.2 — development environment corrections** محلی پیاده و verify شده است. Django/DRF API، engine قطعی،
-persistence، رابط React فارسی/RTL، history، browser journey، adapter محدود AvalAI و بستهٔ production سه‌سرویسی موجودند.
-mode پیش‌فرض همچنان mock است؛ live evaluation، target-host release gates و deployment عمومی pending هستند.
+بازطراحی محدود UX روی feature `002-personalized-shopping-copilot` جریان اصلی را گفت‌وگویی می‌کند. مسیر `/` و
+`/copilot` دستیار جدید و `/legacy` تجربهٔ قبلی هستند؛ لینک‌های قبلی `/?analysis=...` حفظ شده‌اند.
+AI پیش‌فرض mock و research OFFLINE است؛ داشتن کلید به معنی فعال‌شدن، اعتبارسنجی یا مجوز هزینه نیست.
+نتایج دقیق آزمون و وضعیت بازبینی بصری در [تحویل فعلی](docs/handoff.md) ثبت می‌شوند. live evaluation و انتشار عمومی بازند.
 
 ## راهنمای اسناد
 
@@ -23,6 +24,7 @@ mode پیش‌فرض همچنان mock است؛ live evaluation، target-host re
 - [عملیات backend](docs/backend-operations.md)
 - [قانون اساسی Spec Kit](.specify/memory/constitution.md)
 - [Specification تحلیل تصمیم خرید](specs/001-purchase-decision-analysis/spec.md)
+- [Specification دستیار خرید جاری](specs/002-personalized-shopping-copilot/spec.md)
 - [برنامه فنی Phase 2](specs/001-purchase-decision-analysis/plan.md)
 
 ## راه‌اندازی توسعه
@@ -43,6 +45,8 @@ npm run dev -- --host 127.0.0.1
 ```
 
 رابط در `http://127.0.0.1:5173/` باز می‌شود و `/api` را از proxy هم‌origin به backend می‌فرستد.
+مسیر Compose/NGINX برای verification واقعی `http://127.0.0.1:58080/` است. composer پیام اول را خودکار به گفت‌وگو
+تبدیل می‌کند؛ تاریخچه، تنظیمات و شناخت من در ناوبری بالا هستند. فقط با شواهد کافی مقایسه/قیمت نمایش داده می‌شود.
 پورت‌های قابل‌تنظیم API و PostgreSQL توسعه فقط روی `127.0.0.1` منتشر می‌شوند.
 
 smoke کامل cookie/CSRF و فرمان‌های تست/frontend در

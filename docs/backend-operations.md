@@ -1,5 +1,45 @@
 # عملیات backend و بستهٔ production تا M4
 
+## Bounded UX redesign — local operation and rollback (2026-11-16)
+
+- Default `/` and compatible `/copilot` serve the new conversation UI. `/legacy`, `/?analysis=<id>` and
+  `/?view=history` preserve feature001; API routing/ownership is unchanged. Both NGINX configurations already use
+  SPA `try_files`; no public routing, wildcard hosts or production security changes are needed.
+- Keep `COPILOT_AI_MODE=mock` and `BEFOREBUY_RESEARCH_MODE=OFFLINE`. Read-only settings now expose credential_state
+  separately from regional connection block and effective mode. Do not replace the existing `.env`, keyring,
+  encrypted OpenAI credential or selected provider to exercise the UX. No validation button is needed for local chat.
+- First message creates a conversation. Category/recipient choices and explicit money statements use the normal
+  owner/CSRF/message/idempotency/worker path. Conflicting budget is a proposal until confirmed; reply actions are
+  stale after a newer turn/revision. Clear history preserves credentials/settings/accounting and cascades derived memory.
+- Migration `0017_conversational_ux` adds two JSON fields only. Before applying it, application writes were stopped
+  with `docker compose stop api`; a protected custom-format logical backup was created and `pg_restore --list`
+  successfully read its listing (241 lines). This is archive readability, not a new full restore rehearsal.
+
+```text
+/Users/mehdi/Backups/beforebuy/ux-redesign-7fUJFR/pre-ux.dump
+directory 0700; dump 0600; 276705 bytes
+SHA-256 41f9d49f10167083af29c46b059aec16fffd48689f86a1274879d230ac082b6a
+```
+
+Keep this backup out of Git and Trash. Existing `beforebuy_beforebuy_pgdata_v18` and all other volumes remain intact.
+Migration applied via `docker compose run --rm --no-deps api python backend/manage.py migrate --noinput`.
+Rebuild/recreate only API/web as needed, without `down --volumes`. Existing runtime data is not a test fixture.
+UX rollback: serve the prior frontend image/route while retaining additive schema/data. Database rollback requires
+a new isolated destination volume, explicit restore validation and reconciliation of deletions/accounting; never
+restore over the active development volume. Public target-host, live-provider/source and human evaluation gates remain.
+
+Canonical focused UX verification (from repository root, installed compatible Node on PATH):
+
+```sh
+./scripts/test-backend.sh --keepdb --verbosity 1
+node frontend/node_modules/vitest/vitest.mjs run --root frontend --maxWorkers=1
+NODE_PATH="$PWD/frontend/node_modules" COPILOT_SCREENSHOT_DIR="$PWD/artifacts/screenshots" PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080 node frontend/node_modules/@playwright/test/cli.js test --config frontend/playwright.config.ts tests/e2e/copilot-ux-redesign.spec.ts tests/e2e/copilot-choice-desk.spec.ts --reporter=list
+```
+
+Browser tests bootstrap isolated guests through actual NGINX and use synthetic records. A bounded client-delivery
+delay makes stream switching/stop reproducible; it is not a provider-latency measurement. Physical mobile keyboards,
+real device zoom and live model quality need separate validation. Exact results/screenshots are recorded in handoff.
+
 `compose.yaml` فقط stack توسعه است. بستهٔ production در `compose.production.yaml` سه service `web → api → db`
 دارد؛ تکمیل rehearsal محلی به‌معنای مجوز انتشار عمومی یا آمادگی live AI نیست.
 

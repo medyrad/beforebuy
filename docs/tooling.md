@@ -1,5 +1,16 @@
 # فهرست ابزارها و مهارت‌ها
 
+## Bounded UX redesign — existing capabilities reused
+
+| Need | Selected tool/skill | Alternatives | Evidence | Version | Install phase | Verification | Reason for deferral |
+|---|---|---|---|---|---|---|---|
+| Persian conversational UX | installed frontend-design + Concept 2 overlay | new UI framework/design skill | native session catalog and local SKILL.md/LICENSE inspected; current gap is application design, not missing tooling | unchanged pinned Phase 7 snapshot | already installed; no addition | two-pass design/critique and real NGINX screenshots | no duplicate install; inactive Vercel snapshots remain inactive |
+| Repeatable browser/a11y | playwright-cli guidance, existing Playwright Test + axe + local Chrome | MCP browser service | installed runner can exercise same-origin REST/SSE/layout/keyboard/axe | Playwright 1.65.1, axe 4.11.1 | existing | `copilot-ux-redesign.spec.ts`; exact results in handoff | MCP adds no required capability |
+| Behavioral corrections | existing project, Django/DRF, TDD, debugging, verification and Spec Kit analyze/implement skills | another workflow | current catalog/files; PostgreSQL acceptance/context/publication tests | existing repository pins | no installation | red/green budget/reply/API and UI tests | Spec Kit remains sole SDD owner |
+
+No maintainer speed claim or universally-best claim is made. No code-intelligence index, new dependency, provider,
+framework or future-phase tool was installed. No product imagery was downloaded/generated; category SVGs are original.
+
 ## سیاست انتخاب
 
 Spec Kit تنها مالک SDD است. قابلیت مستندشده توسط maintainer، ادعای performance او و نتیجه واقعاً اندازه‌گیری‌شده در این workspace با هم خلط نمی‌شوند. نصب‌ها تا حد ممکن project-scoped، pin‌شده و قابل بازسازی‌اند. ابزار فاز آینده پیش از trigger همان فاز نصب نمی‌شود.

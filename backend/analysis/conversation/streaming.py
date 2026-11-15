@@ -228,6 +228,9 @@ def finalize_operation(operation_id, lease_owner, text):
         return False
 
     final = Message.objects.create(conversation=conversation, role="ASSISTANT", state="FINAL", text=text)
+    from .replies import actions_for
+    final.reply_actions = actions_for(final, conversation.brief)
+    final.save(update_fields=['reply_actions'])
     _create_event(
         operation, conversation, "assistant.message.final",
         {"message_id": str(final.id), "text": text}, now,

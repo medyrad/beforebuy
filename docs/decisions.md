@@ -1,5 +1,17 @@
 # ثبت تصمیم‌ها
 
+## بازطراحی محدود UX — 2026-11-16
+
+- مصوب صریح product lead: صفحهٔ اصلی دستیار گفت‌وگویی، حفظ `/copilot` و انتقال رابط قبلی به `/legacy` با حفظ deep linkها.
+  این مجوز جانشین محدودیت قبلی default-route است؛ حذف legacy، داده یا انتشار عمومی مجاز نشده است.
+- Concept 2 با زمینهٔ خنثی گرم، گفت‌وگوی سمت راست، میز انتخاب مرحله‌ای، composer در دسترس و تاریخچهٔ کشویی اجرا می‌شود.
+  پذیرش بصری/کاربردپذیری نهایی هنوز نیازمند بازبینی product lead است.
+- پاسخ‌های انتخابی فقط actionهای server-owned متصل به پیام/نسخه‌اند؛ مدل prose به action دلخواه تبدیل نمی‌شود.
+  ثبت یک مبلغ صریح بودجه user-reported و تأییدنشده است؛ تغییر مبلغ موجود تا پاسخ صریح proposal می‌ماند.
+  grammar محدود پول و پاسخ به پرسش مشخص، فهم عمومی زبان نیست. `۱۰ ریال = ۱ تومان` قطعی است.
+- جست‌وجوی تاریخچه فقط عنوان‌های بارگذاری‌شده را می‌بیند. حذف، حافظهٔ مشتق‌شده را طبق lifecycle قبلی حذف می‌کند؛
+  credential، تنظیمات مستقل و ledger هزینه باقی می‌مانند. AI mock و research OFFLINE؛ فراخوانی زنده مجاز نیست.
+
 ## Phase 12 — provider-neutral authorization and selected Iran path
 
 - Product lead explicitly withdraws the OpenAI-only requirement. This supersedes only exclusivity clauses; the

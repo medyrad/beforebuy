@@ -1,4 +1,5 @@
 export interface Brief {
+  conversation_state?: { pending_budget?: { budget_toman: number; source_message_id: string } }
   revision: number
   recipient_context: 'SELF' | 'GIFT' | 'HOUSEHOLD' | null
   category: string | null
@@ -17,6 +18,7 @@ export interface Brief {
 }
 
 export interface Message {
+  reply_actions?: ReplyAction[]
   id: string
   role: 'USER' | 'ASSISTANT'
   state: 'ACCEPTED' | 'FINAL' | 'FAILED' | 'CANCELLED'
@@ -28,6 +30,7 @@ export interface Message {
 export type OperationStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'INTERRUPTED'
 
 export interface Operation {
+  operation_kind?: string
   id: string
   conversation_id: string
   status: OperationStatus
@@ -37,6 +40,7 @@ export interface Operation {
 }
 
 export interface Conversation {
+  messages_truncated?: boolean
   temporary?: boolean
   id: string
   status: 'ACTIVE'
@@ -49,6 +53,12 @@ export interface Conversation {
   messages: Message[]
   operations: Operation[]
 }
+
+export interface ReplyAction {
+  id: string; label: string; kind: string; value: string | null
+  conversation_id: string; question_id: string; revision: number
+}
+export interface Answer { question_id: string; action_id: string; revision: number }
 
 export type ConversationSummary = Omit<Conversation, 'brief' | 'messages' | 'operations'>
 

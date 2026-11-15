@@ -45,6 +45,7 @@ class CopilotSettingsView(ObjectBodyAPIView):
         return Response({'memory_enabled': item.memory_enabled, 'provider': item.provider,
                          'model': item.model, 'revision': item.revision,
                          'mode': mode,
+                         'credential_state': 'NOT_CONFIGURED' if credential is None else credential.state,
                          'connection': connection, 'catalog': catalog_for(item.provider, item.model)})
 
     @transaction.atomic

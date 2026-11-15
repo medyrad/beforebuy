@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -7,7 +7,7 @@ import { CopilotApp } from './CopilotApp'
 const conversation = {
   id: '11111111-1111-4111-8111-111111111111', status: 'ACTIVE', title: 'خرید بعدی', brief_revision: 0,
   created_at: '2026-11-15T10:00:00Z', updated_at: '2026-11-15T10:00:00Z', expires_at: '2027-02-13T10:00:00Z',
-  brief: { revision: 0, recipient_context: null, category: null, selected_product_label: null, budget_toman: null, use_cases: [], hard_constraints: [], unknowns: [], contradictions: [], confirmed: false, updated_at: '2026-11-15T10:00:00Z' },
+  brief: { revision: 0, recipient_context: null, category: null, selected_product_label: null, budget_toman: 15000000, use_cases: [], hard_constraints: [], unknowns: [], contradictions: [], confirmed: true, updated_at: '2026-11-15T10:00:00Z' },
   messages: [], operations: [],
 }
 
@@ -36,7 +36,7 @@ describe('Copilot milestone A shell', () => {
     vi.stubGlobal('EventSource', FakeEventSource)
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
-      const data = url.endsWith('/session') ? { expires_at: conversation.expires_at }
+      const data = url.endsWith('/settings') ? { provider: 'gapgpt', model: 'gapgpt-deepseek-v4.1-flash', mode: 'DEMONSTRATION', connection: 'NOT_CONFIGURED' } : url.endsWith('/session') ? { expires_at: conversation.expires_at }
         : url.endsWith('/choices/candidates') ? { items: [] } : url.endsWith('/choices') ? null
         : url.endsWith('/messages') && init?.method === 'POST' ? { operation: { id: 'op', status: 'PENDING' }, message_id: 'message', events_url: '/events' }
         : url.endsWith('/cancel') ? { id: 'op', status: 'CANCELLED' }
@@ -47,13 +47,93 @@ describe('Copilot milestone A shell', () => {
     }))
   })
 
+  it('reconciles a stop racing with an already completed operation', async () => {
+    const original = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).endsWith('/cancel')) return new Response(JSON.stringify({ error: { code: 'OPERATION_TERMINAL', message: 'عملیات پایان یافته است.' } }), { status: 409 })
+      if (String(input).endsWith('/operations/op')) return new Response(JSON.stringify({ id: 'op', status: 'COMPLETED' }))
+      return original(input, init)
+    })
+    const user = userEvent.setup()
+    render(<CopilotApp />)
+    await user.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
+    await user.type(await readyMessageInput(), 'تست')
+    await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
+    await user.click(await screen.findByRole('button', { name: 'توقف تولید' }))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'توقف تولید' })).not.toBeInTheDocument())
+    expect(screen.queryByText('عملیات پایان یافته است.')).not.toBeInTheDocument()
+  })
+
+  it('detaches a previous stream and preserves the new conversation draft against late events', async () => {
+    const user = userEvent.setup()
+    render(<CopilotApp />)
+    await user.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
+    await user.type(await readyMessageInput(), 'پیام قدیمی')
+    await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
+    await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
+    const previous = FakeEventSource.current!
+    act(() => previous.emit('operation.started'))
+    await user.click(screen.getByRole('button', { name: 'خرید تازه' }))
+    await user.type(await readyMessageInput(), 'پیش‌نویس تازه')
+    act(() => {
+      previous.emit('assistant.text.delta', JSON.stringify({ text: 'نباید وارد گفت‌وگوی تازه شود' }))
+      previous.emit('operation.completed')
+    })
+    expect(previous.closed).toBe(true)
+    expect(screen.queryByText('نباید وارد گفت‌وگوی تازه شود')).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'پیام شما' })).toHaveValue('پیش‌نویس تازه')
+    expect(screen.getByRole('heading', { name: 'برای چه خریدی کمکت کنم؟' })).toBeInTheDocument()
+  })
+
+  it('does not overwrite the final message with an older acceptance refresh', async () => {
+    let release!: (value: Response) => void
+    let reads = 0
+    const original = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).endsWith(`/conversations/${conversation.id}`)) {
+        reads += 1
+        if (reads === 2) return new Promise(resolve => { release = resolve })
+        if (reads >= 3) return new Response(JSON.stringify({ ...conversation, messages: [{ id: 'final', role: 'ASSISTANT', state: 'FINAL', text: 'پاسخ نهایی محفوظ است' }] }))
+      }
+      return original(input, init)
+    })
+    const user = userEvent.setup()
+    render(<CopilotApp />)
+    await user.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
+    await user.type(await readyMessageInput(), 'تست')
+    await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
+    await waitFor(() => expect(reads).toBe(2))
+    act(() => FakeEventSource.current?.emit('operation.completed'))
+    expect(await screen.findByText('پاسخ نهایی محفوظ است')).toBeInTheDocument()
+    await act(async () => release(new Response(JSON.stringify(conversation))))
+    expect(screen.getByText('پاسخ نهایی محفوظ است')).toBeInTheDocument()
+  })
+
+  it('preserves a reader above the bottom and offers an explicit latest-message jump', async () => {
+    const user = userEvent.setup()
+    render(<CopilotApp />)
+    await user.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
+    await user.type(await readyMessageInput(), 'آزمون پیمایش')
+    await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
+    await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
+    const thread = screen.getByLabelText('پیام‌های گفت‌وگو')
+    Object.defineProperties(thread, { scrollHeight: { value: 1000, configurable: true }, clientHeight: { value: 200, configurable: true } })
+    thread.scrollTop = 100
+    fireEvent.scroll(thread)
+    act(() => FakeEventSource.current?.emit('assistant.text.delta', JSON.stringify({ text: 'پاسخ در حال تکمیل' })))
+    expect(thread.scrollTop).toBe(100)
+    await user.click(screen.getByRole('button', { name: 'پیام‌های جدید ↓' }))
+    expect(thread.scrollTop).toBe(1000)
+  })
+
   it('shows Persian fixture disclosure and an honest empty Choice Desk', async () => {
     render(<CopilotApp />)
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
     expect(await screen.findByRole('heading', { name: 'همراه خرید' })).toBeInTheDocument()
-    expect(screen.getByText('بدون AI زنده')).toBeInTheDocument()
+    expect(screen.getByText('نسخهٔ نمایشی')).toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: 'لینک‌های دقیق محصول' })).not.toBeVisible()
-    await userEvent.click(screen.getByText('پژوهش منابع و پیشنهادهای فروش', { exact: true }))
-    expect(screen.getByRole('heading', { name: 'پیشنهادهای واقعی و منبع‌دار' })).toBeInTheDocument()
+    await userEvent.click(screen.getByText('از کجا بخرم؟', { exact: true }))
+    expect(screen.getByRole('heading', { name: 'پیشنهادهای فروش و منابع' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'هنوز پیشنهادی بررسی نشده است.' })).toBeInTheDocument()
     expect(screen.queryByText(/قیمت بازار:/)).not.toBeInTheDocument()
   })
@@ -61,6 +141,7 @@ describe('Copilot milestone A shell', () => {
   it('preserves explicit mobile conversation and desk controls', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
     await screen.findByRole('heading', { name: 'همراه خرید' })
     const desk = screen.getByRole('button', { name: 'میز انتخاب' })
     await user.click(desk)
@@ -70,7 +151,8 @@ describe('Copilot milestone A shell', () => {
 
   it('offers accessible brief edit and upload controls without later-memory controls', async () => {
     render(<CopilotApp />)
-    expect(await screen.findByRole('button', { name: 'ویرایش brief' })).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
+    expect(await screen.findByRole('button', { name: 'اصلاح نیاز خرید' })).toBeInTheDocument()
     expect(screen.getByLabelText('افزودن تصویر')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'شناخت من' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'تنظیمات دستیار' })).toBeInTheDocument()
@@ -79,6 +161,7 @@ describe('Copilot milestone A shell', () => {
   it('validates upload size and exposes stop while fixture streaming', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
     const input = await screen.findByLabelText('افزودن تصویر') as HTMLInputElement
     await user.upload(input, new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.jpg', { type: 'image/jpeg' }))
     expect(screen.getByRole('alert')).toHaveTextContent('حداکثر ۵ مگابایت')
@@ -93,6 +176,7 @@ describe('Copilot milestone A shell', () => {
   it('offers an explicit controlled retry after a terminal fixture failure', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
     await user.type(await readyMessageInput(), 'همان درخواست قبلی')
     await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
     await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
@@ -107,6 +191,7 @@ describe('Copilot milestone A shell', () => {
   it('reconciles stream errors through REST without regenerating active work', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
     await user.type(await readyMessageInput(), 'پیام reconnect')
     await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
     await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
@@ -122,6 +207,7 @@ describe('Copilot milestone A shell', () => {
   it('uses REST reconciliation for an in-stream replay gap', async () => {
     const user = userEvent.setup()
     render(<CopilotApp />)
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
     await user.type(await readyMessageInput(), 'پیام gap')
     await user.click(screen.getByRole('button', { name: 'ارسال پیام' }))
     await waitFor(() => expect(FakeEventSource.current).not.toBeNull())
@@ -146,14 +232,15 @@ describe('Copilot milestone A shell', () => {
           availability: 'IN_STOCK', observation_kind: 'MERCHANT_PAGE_VERIFIED', evidence_state: 'LIVE', observed_at: '2026-11-15T10:00:00Z',
           fresh_until: '2026-11-15T16:00:00Z' }], created_at: '2026-11-15T10:00:00Z', started_at: '2026-11-15T10:00:00Z', completed_at: '2026-11-15T10:00:01Z',
       }
-      const data = url.endsWith('/session') ? { expires_at: conversation.expires_at }
+      const data = url.endsWith('/settings') ? { provider: 'gapgpt', model: 'gapgpt-deepseek-v4.1-flash', mode: 'DEMONSTRATION', connection: 'NOT_CONFIGURED' } : url.endsWith('/session') ? { expires_at: conversation.expires_at }
         : url.endsWith('/choices/candidates') ? { items: [] } : url.endsWith('/choices') ? null
         : url.endsWith('/research') && init?.method === 'POST' ? { job, operation: { id: 'research-op', status: 'COMPLETED' }, idempotent_replay: false, events_url: '/events' }
         : url.endsWith('/research-jobs/job-1') ? job : url.includes('/conversations/') ? conversation : { items: [conversation], next_cursor: null }
       return new Response(JSON.stringify(data), { status: url.endsWith('/research') ? 202 : 200, headers: { 'Content-Type': 'application/json' } })
     })
     render(<CopilotApp />)
-    await user.click(await screen.findByText('پژوهش منابع و پیشنهادهای فروش', { exact: true }))
+    await userEvent.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
+    await user.click(await screen.findByText('از کجا بخرم؟', { exact: true }))
     const input = await screen.findByRole('textbox', { name: 'لینک‌های دقیق محصول' })
     await waitFor(() => expect(input).toBeEnabled())
     await user.type(input, 'https://takkalaban.com/product/philips-na230/')

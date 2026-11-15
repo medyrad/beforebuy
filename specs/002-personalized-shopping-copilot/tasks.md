@@ -4,6 +4,21 @@ description: "Dependency-ordered implementation tasks for Personalized Shopping 
 
 # Tasks: دستیار شخصی خرید
 
+## Bounded UX redesign — authorized current scope
+
+- [x] T086 [US1] Reproduce NGINX defects; freeze FR-082–087, Concept 2 journey, reply/budget/history contracts and route rollback; run read-only analyze.
+- [x] T087 [US1] Write failing context/publication/API tests for typed replies, stale/idempotent actions, budget correction, ownership and clear-history isolation.
+- [x] T088 [US1] Implement narrow server-owned reply actions and budget proposal state in existing acceptance/context/publication seams; no general NLP or provider calls.
+- [x] T089 [US1] Write failing React/NGINX journeys for homepage, composer, progressive desk, history, scoped streaming/drafts and backend mode.
+- [x] T090 [US1] Implement responsive Concept 2, automatic first conversation, legacy routes, reply controls, accessible history and truthful status without a new framework.
+- [x] T091 [US4] Verify backend/frontend regressions and NGINX viewport/keyboard/accessibility journeys; inspect screenshots; preserve feature001 T039/T066/live gates.
+- [x] T092 [D] Archive handoff, synchronize operations/contracts/tooling and evidence, commit/push related changes only; deliver for product review, not assumed acceptance.
+
+Bounded UX evidence: PostgreSQL 320/320, React 26/26, lint/typecheck/Docker web build, no migration drift,
+real NGINX Playwright 7/7 (four viewports, two comparison regressions, long/history/zoom/legacy journey),
+axe serious/critical zero in checked pages and visual screenshot review. Mock/OFFLINE, no provider/source calls.
+Delivery commit/remote evidence is reported in the final handoff response; visual product acceptance remains pending.
+
 ## Phase 12 — provider-neutral real conversational path
 
 - [x] T078 [D] Record product-lead supersession of OpenAI exclusivity; compare at most GapGPT/AvalAI from official sources and freeze selected/fallback evidence, tariff, protocol and unresolved gates.
@@ -147,7 +162,7 @@ quality, account model access and live market coverage remain unevaluated.
 - [ ] T045 [E] Run browser smoke only for implemented copilot route and verify target-host Host/CSRF/proxy/stream behavior; do not public deploy
 - [ ] T046 [E] Run source allowlist review, privacy threat model, cost cap review and OpenAI official region check; record each as independent go/no-go
 - [ ] T047 [E] Execute controlled live evaluation only after explicit eligibility and spending authorization; otherwise record zero calls and exact blocker
-- [ ] T048 [E] Prepare cutover/rollback evidence per `migration-coexistence.md`; product lead must separately approve default-route change and legacy retirement
+- [ ] T048 [E] Prepare cutover/rollback evidence per `migration-coexistence.md`; bounded UX authorization now approves the local default-route change only; general pilot cutover and legacy retirement remain separately gated
 - [ ] T050 [E] Write failing owner-scoped export tests and implement a minimal JSON export for conversation, current brief, citations and confirmed memory in `backend/tests/api/test_copilot_export.py` and `backend/analysis/api/export.py`; exclude credential ciphertext/plaintext, raw cache and private operational metadata
 
 ## Dependencies

@@ -234,6 +234,12 @@ class ContextualFixtureGenerator:
 
     def generate(self):
         from .copilot_answer import safe_lead, validate_and_render
+        from analysis.conversation.replies import local_question
+        question = local_question(self.context.get('brief', {}))
+        if question:
+            self.final_text = question
+            yield {'text': question, 'phase': 'VALIDATED_BLOCK'}
+            return
         yield {'text': safe_lead(self.context), 'phase': 'PROVISIONAL_CONTEXT'}
         plan = _fixture_plan(self.context)
         rendered = validate_and_render(plan, self.context)
@@ -266,7 +272,8 @@ def _fixture_plan(context):
                     'blocks': [{'kind': 'UNKNOWN', 'candidate_id': item['id'], 'criterion': unknown, 'evidence_ids': []},
                                {'kind': 'NEXT_CHECK', 'candidate_id': item['id'], 'criterion': unknown, 'evidence_ids': []}]}
     brief = context.get('brief') or {}
-    key = next((value for value in ('budget_toman', 'category', 'recipient_context', 'use_cases') if not brief.get(value)), None)
+    key = next((value for value in ('budget_toman', 'category', 'recipient_context', 'use_cases')
+                if brief.get(value) is None or brief.get(value) == [] or brief.get(value) == ''), None)
     if key:
         return {'answer_type': 'CLARIFICATION', 'lead_key': 'NEEDS_CONTEXT', 'clarification_key': key, 'blocks': []}
     return {'answer_type': 'COMPARISON_ANSWER', 'lead_key': 'LIMITED_EVIDENCE', 'clarification_key': 'none', 'blocks': []}

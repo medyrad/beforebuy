@@ -1,5 +1,17 @@
 # Quickstart — Milestone A/B/C offline and fixture stack
 
+## Current bounded UX entry
+
+Open `http://127.0.0.1:58080/` (or `/copilot`). Type the first message directly; it creates the conversation.
+Use the next question's optional replies or type freely. Explicit budget conflicts are confirmed inside chat.
+The left desk progressively exposes needs, supported comparisons and offers; category starters do not promise coverage.
+For an educational comparison, confirm the need, open «آشنایی با مقایسه از طریق نمونهٔ آموزشی», load synthetic data,
+then «ساخت مقایسه». No live market or provider call is needed. «گفت‌وگوهای من» supports loaded-title search,
+pagination and confirmed deletion/clear; settings/profile preserve the current draft. `/legacy` retains the previous
+flow; `/?analysis=<id>` remains valid. The historical instructions below describe earlier phases, not current labels.
+Migration 0017 requires a protected backup before applying on nonempty development data; see `docs/backend-operations.md`.
+Keep AI mock and research OFFLINE. Do not validate or replace the stored key for this walkthrough.
+
 ## Phase 12 — provider-neutral local configuration (no live call by default)
 
 Keep `COPILOT_AI_MODE=mock`, `COPILOT_PHASE12_SPENDING_AUTHORIZED=0` and

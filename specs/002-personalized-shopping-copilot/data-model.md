@@ -1,5 +1,14 @@
 # Data Model
 
+## Bounded UX migration 0017
+
+Additive `ShoppingBrief.conversation_state` JSON defaults to `{}`: pending_budget stores an explicitly proposed
+integer toman amount and originating user message ID; correcting_need is a temporary explicit correction prompt.
+Neither is confirmed requirement/evidence. Existing budget/provenance remain unchanged until confirmation.
+`Message.reply_actions` JSON defaults to `[]`; final server questions contain 2–5 revision/message/owner-bound
+allowlisted options, described in `contracts/conversational-ux.md`. No credential/schema migration or key access.
+New state inherits conversation ownership, expiry and cascade deletion. Existing rows/data remain valid.
+
 ## Milestone D implementation
 
 Migrations 0011–0014 add owner-scoped settings, preference memory, encrypted credentials, credential revision

@@ -84,7 +84,7 @@ def validate_conversational_plan(payload, context):
                 raise AnswerPlanError('MALFORMED_PLAN')
             shown = '، '.join(value) if isinstance(value, list) else str(value)
             values.append(f'{labels[key]}: {shown}')
-        chunks.append('پیشنهاد برای تأیید brief: ' + '؛ '.join(values) + '. این تغییر هنوز اعمال نشده است.')
+        chunks.append('پیشنهاد برای تأیید نیاز خرید: ' + '؛ '.join(values) + '. این تغییر هنوز اعمال نشده است.')
     chunks.extend(factual.chunks)
     if question:
         chunks.append(question.strip())
@@ -173,7 +173,7 @@ def _clarification(key, brief):
         'recipient_context': brief.get('recipient_context'),
         'use_cases': brief.get('use_cases'),
     }
-    if values[key]:
+    if values[key] is not None and values[key] != [] and values[key] != '':
         raise AnswerPlanError('UNSUPPORTED_CLARIFICATION')
     return {
         'budget_toman': 'سقف بودجهٔ این خرید چقدر است؟',

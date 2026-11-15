@@ -15,20 +15,22 @@ class OperationConflict(Exception):
         self.message = message
 
 
-def canonical_request_hash(text, upload_ids, expected_revision):
+def canonical_request_hash(text, upload_ids, expected_revision, answer=None):
     payload = {"text": text, "upload_ids": sorted(str(value) for value in upload_ids), "expected_brief_revision": expected_revision}
+    if answer is not None:
+        payload['answer'] = answer
     return hashlib.sha256(json.dumps(payload, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode()).hexdigest()
 
 
 @transaction.atomic
-def accept_message(*, conversation_id, guest, text, upload_ids, expected_revision, idempotency_key):
+def accept_message(*, conversation_id, guest, text, upload_ids, expected_revision, idempotency_key, answer=None):
     GuestContext.objects.select_for_update().get(id=guest.id)
     conversation = Conversation.objects.select_for_update().filter(
         id=conversation_id, guest_context=guest, expires_at__gt=timezone.now()
     ).first()
     if conversation is None:
         raise Conversation.DoesNotExist
-    request_hash = canonical_request_hash(text, upload_ids, expected_revision)
+    request_hash = canonical_request_hash(text, upload_ids, expected_revision, answer)
     existing = StreamOperation.objects.filter(conversation=conversation, idempotency_key=idempotency_key).first()
     if existing:
         if existing.request_hash != request_hash:
@@ -36,6 +38,8 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
         return existing, True
     if conversation.brief_revision != expected_revision:
         raise OperationConflict("STALE_BRIEF_REVISION", "نسخهٔ brief تغییر کرده است.")
+    from .replies import validate_action, apply_explicit_answer
+    action = validate_action(conversation, text, answer)
     now = timezone.now()
     active = StreamOperation.objects.filter(conversation__guest_context=guest).filter(
         Q(status="PENDING", created_at__gt=now - timedelta(seconds=30))
@@ -75,13 +79,17 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
             raise OperationConflict('CREDENTIAL_UNVALIDATED', 'اتصال تأیید نشده است.')
         credential_revision = credential.revision
     message = Message.objects.create(conversation=conversation, role="USER", state="ACCEPTED", text=text)
+    apply_explicit_answer(conversation, message, action)
+    if conversation.title == 'گفت‌وگوی خرید':
+        conversation.title = text[:80]
+        conversation.save(update_fields=['title'])
     UploadedImage.objects.filter(id__in=[item.id for item in uploads]).update(message=message)
     operation = StreamOperation.objects.create(
         conversation=conversation,
         user_message=message,
         idempotency_key=idempotency_key,
         request_hash=request_hash,
-        expected_brief_revision=expected_revision,
+        expected_brief_revision=conversation.brief_revision,
         credential_revision=credential_revision,
         credential_provider=credential_provider,
     )

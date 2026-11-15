@@ -3,7 +3,7 @@ import type { Brief } from '../conversation/types'
 export type Criterion = NonNullable<NonNullable<Brief['comparison']>['criteria']>[number]
 export interface Memory { id: string; category: string; criterion: Criterion; state: string; revision: number; expires_at: string }
 export interface ModelCatalog { source: string; saved_status: string; items: { id: string }[] }
-export interface Settings { memory_enabled: boolean; provider: 'gapgpt' | 'openai'; model: string; revision: number; mode: string; connection: string; catalog: ModelCatalog }
+export interface Settings { memory_enabled: boolean; provider: 'gapgpt' | 'openai'; model: string; revision: number; mode: string; connection: string; credential_state?: string; catalog: ModelCatalog }
 export interface Credential { provider: string; state: string; revision: string | null; encryption_available: boolean; masked: string | null; expires_at: string | null }
 const root = '/api/v1/copilot'
 const write = (method: string, data: unknown) => ({ method, body: JSON.stringify(data) })

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Beforebuy Shopping Copilot API
-  version: 0.5.1-contextual-assistant
+  version: 0.6.0-conversational-ux
   description: |
     Same-origin guest-owned Milestone A/B contract. Unsafe requests require the
     existing csrftoken cookie and matching X-CSRFToken header. Missing, foreign,
@@ -84,6 +84,12 @@ paths:
               schema: {$ref: '#/components/schemas/Session'}
               example: {expires_at: '2027-02-13T10:30:00Z'}
   /conversations:
+    delete:
+      operationId: clearConversationHistory
+      summary: Delete this guest's conversations and derived memory; preserve independent settings, credentials and accounting
+      responses:
+        '204': {description: Cleared; repeat is safe}
+        '403': {$ref: '#/components/responses/CsrfRejected'}
     get:
       summary: List owned unexpired conversations without extending retention
       operationId: listConversations
@@ -447,7 +453,7 @@ components:
     ConversationDetail:
       allOf:
         - {$ref: '#/components/schemas/ConversationSummary'}
-        - {type: object, required: [brief, messages, operations], properties: {brief: {$ref: '#/components/schemas/ShoppingBrief'}, messages: {type: array, maxItems: 200, items: {$ref: '#/components/schemas/Message'}}, operations: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/Operation'}}}}
+        - {type: object, required: [brief, messages, operations], properties: {messages_truncated: {type: boolean}, brief: {$ref: '#/components/schemas/ShoppingBrief'}, messages: {type: array, maxItems: 200, items: {$ref: '#/components/schemas/Message'}}, operations: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/Operation'}}}}
     Message:
       type: object
       additionalProperties: false
@@ -457,13 +463,37 @@ components:
         role: {type: string, enum: [USER, ASSISTANT]}
         state: {type: string, enum: [ACCEPTED, FINAL, FAILED, CANCELLED]}
         text: {type: string, maxLength: 12000}
+        reply_actions: {type: array, maxItems: 5, items: {$ref: '#/components/schemas/ReplyAction'}}
         upload_ids: {type: array, maxItems: 3, items: {type: string, format: uuid}}
         created_at: {type: string, format: date-time}
+    ReplyAction:
+      type: object
+      additionalProperties: false
+      required: [id, label, kind, value, conversation_id, question_id, revision]
+      properties:
+        id: {type: string}
+        label: {type: string, maxLength: 120}
+        kind: {type: string, enum: [SET_CATEGORY, SET_RECIPIENT, CONFIRM_BUDGET, KEEP_BUDGET, CONFIRM_NEED, CORRECT_NEED]}
+        value: {type: [string, 'null']}
+        conversation_id: {type: string, format: uuid}
+        question_id: {type: string, format: uuid}
+        revision: {type: integer, minimum: 0}
     ShoppingBrief:
       type: object
       additionalProperties: false
       required: [revision, recipient_context, category, selected_product_label, budget_toman, use_cases, hard_constraints, unknowns, contradictions, provenance, confirmed, updated_at]
       properties:
+        conversation_state:
+          type: object
+          additionalProperties: false
+          properties:
+            correcting_need: {type: boolean}
+            pending_budget:
+              type: object
+              required: [budget_toman, source_message_id]
+              properties:
+                budget_toman: {type: integer, minimum: 0, maximum: 1000000000000}
+                source_message_id: {type: string, format: uuid}
         comparison: {$ref: '#/components/schemas/ComparisonProfile'}
         revision: {type: integer, minimum: 0}
         recipient_context: {type: [string, 'null'], enum: [SELF, GIFT, HOUSEHOLD, null]}
@@ -474,7 +504,7 @@ components:
         hard_constraints: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
         unknowns: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 200}}
         contradictions: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 300}}
-        provenance: {type: array, maxItems: 100, items: {type: object, additionalProperties: false, required: [field, source_type, source_id], properties: {field: {type: string, maxLength: 64}, source_type: {type: string, enum: [MESSAGE, EXPLICIT_EDIT]}, source_id: {type: string, format: uuid}}}}
+        provenance: {type: array, maxItems: 100, items: {type: object, additionalProperties: false, required: [field, source_type, source_id], properties: {field: {type: string, maxLength: 64}, source_type: {type: string, enum: [MESSAGE, EXPLICIT_EDIT, USER_REPORTED]}, source_id: {type: string, format: uuid}}}}
         confirmed: {type: boolean}
         updated_at: {type: string, format: date-time}
     EditBriefRequest:
@@ -502,6 +532,14 @@ components:
       additionalProperties: false
       required: [text, expected_brief_revision]
       properties:
+        answer:
+          type: object
+          additionalProperties: false
+          required: [question_id, action_id, revision]
+          properties:
+            question_id: {type: string, format: uuid}
+            action_id: {type: string, maxLength: 64}
+            revision: {type: integer, minimum: 0}
         text: {type: string, minLength: 1, maxLength: 8000}
         upload_ids: {type: array, uniqueItems: true, maxItems: 3, items: {type: string, format: uuid}, default: []}
         expected_brief_revision: {type: integer, minimum: 0}

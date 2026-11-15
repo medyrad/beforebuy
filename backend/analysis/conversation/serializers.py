@@ -15,6 +15,7 @@ def serialize_brief(brief: ShoppingBrief):
         "provenance": brief.provenance,
         "confirmed": brief.confirmed,
         "comparison": brief.comparison,
+        "conversation_state": brief.conversation_state,
         "updated_at": brief.updated_at.isoformat(),
     }
 
@@ -25,6 +26,7 @@ def serialize_message(message: Message):
         "role": message.role,
         "state": message.state,
         "text": message.text,
+        "reply_actions": message.reply_actions,
         "upload_ids": [str(item.id) for item in message.uploads.all()],
         "created_at": message.created_at.isoformat(),
     }
@@ -58,11 +60,12 @@ def serialize_conversation(conversation, *, detail=False):
         "expires_at": conversation.expires_at.isoformat(),
     }
     if detail:
-        messages = conversation.messages.prefetch_related("uploads").order_by("created_at")[:200]
+        messages = list(reversed(list(conversation.messages.prefetch_related("uploads").order_by("-created_at", "-id")[:200])))
         operations = conversation.operations.order_by("-created_at")[:20]
         data.update({
             "brief": serialize_brief(conversation.brief),
             "messages": [serialize_message(item) for item in messages],
+            "messages_truncated": conversation.messages.count() > 200,
             "operations": [serialize_operation(item) for item in reversed(list(operations))],
         })
     return data

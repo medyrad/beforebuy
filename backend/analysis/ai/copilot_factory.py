@@ -19,6 +19,11 @@ def configured_copilot_generator(operation_id):
     bundle = pin_context(operation_id, operation.lease_owner)
     if bundle.limited_reason:
         return LimitedContextGenerator()
+    from analysis.conversation.replies import local_question
+    if local_question(bundle.provider_input.get('brief', {})):
+        generator = ContextualFixtureGenerator(bundle.provider_input)
+        generator.kind = 'DETERMINISTIC_CLARIFICATION'
+        return generator
     if settings.COPILOT_AI_MODE == "mock":
         return ContextualFixtureGenerator(bundle.provider_input)
 

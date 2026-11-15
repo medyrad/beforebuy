@@ -3,7 +3,7 @@
 settings:
   get:
     responses:
-      '200': {description: 'memory_enabled, explicit provider/model, revision, mode, connection state and provider-specific catalog metadata'}
+      '200': {description: 'memory_enabled, explicit provider/model, revision, effective mode, credential_state separately from connection (including regional block), and provider-specific catalog metadata'}
   patch:
     requestBody:
       required: true

@@ -273,6 +273,7 @@ class ShoppingBrief(models.Model):
     provenance = models.JSONField(default=list)
     confirmed = models.BooleanField(default=False)
     comparison = models.JSONField(default=dict)
+    conversation_state = models.JSONField(default=dict)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -305,6 +306,7 @@ class Message(models.Model):
         choices=[("ACCEPTED", "Accepted"), ("FINAL", "Final"), ("FAILED", "Failed"), ("CANCELLED", "Cancelled")],
     )
     text = models.TextField()
+    reply_actions = models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

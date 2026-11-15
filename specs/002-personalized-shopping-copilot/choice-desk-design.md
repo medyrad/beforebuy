@@ -1,8 +1,23 @@
 # Choice Desk Design Specification — Concept 2
 
+## Authorized UX refinement (2026-11-16)
+
+Two-pass direction: warm paper `#f6f4ef`, white surfaces, ink `#24332f`, muted `#59645f`, indigo `#4b46a5`,
+teal `#25675b`; existing self-hosted Vazirmatn and original SVG line icons, no product photography. Desktop right
+chat / left contextual desk; compact top navigation. Homepage hero «برای چه خریدی کمکت کنم؟», six prompt categories,
+working first-message composer, examples and continuation. Desk initially shows the next step, then «نیاز خرید شما»,
+«گزینه‌های پیشنهادی», «مقایسه», «از کجا بخرم؟» as evidence/confirmation becomes available.
+
+Critique against brief: avoid empty dashboard cards and technical forms before useful data; no fake market coverage.
+Chat is a min-height:0 flex column inside the remaining viewport, with independent thread scroll and bounded composer.
+Mobile is chat-first with explicit desk switch; history uses a labelled modal drawer, Escape/focus return and explicit
+destructive confirmation. Near-bottom following only; reading above gets «پیام‌های جدید». No global overflow masking.
+Settings/profile preserve mounted chat state. Saved, validated, selected provider/model and effective mode are distinct.
+Visual acceptance remains pending product-lead review even when automated checks pass.
+
 Choice Desk فضای آرام تحلیلی است، نه storefront. conversation brief می‌سازد؛ Desk evidence/tradeoff را مقایسه می‌کند. visual language باید دقیق، فارسی‌اول و شبیه یک workspace تصمیم‌گیری باشد، نه dashboard generic.
 
-## Information architecture
+## Historical baseline information architecture (superseded where specified above)
 
 1. right-side navigation: brand، مسیر legacy، conversation history و وضعیت fixture.
 2. conversation panel on the right: thread، composer، attachment و stop/retry.

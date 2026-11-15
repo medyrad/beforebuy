@@ -92,13 +92,16 @@ export function ChoiceDesk({ conversation, evidenceRevision = '' }: { conversati
     if (active.current === stamp) { setChoice(result); setDrawer(null) }
   })
   const result = stale ? null : choice?.result
+  if (!conversation.brief.confirmed) return choice
+    ? <p className="choice-notice" role="status">مقایسهٔ قبلی معتبر نیست؛ ابتدا نیاز اصلاح‌شده را تأیید کنید.</p>
+    : null
   return <section className="personal-choice" aria-labelledby="comparison-title">
-    <header className="choice-heading"><div><h2 id="comparison-title">انتخابی که به نیاز شما می‌خورد</h2><p>پاسخ قالبی و قطعی بر اساس شواهد؛ بدون تولید مدل زنده.</p></div><span className="choice-version">میز مقایسه</span></header>
-    {!conversation.brief.confirmed && <p className="choice-notice">ابتدا نیاز خرید را در نوار بالا ذخیره و تأیید کنید.</p>}
+    <header className="choice-heading"><div><h2 id="comparison-title">گزینه‌های پیشنهادی</h2><p>مقایسه بر اساس نیاز تأییدشده و شواهد موجود؛ نه حدس مدل.</p></div><span className="choice-version">مقایسه</span></header>
+    {!conversation.brief.confirmed && <p className="choice-notice">ابتدا برداشت از نیاز خرید را تأیید کنید.</p>}
     <details className="choice-controls" open={!choice}>
       <summary>محصول موردنظر و جایگزین‌ها</summary>
       <p>تا سه محصول جایگزین؛ فروشنده‌های یک محصول، جایگزین جداگانه نیستند.</p>
-      <div className="demo-controls"><label>دستهٔ نمونهٔ آموزشی<select value={demoCategory} onChange={(e) => setDemoCategory(e.target.value)}><option value="electronics">الکترونیک</option><option value="home">خانه</option><option value="sports">ورزشی</option></select></label><button className="button ghost" disabled={busy || !conversation.brief.confirmed} onClick={() => void demo()}>بارگذاری دادهٔ مصنوعی</button></div>
+      <details><summary>آشنایی با مقایسه از طریق نمونهٔ آموزشی</summary><div className="demo-controls"><label>دستهٔ نمونهٔ آموزشی<select value={demoCategory} onChange={(e) => setDemoCategory(e.target.value)}><option value="electronics">الکترونیک</option><option value="home">خانه</option><option value="sports">ورزشی</option></select></label><button className="button ghost" disabled={busy || !conversation.brief.confirmed} onClick={() => void demo()}>بارگذاری دادهٔ مصنوعی</button></div></details>
       <p className="muted">نمونه‌ها ساختگی‌اند؛ قیمت و پوشش بازار زنده نیستند. دسته و معیار نیاز خرید باید با نمونه یکسان باشد.</p>
       {candidates.length > 0 && <><label>محصول موردنظر<select value={intended} onChange={(e) => { setIntended(e.target.value); setSelected([e.target.value]) }}><option value="">انتخاب کنید</option>{candidates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label><fieldset><legend>جایگزین‌های مقایسه</legend>{candidates.filter((item) => item.id !== intended && item.category === candidates.find((v) => v.id === intended)?.category).map((item) => <label className="choice-checkbox" key={item.id}><input type="checkbox" checked={selected.includes(item.id)} disabled={!selected.includes(item.id) && selected.length >= 4} onChange={(e) => setSelected(e.target.checked ? [...selected, item.id] : selected.filter((id) => id !== item.id))} /><bdi>{item.name}</bdi></label>)}</fieldset></>}
     </details>

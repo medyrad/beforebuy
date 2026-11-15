@@ -1,0 +1,65 @@
+.shopping-app { --cp-paper:#f6f4ef; --cp-surface:#fff; --cp-muted-surface:#f1f3ef; --cp-ink:#24332f; --cp-muted:#59645f; --cp-line:#dce1d9; --cp-indigo:#4b46a5; --cp-indigo-soft:#eeedf8; color:var(--cp-ink); background:var(--cp-paper); position:fixed; inset:0; height:auto; min-height:0; container:shopping / size; display:flex; flex-direction:column; }
+.shopping-app button, .shopping-app input, .shopping-app textarea { font:inherit; }
+.shopping-app button { cursor:pointer; }
+.shopping-app button:disabled { cursor:default; }
+.shopping-app .copilot-utility { flex:none; display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; padding:.6rem 1.2rem; border-bottom:1px solid var(--cp-line); background:#faf9f6; }
+.shopping-app .copilot-utility button { min-height:40px; padding:.4rem .65rem; border:1px solid transparent; border-radius:9px; background:transparent; color:var(--cp-ink); font-size:.8rem; }
+.shopping-app .copilot-utility button[aria-pressed=true] { color:var(--cp-indigo); background:var(--cp-indigo-soft); }
+.shopping-app .copilot-utility a { color:var(--cp-muted); font-size:.72rem; margin-inline-start:auto; }
+.shopping-app .copilot-utility .wordmark { font-size:1.1rem; font-weight:850; margin-inline-end:auto; text-align:right; color:#25675b; }
+.wordmark span { display:block; font-size:.62rem; font-weight:450; color:var(--cp-muted); }
+.shopping-app .copilot-shell { --cp-paper:inherit; --cp-surface:inherit; --cp-muted-surface:inherit; --cp-ink:inherit; --cp-muted:inherit; --cp-line:inherit; --cp-indigo:inherit; --cp-indigo-soft:inherit; direction:rtl; flex:1; min-height:0; height:auto; display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); grid-template-areas:"conversation desk"; padding:0; }
+.shopping-app .conversation-pane { grid-area:conversation; height:auto; min-height:0; min-width:0; display:flex; flex-direction:column; border:0; border-inline-end:1px solid var(--cp-line); background:white; position:relative; }
+.shopping-app .copilot-heading { flex:none; padding:1rem 1.3rem .5rem; gap:.5rem; }
+.shopping-app .copilot-heading h1 { font-size:clamp(1.05rem,2vw,1.55rem); line-height:1.6; }
+.shopping-app .copilot-heading .text-button { display:flex; align-items:center; gap:.2rem; white-space:nowrap; font-size:.72rem; color:var(--cp-indigo); }
+.shopping-app .overline { color:#25675b; font-weight:650; letter-spacing:0; }
+.provider-strip { flex:none; display:flex; align-items:start; justify-content:space-between; gap:.5rem; padding:.25rem 1.3rem .65rem; font-size:.67rem; color:var(--cp-muted); border-bottom:1px solid #eef0ea; }
+.provider-strip > span { border-radius:6px; padding:.15rem .5rem; background:#f0eee7; color:#5b5238; white-space:nowrap; }
+.provider-strip details { max-width:65%; }.provider-strip summary { cursor:pointer; }.provider-strip p { overflow-wrap:anywhere; }
+.shopping-app .thread { flex:1; min-height:0; overflow-y:auto; padding:1rem 1.3rem; scroll-behavior:auto; }
+.welcome > p { margin:.3rem 0 1.3rem; line-height:1.95; color:var(--cp-muted); font-size:.9rem; }
+.category-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; }
+.category-grid button { display:flex; flex-direction:column; align-items:center; gap:.6rem; padding:1rem .4rem; border:1px solid var(--cp-line); border-radius:14px; background:#fafbf8; color:#25675b; }
+.category-grid button:nth-child(2n) { background:#f6f5fb; color:var(--cp-indigo); }
+.category-grid button:hover { border-color:#8b9e91; transform:translateY(-2px); transition:transform .15s; }
+.category-grid span { color:var(--cp-ink); font-size:.78rem; font-weight:650; }
+.welcome .welcome-note { font-size:.7rem; margin:.8rem 0 1.2rem; }
+.example-prompts { display:grid; gap:.5rem; }.example-prompts > span { font-size:.75rem; color:var(--cp-muted); }
+.example-prompts button { text-align:right; padding:.6rem .8rem; border:1px solid #e5e7e0; border-radius:10px; background:white; color:var(--cp-muted); font-size:.76rem; }
+.continue-chat { margin:1rem 0; padding:.6rem; width:100%; border:1px solid var(--cp-line); border-radius:9px; color:var(--cp-indigo); background:var(--cp-indigo-soft); overflow-wrap:anywhere; }
+.shopping-app .welcome .text-button { display:block; font-size:.7rem; margin:.8rem 0; color:var(--cp-muted); }
+.shopping-app .message { max-width:94%; line-height:1.95; font-size:.88rem; box-shadow:none; }
+.shopping-app .message.user { background:#eeedf8; border-color:#dfdcee; }.shopping-app .message.assistant { background:#f5f7f3; }
+.reply-options { display:flex; flex-wrap:wrap; gap:.45rem; margin-top:.85rem; }
+.reply-options button { padding:.45rem .7rem; min-height:40px; border:1px solid #9692bd; border-radius:10px; color:#39357e; background:white; font-size:.78rem; }
+.reply-options button:disabled { opacity:.6; }
+.shopping-app .composer { flex:none; margin:.5rem 1rem max(.7rem,env(safe-area-inset-bottom)); padding:.5rem; border:1px solid #aebcad; border-radius:16px; box-shadow:0 5px 16px #24332f08; }
+.shopping-app .composer textarea { min-height:40px; max-height:min(112px,22dvh); padding:.25rem .4rem; font-size:.88rem; overflow-y:auto; resize:none; }
+.shopping-app .composer-actions { direction:rtl; gap:.4rem; }.composer-actions small { color:var(--cp-muted); font-size:.62rem; margin-inline-end:auto; }
+.shopping-app .send-button { background:#4b46a5; color:#fff; }.shopping-app .send-button:disabled { opacity:.55; }
+.upload-control { position:relative; overflow:hidden; }.upload-control input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; }.upload-control:focus-within { outline:2px solid var(--cp-indigo); }
+.jump-latest { position:absolute; bottom:160px; align-self:center; z-index:2; background:white; color:var(--cp-indigo); border:1px solid #aaa4d5; border-radius:20px; padding:.35rem 1rem; box-shadow:0 3px 12px #0001; }
+.shopping-app .choice-desk { min-height:0; overflow-y:auto; padding:clamp(1.1rem,3vw,2.5rem); background:var(--cp-paper); }
+.desk-intro { margin:.2rem 0 1.8rem; }.desk-intro h2 { font-size:clamp(1.1rem,2vw,1.6rem); margin:.5rem 0; line-height:1.65; }.desk-intro p:last-child { color:var(--cp-muted); font-size:.82rem; line-height:1.9; max-width:35rem; }
+.journey-steps { list-style:none; padding:0; margin:1.3rem 0; display:grid; gap:1.3rem; }.journey-steps li { display:flex; align-items:start; gap:.8rem; }.journey-steps li > span { display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:50%; border:1px solid #c8d5ca; background:#e9eee7; color:#25675b; font-size:.85rem; }.journey-steps h3 { font-size:.88rem; margin:.1rem 0 .35rem; }.journey-steps p { color:var(--cp-muted); margin:0; font-size:.76rem; }
+.shopping-app .brief-ribbon { padding:1rem; box-shadow:none; border-radius:14px; }.shopping-app .brief-actions { position:static; margin-top:.8rem; flex-wrap:wrap; font-size:.75rem; }.shopping-app .brief-ribbon .overline { font-size:.68rem; }
+.optional-tools { margin:1rem 0; font-size:.78rem; color:var(--cp-muted); }.optional-tools summary { cursor:pointer; }
+.shopping-app .personal-page { flex:1; min-height:0; overflow-y:auto; width:100%; margin:0 auto; padding:1rem; }
+.history-drawer { margin:0 0 0 auto; width:min(440px,100%); max-width:100%; height:100dvh; max-height:100dvh; padding:1.1rem; border:0; border-inline-start:1px solid #ccd3ca; color:#24332f; background:#faf9f6; overflow-y:auto; }
+.history-drawer::backdrop { background:#172b2570; }.history-drawer header { display:flex; justify-content:space-between; align-items:center; }.history-drawer h2 { font-size:1.1rem; }.history-drawer p { font-size:.78rem; color:#59645f; line-height:1.9; }.history-drawer button { font:inherit; min-height:42px; padding:.4rem .7rem; border:1px solid #c5ccbf; border-radius:9px; color:#334b41; background:white; cursor:pointer; }
+.history-drawer label { display:grid; gap:.4rem; margin:1.2rem 0; font-size:.78rem; }.history-drawer input { padding:.7rem; border:1px solid #adb9ab; border-radius:9px; min-width:0; font:inherit; }
+.history-drawer ul { list-style:none; padding:0; }.history-drawer li { display:flex; align-items:center; gap:.3rem; border-bottom:1px solid #e1e5dc; padding:.4rem 0; }.history-drawer .history-open { border:0; background:transparent; flex:1; min-width:0; text-align:right; overflow-wrap:anywhere; }.history-open time { display:block; color:#59645f; font-size:.65rem; margin-top:.3rem; }.history-drawer .danger-link { color:#9c302b; margin-top:1rem; }.delete-confirm { padding:.8rem; border:1px solid #c88b7d; border-radius:10px; margin:1rem 0; }.delete-confirm button { margin:.2rem; }
+@container shopping (max-width:860px) {
+  .shopping-app .copilot-utility { padding:.35rem .5rem; gap:.1rem; }.shopping-app .copilot-utility button { font-size:.67rem; padding:.3rem .4rem; }.shopping-app .copilot-utility .wordmark { font-size:.95rem; }.wordmark span { display:none; }.shopping-app .copilot-utility a { font-size:.65rem; }
+  .shopping-app .copilot-shell { display:flex; flex-direction:column; }
+  .shopping-app .conversation-pane, .shopping-app .choice-desk { display:none; min-height:0; height:auto; }
+  .shopping-app .conversation-pane.mobile-active { display:flex; flex:1; }
+  .shopping-app .choice-desk.mobile-active { display:block; flex:1; padding:1rem; }
+  .shopping-app .mobile-switcher { position:static; flex:none; height:auto; display:flex; padding:.25rem .5rem max(.25rem,env(safe-area-inset-bottom)); background:#faf9f6; }.shopping-app .mobile-switcher button { flex:1; min-height:38px; font-size:.75rem; }
+  .shopping-app .copilot-heading { padding:.7rem .8rem .3rem; }.shopping-app .overline { font-size:.62rem; }.provider-strip { padding:.2rem .8rem .45rem; }
+  .shopping-app .thread { padding:.8rem; }.shopping-app .composer { margin:.35rem .65rem .45rem; }.category-grid { gap:.45rem; }.category-grid button { padding:.75rem .2rem; }.category-grid span { font-size:.7rem; }
+  .shopping-app .message { font-size:.82rem; }.shopping-app .brief-form { grid-template-columns:1fr; }.shopping-app .copilot-error { font-size:.72rem; margin:.2rem .65rem; }
+}
+@container shopping (max-height:550px) { .shopping-app .overline { display:none; }.shopping-app .copilot-heading { padding:.25rem .7rem; }.shopping-app .provider-strip { padding:.15rem .7rem; }.shopping-app .composer textarea { max-height:60px; min-height:32px; }.shopping-app .composer { margin:.25rem .6rem; }.composer-actions small { display:none; } }
+@media(prefers-reduced-motion:reduce) { .shopping-app *, .shopping-app *::before, .shopping-app *::after { scroll-behavior:auto; transition:none; animation:none; }.category-grid button:hover { transform:none; } }

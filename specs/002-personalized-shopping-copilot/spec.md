@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-15
 
-**Status**: Phase 12 provider-neutral conversational path T078–T085 authorized; independent/stubbed work proceeds while live generation remains separately gated
+**Status**: Bounded UX redesign T086–T092 authorized; local verification and product-lead visual review remain distinct from live/provider/public-release gates
 
 **Input**: تبدیل Beforebuy از پرسش‌نامهٔ تلفن به دستیار گفت‌وگومحور چنددسته‌ای با پژوهش محدود، میز انتخاب، حافظهٔ opt-in و credential مجزای provider متعلق به کاربر.
 
@@ -109,6 +109,13 @@
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
+- **FR-082**: Authorized UX cutover MUST make `/` and `/copilot` conversational entry points, auto-create on first message, and preserve `/legacy` plus existing `/?analysis=` and history links without changing legacy data/API.
+- **FR-083**: Concept 2 MUST use warm neutral surfaces, restrained indigo/teal, self-hosted Persian typography, right-hand conversation and progressive left-hand need/candidates/comparison/offers. Category shortcuts are prompts, not coverage claims. Independent thread scrolling MUST keep composer/stop reachable at 1440×900, 1280×720, 390×844, 360×640, reduced height and 200% zoom; auto-follow only near bottom.
+- **FR-084**: Optional 2–5 server-owned reply actions MUST bind conversation, final question message and brief revision, use normal message/idempotency submission, show the answer and reject stale/foreign actions. Free text remains available; actions never trigger research or purchases.
+- **FR-085**: Explicit single-amount budget statements MUST retain user-reported attribution separately from confirmation. Conflicting amounts MUST remain proposals until confirmed/corrected in chat. `۱۵ میلیون ریال` after `بودجه‌ام ۱۵ میلیون تومان است` MUST propose 1,500,000 toman while retaining 15,000,000; 10 rial = 1 toman. This bounded parser is not general language understanding.
+- **FR-086**: History MUST support loaded-title search, dates, pagination, new/open/delete/clear with confirmation and lifecycle disclosure. Switching MUST detach subscriptions/timers and guard late responses; drafts, scroll and research state are conversation-scoped. Credentials/independent preferences remain unchanged.
+- **FR-087**: Mode/provider/model/credential labels MUST use backend state, not imply validation from storage. No provider call, credential change, research activation or public deployment is authorized. Verification MUST include real NGINX journeys, screenshot inspection, accessibility and preserved legacy access; physical-device limitations remain explicit.
 
 - **FR-076**: OpenAI exclusivity is withdrawn. Runtime MUST select one explicit documented provider/model without
   arbitrary base URLs, hidden fallback or provider-routing framework. OpenAI remains optional only where officially

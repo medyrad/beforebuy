@@ -10,6 +10,7 @@ interface AnalysisOptions {
 }
 
 export async function completeAnalysis(page: Page, options: AnalysisOptions = {}) {
+  if (await page.getByRole('heading', { name: 'برای چه خریدی کمکت کنم؟' }).count()) await page.goto('/legacy')
   const product = options.product ?? 'مدل نمونه X 256GB'
   await page.getByRole('button', { name: 'خریدم را بررسی کن' }).click()
   await page.getByRole('textbox', { name: /چه تلفنی/ }).fill(product)

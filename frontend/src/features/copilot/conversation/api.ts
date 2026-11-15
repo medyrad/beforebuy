@@ -1,4 +1,4 @@
-import type { Brief, Conversation, ConversationSummary, Operation, ResearchJob, Upload } from './types'
+import type { Answer, Brief, Conversation, ConversationSummary, Operation, ResearchJob, Upload } from './types'
 
 export class CopilotApiError extends Error {
   constructor(public status: number, public code: string, message: string) { super(message) }
@@ -25,7 +25,8 @@ export async function call<T>(path: string, init: RequestInit = {}): Promise<T> 
 
 export const copilotApi = {
   bootstrap: () => call<{ expires_at: string }>('/api/v1/session'),
-  list: () => call<{ items: ConversationSummary[]; next_cursor: string | null }>('/api/v1/conversations?limit=50'),
+  list: (cursor?: string) => call<{ items: ConversationSummary[]; next_cursor: string | null }>(`/api/v1/conversations?limit=50${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`),
+  clear: () => call<void>('/api/v1/conversations', { method: 'DELETE' }),
   create: (temporary = false) => call<Conversation>('/api/v1/conversations', { method: 'POST', body: JSON.stringify({ temporary }) }),
   get: (id: string) => call<Conversation>(`/api/v1/conversations/${id}`),
   remove: (id: string) => call<void>(`/api/v1/conversations/${id}`, { method: 'DELETE' }),
@@ -35,9 +36,9 @@ export const copilotApi = {
   confirmBrief: (id: string, expectedRevision: number) => call<Brief>(`/api/v1/conversations/${id}/brief/confirm`, {
     method: 'POST', body: JSON.stringify({ expected_revision: expectedRevision }),
   }),
-  send: (id: string, text: string, revision: number, uploadIds: string[], key: string) => call<{ operation: Operation; message_id: string; events_url: string }>(`/api/v1/conversations/${id}/messages`, {
+  send: (id: string, text: string, revision: number, uploadIds: string[], key: string, answer?: Answer) => call<{ operation: Operation; message_id: string; events_url: string }>(`/api/v1/conversations/${id}/messages`, {
     method: 'POST', headers: { 'Idempotency-Key': key },
-    body: JSON.stringify({ text, expected_brief_revision: revision, upload_ids: uploadIds }),
+    body: JSON.stringify({ text, expected_brief_revision: revision, upload_ids: uploadIds, ...(answer ? { answer } : {}) }),
   }),
   cancel: (id: string) => call<Operation>(`/api/v1/operations/${id}/cancel`, { method: 'POST', body: '{}' }),
   operation: (id: string) => call<Operation>(`/api/v1/operations/${id}`),

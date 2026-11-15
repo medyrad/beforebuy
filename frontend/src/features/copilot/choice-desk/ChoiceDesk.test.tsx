@@ -18,7 +18,7 @@ beforeEach(() => {
 it('labels template and historical evidence, preserves unknown cost and exposes source disclosure', async () => {
   const user = userEvent.setup(); render(<ChoiceDesk conversation={conversation} />)
   expect(await screen.findByText('اطلاعات برای تصمیم قطعی کافی نیست')).toBeInTheDocument()
-  expect(screen.getByText(/پاسخ قالبی و قطعی/)).toBeInTheDocument()
+  expect(screen.getByText(/مقایسه بر اساس نیاز تأییدشده و شواهد موجود/)).toBeInTheDocument()
   expect(screen.getAllByText(/هزینهٔ نهایی/).length).toBeGreaterThan(0)
   expect(screen.getByText(/جایگزین پشتیبانی‌شده‌ای/)).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: /شواهد و منابع/ }))
@@ -34,7 +34,7 @@ it('invalidates an old comparison immediately after a brief edit and never shows
   rerender(<ChoiceDesk conversation={{ ...conversation, brief_revision: 2, brief: { ...conversation.brief, confirmed: false } }} />)
   expect(screen.getByRole('status')).toHaveTextContent('مقایسهٔ قبلی معتبر نیست')
   expect(screen.queryByText('اطلاعات برای تصمیم قطعی کافی نیست')).not.toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'ساخت مقایسه' })).toBeDisabled()
+  expect(screen.queryByRole('button', { name: 'ساخت مقایسه' })).not.toBeInTheDocument()
 })
 
 it('discards a comparison response arriving after a consequential edit', async () => {

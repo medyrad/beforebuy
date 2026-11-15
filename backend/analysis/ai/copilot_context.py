@@ -43,6 +43,7 @@ def assemble_context(operation_id):
         'contradictions': deepcopy(brief.contradictions),
         'comparison': deepcopy(brief.comparison),
         'confirmed': brief.confirmed,
+        'conversation_state': deepcopy(brief.conversation_state),
     }
     core = {'current_message': operation.user_message.text if operation.user_message else '', 'brief': brief_data}
     if len(_encoded(core)) > getattr(settings, 'COPILOT_CONTEXT_CRITICAL_BYTES', 32768):

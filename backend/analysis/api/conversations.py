@@ -39,6 +39,15 @@ def error(code, message, status_code, **extra):
 
 
 class ConversationListCreateView(CsrfProtectedAPIView):
+    @transaction.atomic
+    def delete(self, request):
+        guest = get_or_create_guest(request)
+        from analysis.models import GuestContext
+        GuestContext.objects.select_for_update().get(id=guest.id)
+        for item in Conversation.objects.select_for_update().filter(guest_context=guest).order_by('id'):
+            item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def get(self, request):
         guest = get_or_create_guest(request)
         try:
@@ -108,6 +117,7 @@ class BriefView(CsrfProtectedAPIView):
         brief = ShoppingBrief.objects.select_for_update().get(conversation=conversation)
         for key, value in changes.items():
             setattr(brief, key, value)
+        brief.conversation_state = {}
         if "unknowns" not in changes:
             standard = {
                 "مخاطب خرید": brief.recipient_context is None,
@@ -164,7 +174,11 @@ class MessageSubmitView(CsrfProtectedAPIView):
         text = str(request.data.get("text", "")).strip()
         upload_ids = request.data.get("upload_ids", [])
         expected = request.data.get("expected_brief_revision")
-        if not re.fullmatch(r"[A-Za-z0-9._:-]{16,128}", key) or not text or len(text) > 8000 or not isinstance(upload_ids, list) or len(upload_ids) > 3 or not isinstance(expected, int):
+        answer = request.data.get('answer')
+        if answer is not None and (not isinstance(answer, dict) or set(answer) != {'question_id', 'action_id', 'revision'}
+                                   or type(answer.get('revision')) is not int):
+            return error('INVALID_ANSWER', 'پاسخ انتخابی نامعتبر است.', 422)
+        if not re.fullmatch(r"[A-Za-z0-9._:-]{16,128}", key) or not text or len(text) > 8000 or not isinstance(upload_ids, list) or len(upload_ids) > 3 or type(expected) is not int:
             return error("VALIDATION_ERROR", "پیام، کلید idempotency یا revision نامعتبر است.", 422)
         try:
             upload_ids = [uuid.UUID(str(value)) for value in upload_ids]
@@ -173,7 +187,7 @@ class MessageSubmitView(CsrfProtectedAPIView):
         conversation = active_conversation(guest, conversation_id)
         existing = StreamOperation.objects.filter(conversation=conversation, idempotency_key=key).first()
         if existing:
-            request_hash = canonical_request_hash(text, upload_ids, expected)
+            request_hash = canonical_request_hash(text, upload_ids, expected, answer)
             if existing.request_hash != request_hash:
                 return error("IDEMPOTENCY_CONFLICT", "این کلید برای درخواست دیگری استفاده شده است.", 409)
             return Response({
@@ -188,7 +202,7 @@ class MessageSubmitView(CsrfProtectedAPIView):
             with transaction.atomic():
                 operation, replay = accept_message(
                     conversation_id=conversation_id, guest=guest, text=text, upload_ids=upload_ids,
-                    expected_revision=expected, idempotency_key=key,
+                    expected_revision=expected, idempotency_key=key, answer=answer,
                 )
                 if not replay:
                     transaction.on_commit(lambda operation_id=operation.id: submit_reserved(operation_id))
