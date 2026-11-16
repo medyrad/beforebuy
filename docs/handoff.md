@@ -1,3 +1,66 @@
+# T101 — بررسی نخستین مکالمهٔ واقعی — 2026-11-16
+
+Baseline: `c09f5f6893b7809324da22acd2d636924e0c480b`؛ شاخهٔ موجود `002-personalized-shopping-copilot`.
+
+**Real conversation blocked — صلاحیت مسیر دقیق Baidu/OpenRouter برای حساب، backend و کاربران ایران هنوز مستند نشده است.**
+
+این checkpoint صرفاً وضعیت واقعی و مسیر ورود را بررسی کرد؛ اتصال فنی T096 دوباره ساخته نشد و T101/T039 تکمیل نیستند.
+
+## وضعیت مشاهده‌شده، نه فرض فعال‌سازی
+
+| پیش‌نیاز | نتیجهٔ بررسی این checkpoint |
+|---|---|
+| صلاحیت خدمت/مسیر | حل‌نشده؛ هر دو پرچم runtime برابر false و مرجع خالی است. همان ابهام مستند در `free-provider-readiness.md`؛ ممنوعیت قطعی استنباط نشد. |
+| کلید محلی OpenRouter | موجود نیست: query فقط metadata نشان داد جدول ProviderCredential هیچ ردیفی ندارد؛ هیچ کلید یا ciphertext خوانده/رمزگشایی نشد. |
+| رضایت صریح ساختگی | ثبت نشده: همهٔ settings بررسی‌شده false؛ checkbox مرورگر جدا نیز unchecked. اقدامی به‌جای کاربر تأیید نشد. |
+| قیمت جاری | `current_prices()` داخل API با GET عمومی بدون Authorization از endpoint رسمی همان مدل پاسخ200 و `prompt=0, completion=0, discount=0` گرفت؛ مدل `baidu/ernie-5.5-flash-preview:free` و route `baidu`. این قیمت مستند است، نه هزینهٔ برگشتی مدل یا تضمین صورتحساب. |
+| سهمیهٔ پایدار | جدول شمارنده هنوز ردیفی ندارد و AIInvocation برای OpenRouter صفر است؛ مطابق قرارداد اولیه، **۱۰ از ۱۰ تلاش باقی است**. هیچ reset انجام نشد. |
+
+تنظیمات ذخیره‌شدهٔ مالکان مختلف پیش از مرورگر جدا، ۲ OpenRouter، ۷۴ GapGPT و ۴۳ OpenAI بود؛ این aggregate
+انتخاب نشست شخصی کاربر را ثابت نمی‌کند. مسیر آزمایش در مرورگر تازه صریحاً OpenRouter انتخاب شد؛ نشست کاربر تغییر نکرد.
+runtime همچنان `COPILOT_AI_MODE=mock` و `BEFOREBUY_RESEARCH_MODE=OFFLINE`؛ mount اصلی
+`/run/secrets/copilot_master_keyring` در API موجود است و secret-overlay بدون تغییر باقی ماند.
+
+## بررسی مسیر کاربر و نتیجهٔ واقعی
+
+- Docker daemon نسخه28.1.1 پاسخ داد؛ db/api/web running و healthy؛ صفحهٔ اصلی HTTP200.
+- Chrome واقعی از طریق Playwright و NGINX موجود: `/` → «تنظیمات دستیار» → OpenRouter؛
+  فرم کلید، توضیح حل‌نشدن صلاحیت، پیام «کلیدی ذخیره نشده» و دکمهٔ قابل‌مشاهدهٔ «آزمایش رایگان» تأیید شدند.
+  دکمه بدون کلید/رضایت disabled بود. هیچ ذخیرهٔ کلید، رضایت، generation یا market request انجام نشد.
+- اولین اجرای مرورگر به‌دلیل نبود bundled Chromium اجرا نشد؛ با Chrome نصب‌شده، مطابق config موجود پروژه،
+  بررسی بالا موفق شد. هیچ browser/tool تازه نصب نشد. query اولیهٔ aggregate از `id` ناموجود استفاده کرد؛
+  با `pk` اصلاح و خواندن metadata موفق شد؛ این خطای فرمان بررسی بود، نه خطای برنامه.
+- فضای آزاد هنگام بررسی377MiB بود؛ هیچ build، restart، migration، پاک‌سازی یا اجرای مجدد suiteهای تاریخی انجام نشد.
+  تغییر فقط مستندی است؛ defect تازه‌ای در مسیر بررسی‌شده ثابت نشد تا correction/analyze/implement جدید لازم باشد.
+- تماس واقعی مدل **۰**، مصرف تلاش **۰**؛ usage، latency تولید و هزینهٔ برگشتی **وجود ندارند**.
+  گفتگوهای A/B اجرا نشدند؛ کیفیت پاسخ فارسی، حفظ بودجه/اولویت و سودمندی واقعی **ارزیابی نشده‌اند**.
+  پاسخ قالب محلی یا موفقیت GET قیمت به‌عنوان پاسخ مدل شمرده نشد.
+
+## یک اقدام فعلی برای رفع نخستین مانع
+
+همان پرسش آماده را به پشتیبانی OpenRouter بدهید و پاسخ قابل‌استناد را ارائه کنید؛ از طرف شما ارسال نشده است:
+
+> May an Iran-resident account with Iran-hosted backend and Iranian end users use `baidu/ernie-5.5-flash-preview:free` pinned to `baidu` through OpenRouter, and which channel-specific regional-access and prompt-retention/training terms govern that exact route?
+
+پس از روشن‌شدن صلاحیت و ثبت مستند آن، مسیر موجود ورود این است:
+`http://127.0.0.1:58080/` → «تنظیمات دستیار» → OpenRouter → ورود کلید فقط در فرم محلی →
+«ذخیرهٔ کلید» → خواندن افشا/تأیید رضایت ساختگی → «آزمایش رایگان».
+موفقیت واقعی آزمایش یک تلاش مصرف و خودکار گفتگوی موقت پایلوت را باز می‌کند؛ نشان پایلوت آن را از گفتگوهای mock جدا می‌کند.
+**اکنون هیچ گفتگوی واقعی ساخته نشده و لینک/شناسهٔ گفتگوی واقعی برای بازکردن وجود ندارد.**
+پس از بازشدن، سه پیام گوشی/بودجه۱۵میلیون/دوربین‌وباتری و سپس سناریوی جارو رباتیک باید با همان allowance باقی‌مانده
+آزموده و پاسخ‌ها انسانی بررسی شوند؛ هیچ تغییری به eligibility صرفاً با داشتن کلید یا HTTP200 مجاز نیست.
+
+فرمان startup قبلی بدون تغییر:
+
+```sh
+COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
+```
+
+تغییر این checkpoint فقط همین گزارش و یادداشت T101 است؛ تصاویر قدیمی، volumeها، backupها و credentialها دست‌نخورده‌اند.
+hash commit و تأیید remote در پاسخ تحویل ثبت می‌شود. این وضعیت هیچ ادعای پوشش بازار زنده یا آمادگی production ندارد.
+
+---
+
 # T096 — اتصال فنی OpenRouter و آزمایش رایگان محدود — 2026-11-16
 
 Baseline: `122226250f3066d267b1b26cb34f4ef2cd9ac46b`؛ شاخهٔ موجود `002-personalized-shopping-copilot`.

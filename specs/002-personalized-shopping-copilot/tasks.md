@@ -174,6 +174,7 @@ quality, account model access and live market coverage remain unevaluated.
 - [x] T095 [US4] Compare OpenRouter/Groq official free API terms/quotas/eligibility, record blockers and onboarding requirements; verify affected UI and update handoff (FR-089). Live integration stays pending without an eligible contract.
 - [x] T096 [US4] Implement independent OpenRouter encrypted credentials/settings, fixed Baidu free streaming adapter, synthetic pilot and durable ten-attempt/zero-price controls; unresolved activation gates do not block implementation (FR-092). Verified: 15 dedicated backend checks, related regressions, 21 frontend checks and four real NGINX settings journeys. Technical integration only; live activation/evaluation remains T101.
 - [ ] T101 [US4] Run an actual eligible, consented OpenRouter free pilot after a local key and explicit action; record provider/usage/cost and Persian multi-turn/non-phone evidence separately from T096 technical completion.
+  Checkpoint 2026-11-16 (baseline c09f5f6): existing NGINX homepage/settings journey inspected in isolated Chrome; action visible and safely disabled without key/consent. Runtime eligibility remains unresolved/false, no OpenRouter credential or recorded consent, public exact-route pricing rechecked zero, zero invocations and ten attempts remaining. No model generation or response-quality assessment; see current handoff. No requirements/implementation change.
 
 ## Bounded free-route feasibility and native typography (2026-11-16)
 
