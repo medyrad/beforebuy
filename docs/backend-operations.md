@@ -1,5 +1,45 @@
 # عملیات backend و بستهٔ production تا M4
 
+## Real-market checkpoint — manual fallback (2026-11-16)
+
+Local startup remains:
+
+```sh
+COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
+```
+
+No key generation/replacement, AI calls or source activation is required for manual offers.
+Homepage `http://127.0.0.1:58080/` → create/open a conversation → confirm need → Choice Desk →
+«ثبت پیشنهادی که خودم دیده‌ام». Enter actual observed product/variant, seller, HTTPS source, original price/unit,
+stock, claimed time and known fees. Blank fees stay unknown. Add another merchant only after explicitly
+confirming the same variant; different/uncertain variants stay separate. Every manual observation retains
+«واردشده توسط کاربر؛ مستقلاً تأیید نشده». Lowest price is conditional, not a technical recommendation.
+No automatic fetch, delivery/return guarantee or supported alternative is created from this form.
+
+Migration0019 adds model choices only (`sqlmigrate`: two no-op operations); applied successfully.
+Pre-migration restricted logical backup: `/Users/mehdi/Backups/beforebuy/market-checkpoint-KHiSbC/beforebuy.dump`
+(parent0700/file0600); `pg_restore --list` passed. Readability only, not a fresh restore rehearsal.
+Source volume remains `beforebuy_beforebuy_pgdata_v18` mounted at `/var/lib/postgresql`.
+Rollback application to the preceding image/code while retaining data and choice metadata. If data restore
+is ever required, stop writes, restore into a NEW named volume, verify ownership/accounting and only then
+cut over; never overwrite/delete the source volume or reset AI allowances. Backup remains outside Git/Trash.
+
+Fresh source ledger and limits are in `specs/002-personalized-shopping-copilot/source-feasibility.md`.
+AI stays mock and normal research OFFLINE; test entries have synthetic names/domains, not market evidence.
+Live crawling T066, actual AI/human review T039/T101 and public-release prerequisites remain open.
+
+Focused verification from repository root (no provider or merchant calls):
+
+```sh
+docker compose exec -T -w /app/backend api python manage.py test tests.api.test_manual_offers tests.api.test_choice_desk tests.unit.test_copilot_ranking tests.unit.test_ranking_invariants tests.api.test_research_api tests.integration.test_research_pipeline tests.integration.test_research_concurrency tests.unit.test_variant_identity tests.unit.test_extractors --settings=config.settings.test --keepdb --verbosity 1
+cd frontend
+npm test -- --maxWorkers=1 --testTimeout=30000 src/features/copilot/choice-desk/ManualOffers.test.tsx src/features/copilot/choice-desk/ChoiceDesk.test.tsx src/features/copilot/conversation/CopilotApp.test.tsx
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080 npm run test:e2e -- copilot-manual-offers.spec.ts
+```
+
+Browser verification uses existing installed Chrome and isolated guest sessions. Reloading the homepage
+does not automatically open a conversation: use «ادامهٔ گفت‌وگو» or history before inspecting persisted offers.
+
 ## T096 OpenRouter free synthetic pilot
 
 Technical integration is installed independently of activation. Local UI:

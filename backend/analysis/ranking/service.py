@@ -14,9 +14,9 @@ def candidates_for(conversation, variant_ids=None):
     def entry(variant):
         return values.setdefault(str(variant.id), {'id': str(variant.id), 'name': variant.product.model_name,
             'product_id': str(variant.product_id), 'category': variant.attributes.get('category', 'UNKNOWN'),
-            'facts': {}, 'offers': [], 'sources': []})
+            'identity': variant.attributes, 'facts': {}, 'offers': [], 'sources': []})
     def source(s):
-        label = 'SYNTHETIC' if s.extractor_version in {'SYNTHETIC-v1', 'CHOICE-DEMO-v1'} else 'CAPTURED_FIXTURE' if s.fixture_label else 'VERIFIED_SOURCE'
+        label = 'USER_REPORTED' if s.extractor_version == 'USER-ENTRY-v1' else 'SYNTHETIC' if s.extractor_version in {'SYNTHETIC-v1', 'CHOICE-DEMO-v1'} else 'CAPTURED_FIXTURE' if s.fixture_label else 'VERIFIED_SOURCE'
         until = s.retrieval_time + timedelta(seconds=s.source_policy.freshness_seconds)
         return {'id': str(s.id), 'attribution': label, 'url': s.canonical_url,
                 'label': s.fixture_label or s.source_policy.hostname, 'observed_at': s.retrieval_time.isoformat(),
@@ -42,7 +42,24 @@ def candidates_for(conversation, variant_ids=None):
             'shipping': offer.shipping_minor, 'mandatory': offer.mandatory_charges_minor,
             'stock': offer.availability, 'fresh': s['fresh'], 'source_id': s['id'], 'attribution': s['attribution'],
             'observation_kind': offer.observation_kind, 'url': offer.merchant_url or s['url'],
+            'original_amount': offer.item_price_minor, 'original_currency': offer.currency,
+            'entered_at': snapshot_map[offer.snapshot_id].created_at.isoformat(),
+            'total': offer.total_payable_minor, 'warranty': offer.warranty,
             'observed_at': offer.observed_at.isoformat()})
+    for item in values.values():
+        unique, merchant_values = {}, {}
+        for offer in sorted(item['offers'], key=lambda o: (o['observed_at'], o['id']), reverse=True):
+            seller = ' '.join((offer['seller'] or '').translate(str.maketrans('يك', 'یک')).split()).casefold()
+            # Missing merchant identity must never collapse unrelated observations.
+            seller = seller or offer['id']
+            state = (offer['price'], offer['shipping'], offer['mandatory'], offer['stock'])
+            key = (seller, state, offer['attribution'])
+            unique.setdefault(key, offer)
+            if offer['fresh']:
+                merchant_values.setdefault(seller, set()).add(state)
+        for (seller, _, _), offer in unique.items():
+            offer['conflicting'] = len(merchant_values.get(seller, set())) > 1
+        item['offers'] = list(unique.values())
     return sorted(values.values(), key=lambda item: item['id'])
 
 

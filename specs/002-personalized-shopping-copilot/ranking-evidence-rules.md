@@ -55,6 +55,18 @@ Review/editorial/merchant rating types remain separate and retain source/sample/
 
 ## Phase 9.2 offer-view ordering (not product ranking)
 
+### Real-market checkpoint manual boundary
+
+Choice Desk adds a price-only view for USER_REPORTED observations, never admissible technical facts or
+ranked purchase recommendations. Unknown variant attributes stay visible; grouping is conditional on explicit
+user confirmation, not verified identity. Freshness is six hours from claimed observation, not server entry.
+Lowest-item and lowest-complete-total summaries exclude stale, out-of-stock, unknown-stock and conflicting offers.
+All observations remain visible with their provenance, original unit, unknown fees and both timestamps.
+Choice candidates deduplicate normalized seller + item/shipping/mandatory/stock + provenance, retaining the
+latest observation and all raw snapshots. Distinct fresh states for the same merchant flag a conflict.
+No cross-provenance promotion, merchant reputation, discount, delivery/return fact or alternative is inferred.
+Existing Phase9.2 research-response view below remains separate; its ordering is not a technical recommendation.
+
 - فقط offerهای یک `Variant` compatible در یک گروه قابل مقایسه‌اند؛ merchant SKU شناسهٔ cross-store نیست.
 - ترتیب پیش‌فرض: `price_toman` معلوم صعودی، سپس seller normalized، observation time و UUID. قیمت نامعلوم بعد از قیمت معلوم است.
 - same variant + normalized seller + same `price_toman` در view یکی می‌شود و `MERCHANT_PAGE_VERIFIED` بر `COMPARISON_OBSERVED` ترجیح نمایشی دارد؛ observation خام و اختلاف قیمت حذف نمی‌شود.

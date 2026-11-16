@@ -47,6 +47,20 @@ describe('Copilot milestone A shell', () => {
     }))
   })
 
+  it('keeps explicit need editing available when mock parsing found no budget or category', async () => {
+    const original = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      if (String(input).endsWith(`/conversations/${conversation.id}`)) return new Response(JSON.stringify({
+        ...conversation, brief: { ...conversation.brief, budget_toman: null, category: null, confirmed: false },
+      }))
+      return original(input, init)
+    })
+    const user = userEvent.setup(); render(<CopilotApp />)
+    await user.click(await screen.findByRole('button', { name: /ادامهٔ گفت‌وگو/ }))
+    await user.click(await screen.findByRole('button', { name: 'اصلاح نیاز خرید' }))
+    expect(screen.getByLabelText('سقف بودجه (تومان)')).toBeVisible()
+  })
+
   it('reconciles a stop racing with an already completed operation', async () => {
     const original = vi.mocked(fetch).getMockImplementation()!
     vi.mocked(fetch).mockImplementation(async (input, init) => {
@@ -225,7 +239,7 @@ describe('Copilot milestone A shell', () => {
         id: 'job-1', conversation_id: conversation.id, operation_id: 'research-op', mode: 'LIVE', fixture_labeled: false,
         status: 'SUCCESS', stage: 'COMPLETED', completed: 1, total: 1, request_count: 1, decoded_bytes: 1000, wire_bytes: 800, redirect_count: 0,
         targets: [{ source_id: 'takkalaban.com', url: 'https://takkalaban.com/product/philips-na230/' }], brief_revision: 0, current_for_brief: true,
-        coverage: { extracted: ['takkalaban.com'], blocked: [], failed: [], mode: 'LIVE' }, limits: {}, snapshots: [],
+        coverage: { extracted: ['takkalaban.com'], blocked: [], failed: [{ source_id: 'torob.com', code: 'HTTP_STATUS' }], mode: 'LIVE' }, limits: {}, snapshots: [],
         offers: [{ id: 'offer-1', variant_id: 'variant-1', product_name: 'Philips NA230', seller: 'Takkalaban', source_name: 'takkalaban.com',
           source_url: 'https://takkalaban.com/product/philips-na230/', merchant_url: 'https://takkalaban.com/product/philips-na230/', item_price: 239900000,
           source_currency: 'IRR', price_toman: 23990000, shipping_toman: null, mandatory_charges_toman: null, total_payable_toman: null,
@@ -249,5 +263,6 @@ describe('Copilot milestone A shell', () => {
     expect(screen.getByText('۲۳٬۹۹۰٬۰۰۰ تومان')).toBeInTheDocument()
     expect(screen.getByText(/هزینهٔ ارسال و مبلغ نهایی نامعلوم/)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'مشاهده منبع' })).toHaveAttribute('href', 'https://takkalaban.com/product/philips-na230/')
+    expect(screen.getByText(/اطلاعات این منبع در دسترس نیست؛ پیشنهادهای موفق حفظ شده‌اند/)).toBeInTheDocument()
   })
 })

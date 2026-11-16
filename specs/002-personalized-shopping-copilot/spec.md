@@ -108,6 +108,12 @@
 
 ## Requirements *(mandatory)*
 
+### Real-market checkpoint (supersedes historical phase-only execution restrictions)
+
+- **FR-093**: Attempt one exact reviewed real product through the existing bounded transport and research API; at most 30 outbound attempts including diagnostics/redirects. Attempt a different category only after a successful product journey. No LLM/credential work, source bypass or hidden fixture substitution. Keep T066 pending until its original acceptance evidence exists.
+- **FR-094**: When automated access is blocked, allow owner-scoped manual offers in the existing Choice Desk with the exact label «واردشده توسط کاربر؛ مستقلاً تأیید نشده». Preserve original numeric amount/unit, exact variant descriptor, merchant/source URL, claimed observation time and independent server entry time. Explicit rial/toman conversion; missing price/fees remain null. Reject unsafe links and future timestamps. Require confirmed brief/revision and explicit same-variant confirmation for attaching another offer. Never auto-merge by title/SKU; use an owner-scoped user-entered variant only. Preserve conflicts, deduplicate identical merchant observations in display, label stale/out-of-stock and keep totals separate. User-entered offers never become technical facts or supported recommendations.
+- **FR-095**: Existing homepage/Choice Desk must expose the small manual form, comparable item/complete-total prices, source links and unresolved alternative-evidence explanation without policy administration or fixture steps. Existing explicit need editing must remain reachable even when mock parsing recognized no fields; do not require AI activation. Verify focused PostgreSQL ownership/expiry/revision/provenance/normalization tests and mobile/desktop NGINX journeys; synthetic test inputs must not be reported as real prices. Record actual source request consumption and real-data limitations.
+
 ### Functional Requirements
 
 - **FR-082**: Authorized UX cutover MUST make `/` and `/copilot` conversational entry points, auto-create on first message, and preserve `/legacy` plus existing `/?analysis=` and history links without changing legacy data/API.

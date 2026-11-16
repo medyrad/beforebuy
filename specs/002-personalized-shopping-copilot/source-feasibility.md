@@ -1,5 +1,29 @@
 # Source Feasibility Register
 
+## Fresh bounded checkpoint — 2026-11-16 (UTC)
+
+Target: previously supported Samsung Q60D 55-inch exact product. No new authoritative variant or offer
+was resolved because retrieval failed. Historical prices below are NOT refreshed observations.
+
+| Source URL | UTC attempt start | Observed outcome | Budget units / valid offers |
+|---|---|---|---|
+| https://torob.com/p/bb037069-fba8-4964-a758-6adcec22898f/q60d/ | 09:49:31.356790 and 09:49:33.822001 | public DNS resolved; FETCH `JOB_DEADLINE_EXCEEDED`, no HTTP status | 2 / 0 |
+| https://bkalaa.com/product/na230/ | 09:50:15.350999 | `DNS_ERROR`, no HTTP connection | 1 / 0 |
+| https://takkalaban.com/product/philips-na230/ | 09:50:15.621579 | FETCH `JOB_DEADLINE_EXCEEDED`, no HTTP status | 1 / 0 |
+
+Existing SafeFetcher/policy/address validation used. Torob was accidentally launched twice before the first
+pending result returned; both are counted, and no unchanged failing endpoint was retried after the results.
+The two Philips NA230 merchant checks were fallback diagnostics, not a completed second-category journey.
+**4/30 conservative outbound-budget units** (including DNS failure), zero successful extraction, redirects,
+persisted real offers or real alternatives. Timeout evidence does not distinguish TCP from TLS; neither
+HTTP490 nor parsing/identity failure is asserted for these attempts. An initial secondary diagnostic failed
+locally on a missing argument before network execution; corrected invocation is the one counted above.
+No bypass, system network changes, paid service, provider call or live policy activation. No normal research
+job was run after failed preflight; T066 stays pending. Independent fallback uses user input, not captured prices.
+
+The application now supports user-entered exact links/offers; **no real user observation was supplied in this
+checkpoint**. PostgreSQL/NGINX verification entries are explicitly synthetic and must not be cited as market data.
+
 **Review date:** 2026-11-15  
 **Phase 9 live probes:** 7 HTTP GET، zero retry، zero provider/model call؛ `--noproxy '*'`، redirects ≤2، 2 MiB cap، 20s timeout، user-agent معرفی‌شده. Search/index evidence با direct workspace probe و extraction جداست.  
 **Phase 9.2 policy/feasibility probes before pilot:** 19 controlled outbound requests including redirects، zero retry/provider call. Browser-assisted discovery is reported separately because its internal request count is not observable from the workspace.

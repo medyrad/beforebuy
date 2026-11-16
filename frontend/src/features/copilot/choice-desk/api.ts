@@ -5,7 +5,8 @@ export interface Source {
 }
 export interface Candidate {
   id: string; name: string; category: string; sources: Source[]
-  offers: { id: string; seller: string; price: number | null; shipping: number | null; mandatory: number | null; stock: string; fresh: boolean; attribution: string; source_id: string; url: string | null; observation_kind: string; observed_at: string }[]
+  identity?: Record<string, string>
+  offers: { id: string; seller: string; price: number | null; shipping: number | null; mandatory: number | null; stock: string; fresh: boolean; attribution: string; source_id: string; url: string | null; observation_kind: string; observed_at: string; entered_at?: string; original_amount?: number | null; original_currency?: string; total?: number | null; conflicting?: boolean }[]
 }
 export interface ChoiceItem extends Candidate {
   intended: boolean; group: string; total: number | null; item_price: number | null; cost_state: string
@@ -19,6 +20,7 @@ export interface Choice {
 }
 const path = (id: string) => `/api/v1/conversations/${id}/choices`
 export const choiceApi = {
+  manual: (id: string, data: Record<string, unknown>) => call<{ variant_id: string; offer_id: string; attribution: string }>(path(id) + '/manual-offers', { method: 'POST', body: JSON.stringify(data) }),
   get: (id: string) => call<Choice | null>(path(id)),
   candidates: (id: string) => call<{ items: Candidate[] }>(path(id) + '/candidates'),
   demo: (id: string, revision: number, category: string) => call<{ variant_ids: string[] }>(path(id) + '/demo', { method: 'POST', body: JSON.stringify({ expected_revision: revision, category }) }),

@@ -33,9 +33,9 @@ def serialize_research_job(job):
     visible_offers = {}
     for snapshot in snapshots.select_related("source_policy").prefetch_related("offers__variant__product"):
         fresh_until = snapshot.retrieval_time + timedelta(seconds=snapshot.source_policy.freshness_seconds)
-        state = ("SYNTHETIC" if snapshot.fixture_label and snapshot.extractor_version in {"SYNTHETIC-v1", "CHOICE-DEMO-v1"}
+        state = ("USER_REPORTED" if snapshot.extractor_version == 'USER-ENTRY-v1' else "SYNTHETIC" if snapshot.fixture_label and snapshot.extractor_version in {"SYNTHETIC-v1", "CHOICE-DEMO-v1"}
                  else "CAPTURED_FIXTURE" if snapshot.fixture_label else "CACHE" if snapshot.status == "CACHE_HIT" else "LIVE")
-        if state not in {"SYNTHETIC"} and fresh_until <= now:
+        if state not in {"SYNTHETIC", "USER_REPORTED"} and fresh_until <= now:
             state = "STALE"
         for offer in snapshot.offers.all():
             seller_key = re.sub(r"\s+", " ", (offer.seller or "").strip()).casefold()

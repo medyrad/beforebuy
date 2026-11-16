@@ -1,5 +1,19 @@
 # Data Model
 
+## Manual observations (0019; FR-094)
+
+Existing Product/Variant, StreamOperation, ResearchJob, SourceSnapshot and Offer are reused.
+Migration0019 only adds choices MANUAL / USER_REPORTED; generated SQL is no-op.
+USER-ENTRY-v1 snapshots belong to their conversation and a disabled synthetic source policy,
+not a crawled merchant policy. `retrieval_time`/`Offer.observed_at` hold the user's claimed time;
+snapshot `created_at` is the independent server entry time. No raw bytes or EvidenceClaim exist.
+Offer retains original IRR/TOMAN amount; normalized price, shipping, mandatory charges and total are toman.
+Unknown fees are null, not zero. Exact descriptor is retained in Variant.attributes; a user-reported model
+code is not inserted into authoritative identity resolution. Joining another manual offer requires owner,
+identical descriptor and explicit confirmation; all comparisons remain conditional on that user assertion.
+Guest→Conversation lock, confirmed revision, no retention extension, no network and max100 manual offers.
+Deterministic fingerprint makes identical replay idempotent. Existing expiry/delete cascades apply.
+
 ## T096 OpenRouter boundary (0018)
 
 ProviderCredential permits `openrouter` independently of OpenAI/GapGPT. CopilotSettings stores an explicit

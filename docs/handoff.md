@@ -1,372 +1,66 @@
-# T101 — بررسی نخستین مکالمهٔ واقعی — 2026-11-16
+# تحویل خرید با دادهٔ بازار — 2026-11-16
 
-Baseline: `c09f5f6893b7809324da22acd2d636924e0c480b`؛ شاخهٔ موجود `002-personalized-shopping-copilot`.
+شاخه: `002-personalized-shopping-copilot`؛ baseline: `e6de2fc2b4c497904d1fcd7a91821c83914ed504`.
+گزارش قبلی در `docs/archive/t101-before-market-handoff.md` محفوظ است؛ وضعیت تاریخی کلیدها، وضعیت امروز فرض نشده است.
 
-**Real conversation blocked — صلاحیت مسیر دقیق Baidu/OpenRouter برای حساب، backend و کاربران ایران هنوز مستند نشده است.**
+## نتیجهٔ واقعی
 
-این checkpoint صرفاً وضعیت واقعی و مسیر ورود را بررسی کرد؛ اتصال فنی T096 دوباره ساخته نشد و T101/T039 تکمیل نیستند.
+**استخراج زنده همچنان مسدود است؛ مسیر مقایسهٔ دستی در برنامه پیاده و تأیید شده است.**
+هدف Samsung Q60D 55 بود؛ Torob در دو تلاش هم‌پوشان قبل از دریافت نتیجه timeout داد.
+بررسی محدود جایگزین Philips NA230: Bkalaa خطای DNS و Takkalaban timeout داد؛ محصول دوم وارد مسیر کامل نشد.
+زمان‌های UTC: Torob `09:49:31.356790` و `09:49:33.822001`، Bkalaa `09:50:15.350999`، Takkalaban `09:50:15.621579`.
+کد timeout برابر `JOB_DEADLINE_EXCEEDED` در FETCH، بدون HTTP status؛ تفکیک TCP/TLS از این شاهد ممکن نیست.
+مصرف محافظه‌کارانه **۴ از ۳۰ تلاش**؛ پس از نتیجه، endpoint ناموفق تکرار نشد. جزئیات/لینک‌ها در `source-feasibility.md` همین feature.
+منابع: [Torob Q60D](https://torob.com/p/bb037069-fba8-4964-a758-6adcec22898f/q60d/)،
+[Bkalaa NA230](https://bkalaa.com/product/na230/)، [Takkalaban NA230](https://takkalaban.com/product/philips-na230/).
+تعداد پیشنهاد واقعی قابل‌مقایسه **صفر**؛ ورودی واقعی کاربر هم ارائه نشد. قیمت تاریخی یا آزمونی به‌عنوان قیمت امروز گزارش نمی‌شود.
+جایگزین واقعی پشتیبانی‌شده نداریم: هویت دقیق، مشخصات معیارهای نیاز و پیشنهاد فروش تاریخ‌دار لازم است.
 
-## وضعیت مشاهده‌شده، نه فرض فعال‌سازی
+## مسیر قابل استفاده
 
-| پیش‌نیاز | نتیجهٔ بررسی این checkpoint |
-|---|---|
-| صلاحیت خدمت/مسیر | حل‌نشده؛ هر دو پرچم runtime برابر false و مرجع خالی است. همان ابهام مستند در `free-provider-readiness.md`؛ ممنوعیت قطعی استنباط نشد. |
-| کلید محلی OpenRouter | موجود نیست: query فقط metadata نشان داد جدول ProviderCredential هیچ ردیفی ندارد؛ هیچ کلید یا ciphertext خوانده/رمزگشایی نشد. |
-| رضایت صریح ساختگی | ثبت نشده: همهٔ settings بررسی‌شده false؛ checkbox مرورگر جدا نیز unchecked. اقدامی به‌جای کاربر تأیید نشد. |
-| قیمت جاری | `current_prices()` داخل API با GET عمومی بدون Authorization از endpoint رسمی همان مدل پاسخ200 و `prompt=0, completion=0, discount=0` گرفت؛ مدل `baidu/ernie-5.5-flash-preview:free` و route `baidu`. این قیمت مستند است، نه هزینهٔ برگشتی مدل یا تضمین صورتحساب. |
-| سهمیهٔ پایدار | جدول شمارنده هنوز ردیفی ندارد و AIInvocation برای OpenRouter صفر است؛ مطابق قرارداد اولیه، **۱۰ از ۱۰ تلاش باقی است**. هیچ reset انجام نشد. |
+`http://127.0.0.1:58080/` → پیام خرید → «میز انتخاب» در موبایل → «اصلاح نیاز خرید» → تعیین دسته/بودجه و تأیید نیاز →
+«ثبت پیشنهادی که خودم دیده‌ام». لینک دقیق HTTPS، نسخه، فروشنده، مبلغ/واحد، موجودی، زمان مشاهده و هزینه‌های معلوم را وارد کنید.
+برای فروشندهٔ بعدی همان نسخه را صریحاً تأیید کنید؛ نسخهٔ متفاوت جدا ثبت می‌شود. قیمت‌ها و لینک منبع در همان میز انتخاب دیده می‌شوند.
+هیچ خرید خودکاری انجام نمی‌شود. فقط اطلاعاتی را وارد کنید که واقعاً مشاهده کرده‌اید؛ قیمت نمونه پیش‌فرض وجود ندارد.
 
-تنظیمات ذخیره‌شدهٔ مالکان مختلف پیش از مرورگر جدا، ۲ OpenRouter، ۷۴ GapGPT و ۴۳ OpenAI بود؛ این aggregate
-انتخاب نشست شخصی کاربر را ثابت نمی‌کند. مسیر آزمایش در مرورگر تازه صریحاً OpenRouter انتخاب شد؛ نشست کاربر تغییر نکرد.
-runtime همچنان `COPILOT_AI_MODE=mock` و `BEFOREBUY_RESEARCH_MODE=OFFLINE`؛ mount اصلی
-`/run/secrets/copilot_master_keyring` در API موجود است و secret-overlay بدون تغییر باقی ماند.
+هر پیشنهاد: **«واردشده توسط کاربر؛ مستقلاً تأیید نشده»**. مبلغ اصلی و تبدیل دقیق `۱۰ ریال = ۱ تومان` حفظ می‌شود؛
+ارسال/هزینهٔ اجباری نامعلوم صفر نیست و مبلغ نهایی فقط با همهٔ اجزای معلوم نمایش داده می‌شود.
+زمان ادعایی مشاهده از ثبت سرور جداست؛ قدیمی، ناموجود و متعارض از کمینهٔ قابل‌استفاده کنار گذاشته می‌شوند ولی پنهان نمی‌شوند.
+مالکیت/CSRF/revision/expiry، لینک امن، جلوگیری از ارسال دوباره و عدم انتشار پس از تغییر نیاز آزمون دارند.
+پیشنهاد دستی ادعای فنی تولید نمی‌کند، به محصول استخراج‌شده خودکار متصل نمی‌شود و رتبه‌بندی فنی را معتبر نمی‌کند.
+فرم اصلاح نیاز حتی هنگام تشخیص‌ندادن متن توسط mock قابل دسترسی شد؛ parser/ارائه‌دهنده تغییر نکرد.
+شکست بعضی منابع، پیشنهادهای موفق قبلی را حذف نمی‌کند و پیام فارسی منبع ناموفق باقی می‌ماند.
 
-## بررسی مسیر کاربر و نتیجهٔ واقعی
+## آزمون و محدودیت
 
-- Docker daemon نسخه28.1.1 پاسخ داد؛ db/api/web running و healthy؛ صفحهٔ اصلی HTTP200.
-- Chrome واقعی از طریق Playwright و NGINX موجود: `/` → «تنظیمات دستیار» → OpenRouter؛
-  فرم کلید، توضیح حل‌نشدن صلاحیت، پیام «کلیدی ذخیره نشده» و دکمهٔ قابل‌مشاهدهٔ «آزمایش رایگان» تأیید شدند.
-  دکمه بدون کلید/رضایت disabled بود. هیچ ذخیرهٔ کلید، رضایت، generation یا market request انجام نشد.
-- اولین اجرای مرورگر به‌دلیل نبود bundled Chromium اجرا نشد؛ با Chrome نصب‌شده، مطابق config موجود پروژه،
-  بررسی بالا موفق شد. هیچ browser/tool تازه نصب نشد. query اولیهٔ aggregate از `id` ناموجود استفاده کرد؛
-  با `pk` اصلاح و خواندن metadata موفق شد؛ این خطای فرمان بررسی بود، نه خطای برنامه.
-- فضای آزاد هنگام بررسی377MiB بود؛ هیچ build، restart، migration، پاک‌سازی یا اجرای مجدد suiteهای تاریخی انجام نشد.
-  تغییر فقط مستندی است؛ defect تازه‌ای در مسیر بررسی‌شده ثابت نشد تا correction/analyze/implement جدید لازم باشد.
-- تماس واقعی مدل **۰**، مصرف تلاش **۰**؛ usage، latency تولید و هزینهٔ برگشتی **وجود ندارند**.
-  گفتگوهای A/B اجرا نشدند؛ کیفیت پاسخ فارسی، حفظ بودجه/اولویت و سودمندی واقعی **ارزیابی نشده‌اند**.
-  پاسخ قالب محلی یا موفقیت GET قیمت به‌عنوان پاسخ مدل شمرده نشد.
+Chrome واقعی روی NGINX: desktop1440 موفق در۱۸٫۶ثانیه و mobile390 در اجرای اصلاح‌شدهٔ مستقل موفق در۲۱٫۴ثانیه؛
+هر دو مسیر سه پیشنهاد را از فرم ثبت کردند، واحد/موجودی/هزینه و لینک‌ها را بررسی و بعد از reload از «ادامهٔ گفت‌وگو» دوباره باز کردند.
+axe serious/critical در صفحات بررسی‌شده صفر؛ بدون سرریز افقی. تصاویر مصنوعی `artifacts/screenshots/market-manual-{1440,390}.png` بصری بازبینی شدند.
+backend هدفمند PostgreSQL: ۴۸ کشف/اجرا/موفق، صفر skip/failure/error؛ frontend هدفمند: ۱۸/۱۸ موفق، lint پاک.
+بدنهٔ نامعتبر ابتدا ۵۰۰ می‌داد؛ تست قرمز و اصلاح ۴۲۲ تأیید شد.
+دو اجرای اولیهٔ مرورگر موفق نبودند: desktop انتظار کوتاه پس از درخواست‌های سرد حدود۱۵ثانیه‌ای؛ mobile فرم اصلاح نیاز پنهان بود.
+دومی با regression قرمز بازتولید و با نمایش همان فرم موجود رفع شد؛ اولی با انتظار محدود وضعیت، نه تکرار نوشتن یا sleep، اصلاح شد.
+فرض غلط تست دربارهٔ بازشدن خودکار گفتگو بعد از reload و کلیک پیش از پایان بارگذاری موبایل نیز اصلاح شد؛
+اجرای میانی متوقف‌شده/ناموفق موفق شمرده نشد. نتیجهٔ دسکتاپ معتبر دوباره اجرا نشد؛ فقط موبایل اصلاح‌شده بازاجرا شد.
+تست‌ها فقط رکورد مصنوعی با نام و دامنهٔ `.example` می‌سازند؛ مدرک بازار/مدل واقعی نیستند.
 
-## یک اقدام فعلی برای رفع نخستین مانع
-
-همان پرسش آماده را به پشتیبانی OpenRouter بدهید و پاسخ قابل‌استناد را ارائه کنید؛ از طرف شما ارسال نشده است:
-
-> May an Iran-resident account with Iran-hosted backend and Iranian end users use `baidu/ernie-5.5-flash-preview:free` pinned to `baidu` through OpenRouter, and which channel-specific regional-access and prompt-retention/training terms govern that exact route?
-
-پس از روشن‌شدن صلاحیت و ثبت مستند آن، مسیر موجود ورود این است:
-`http://127.0.0.1:58080/` → «تنظیمات دستیار» → OpenRouter → ورود کلید فقط در فرم محلی →
-«ذخیرهٔ کلید» → خواندن افشا/تأیید رضایت ساختگی → «آزمایش رایگان».
-موفقیت واقعی آزمایش یک تلاش مصرف و خودکار گفتگوی موقت پایلوت را باز می‌کند؛ نشان پایلوت آن را از گفتگوهای mock جدا می‌کند.
-**اکنون هیچ گفتگوی واقعی ساخته نشده و لینک/شناسهٔ گفتگوی واقعی برای بازکردن وجود ندارد.**
-پس از بازشدن، سه پیام گوشی/بودجه۱۵میلیون/دوربین‌وباتری و سپس سناریوی جارو رباتیک باید با همان allowance باقی‌مانده
-آزموده و پاسخ‌ها انسانی بررسی شوند؛ هیچ تغییری به eligibility صرفاً با داشتن کلید یا HTTP200 مجاز نیست.
-
-فرمان startup قبلی بدون تغییر:
+## اجرا و حفاظت داده
 
 ```sh
 COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
 ```
 
-تغییر این checkpoint فقط همین گزارش و یادداشت T101 است؛ تصاویر قدیمی، volumeها، backupها و credentialها دست‌نخورده‌اند.
-hash commit و تأیید remote در پاسخ تحویل ثبت می‌شود. این وضعیت هیچ ادعای پوشش بازار زنده یا آمادگی production ندارد.
+runtime بررسی‌شده: AI `mock`، research `OFFLINE` و mount کلید موجود؛ هیچ کلید خوانده/چاپ/اعتبارسنجی یا جابه‌جا نشد.
+فراخوانی LLM، هزینه، خرید سرویس و deployment عمومی: صفر. فضای آزاد پیش از build حدود۲۷GiB؛ PostgreSQL آماده و Docker پاسخ‌گو بود.
+build شامل TypeScript/Vite موفق؛ `makemigrations --check --dry-run` بدون تغییر، OpenAPI YAML خوانا و `git diff --check` پاک.
+گزارش‌ها و trace مرورگر از build contextهای بعدی مستثنی شدند.
+migration0019 فقط choices است؛ SQL دو no-op، اعمال موفق. backup خوانا با پوشه0700/فایل0600:
+`/Users/mehdi/Backups/beforebuy/market-checkpoint-KHiSbC/beforebuy.dump`؛ بررسی خوانایی، نه restore rehearsal تازه.
+volume `beforebuy_beforebuy_pgdata_v18` حفظ شد. rollback کد با حفظ داده؛ restore ضروری فقط پس از توقف نوشتن به volume تازه و بررسی مالکیت/حسابداری.
+هیچ backup، secret، trace، runtime data یا تصویر قدیمی نامرتبط وارد commit نمی‌شود.
 
----
+## وضعیت دامنه و Git
 
-# T096 — اتصال فنی OpenRouter و آزمایش رایگان محدود — 2026-11-16
-
-Baseline: `122226250f3066d267b1b26cb34f4ef2cd9ac46b`؛ شاخهٔ موجود `002-personalized-shopping-copilot`.
-این بخش جانشین گزارش تاریخیِ «اتصال پیاده نشده» در پایین است. پیاده‌سازی از صلاحیت خدمت/مسیر، رضایت پردازش داده و آزمایش حساب جدا شد.
-
-## آنچه ساخته شد
-
-- ارائه‌دهنده و فرم مستقل OpenRouter، رمزنگاری و مالکیت قبلی، جداسازی کلید از OpenAI/GapGPT و حفظ guardهای تغییر سریع/پاسخ دیررس/ارسال دوباره.
-- یک مدل فنی: `baidu/ernie-5.5-flash-preview:free` با مسیر ثابت `baidu`، endpoint رسمی Chat Completions و stream واقعیِ SSE در آداپتر.
-  JSON object mode و اعتبارسنجی محلی قرارداد؛ ادعای کیفیت فارسی یا رعایت JSON Schema اندازه‌گیری‌شده نداریم.
-- قیمت رسمی پیش از هر تلاش باید صفر و معلوم باشد؛ بدون routing خودکار، fallback، ابزار، plugin یا retry. سقف پولی صفر است.
-  شمارندهٔ deployment-wide ده تلاش، شامل اعتبارسنجی و خطاها، با restart/تغییر مالک/حذف گفتگو یا روز تازه reset نمی‌شود.
-- usage و هزینهٔ برگشتی USD جدا ثبت می‌شوند؛ نبود آن‌ها موفقیت تلقی نمی‌شود. هزینهٔ غیرصفر ادامهٔ آزمایش را مسدود می‌کند.
-  context16KiB به‌علاوهٔ دستور/قرارداد ثابت، answer16KiB، wire64KiB، max_tokens1024، timeout شبکه8s و deadline کنترل‌شدهٔ stream20s؛ توقف هنگام انتظار شبکه ممکن است تا timeout طول بکشد.
-- «آزمایش رایگان» فقط با اقدام صریح و رضایت ساختگی، پس از gateها یک درخواست اعتبارسنجی مصرف می‌کند؛ موفقیت با کلید/تنظیمات بدون تغییر، گفت‌وگوی تازهٔ موقت می‌سازد.
-  حافظه/شواهد قبلی/تصویر وارد prompt نمی‌شوند. گفتگوهای عادی mock می‌مانند؛ research OFFLINE. رفتار fallback پنهان وجود ندارد.
-- publication نهایی کلید مربوط به خود provider را بررسی می‌کند؛ اشتباه قبلیِ بررسی صرفاً کلید OpenAI برای سایر providerها اصلاح شد.
-
-## ورود محلی و پیش‌نیاز واقعی
-
-نشانی: `http://127.0.0.1:58080/copilot` → «تنظیمات دستیار» → ارائه‌دهندهٔ OpenRouter → «کلید OpenRouter» → «ذخیرهٔ کلید».
-ذخیره هیچ درخواست provider ایجاد نمی‌کند. ورود حساب در سایت خود OpenRouter است؛ کلید فقط در همین فرم محلی وارد می‌شود.
-
-```sh
-COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
-```
-
-کلید master موجود تولید/تعویض نشد. migration افزایشی0018 اعمال شد؛ mount موجود بعد از بازسازی API خواندنی و runtime mock/OFFLINE تأیید شد.
-پرچم‌های `COPILOT_OPENROUTER_SERVICE_ELIGIBLE` و `COPILOT_OPENROUTER_ROUTE_ELIGIBLE` false و مرجع صلاحیت خالی ماندند.
-رضایت داده یا HTTP200 دلیل تغییر این پرچم‌ها نیست. Compose production آن‌ها را صریح سیم‌کشی می‌کند؛ development از env_file موجود می‌خواند.
-
-منابع دقیق و تفکیک شرط/ابهام/ممنوعیت در [گزارش مسیر](../specs/002-personalized-shopping-copilot/free-provider-readiness.md) است:
-OpenRouter §§2/5.1/5.7، قرارداد Baidu متصل از صفحهٔ همان provider §§1.4/2.3/3.2/3A.3–4؛
-اعمال شرایط trial NVIDIA از notice همان مدل OpenRouter استنباط می‌شود، نه از فرض یکسان‌بودن API مستقیم.
-برای ایران ممنوعیت قطعی از سکوت متن نتیجه گرفته نشد؛ انطباق همین حساب/کانال با شروط منطقه‌ای هنوز روشن نیست.
-پرسش کوتاهِ آمادهٔ پشتیبانی در گزارش هست و ارسال نشده؛ تنظیمات privacy/training حساب تغییر نکرده است.
-
-تماس generation واقعی: **۰**. هزینهٔ مصرف واقعی ایجادشده توسط این کار: **۰**؛ usage/صورتحساب یا کیفیت مکالمهٔ زنده قابل گزارش نیست.
-پس از احراز شرایط و کلید محلی، T101 باید دو جملهٔ گوشی شکسته/بودجه۱۵میلیون و یک خرید غیرگوشی را در برنامه ارزیابی کند؛
-حفظ زمینه، عدم پرسش بودجهٔ تکراری و عدم اختراع شواهد/قیمت باید واقعاً بررسی شوند. T039 و gateهای human/live باز می‌مانند.
-
-## راستی‌آزمایی و تحویل
-
-نتایج مشاهده‌شده:
-
-- backend: در آخرین اجرای اختصاصی **۱۵/۱۵ موفق**؛ ۳۴ regression مرتبط credentials/context/GapGPT/SSE نیز موفق.
-  اجرای ۴۸تایی ابتدا یک خطای نگاشت401 داشت؛ اصلاح exception ordering و اجرای دوبارهٔ ۱۴تایی موفق شد.
-  سه تست API پس از افزودن invalidation برای401/402/403 دوباره موفق شدند. HTTPهای provider در این تست‌ها MockTransport هستند.
-  تست افزودهٔ metadata قیمت نیز مسیر/قابلیت/قیمت و عدم ارسال Authorization را بررسی کرد؛ خطای double-open در fixture تست اصلاح و suite۱۵تایی دوباره موفق شد.
-- frontend: ۲۱ تست تنظیمات/گفتگو موفق با `--maxWorkers=1 --testTimeout=30000`؛ اجرای پیشین با مهلت۵ثانیه
-  در محیط با load average حدود۲۶۳، ده timeout داشت و به‌عنوان موفق شمرده نشد.
-- ESLint فایل‌های تغییرکرده، `makemigrations --check --dry-run`، `docker compose config --quiet` و `git diff --check` موفق.
-- build آخرین وب شامل TypeScript و Vite موفق و NGINX محلی بازسازی شد. یک build قدیمیِ درحال اجرا زیر بار سیستم لغو شد؛
-  خروجی آن استفاده نشد. هیچ خطای storage مشاهده نشد و هیچ داده/volume یا فرایند پروژهٔ دیگر حذف/متوقف نشد.
-- Playwright واقعی NGINX: **۴/۴ موفق**، `copilot-openrouter.spec.ts` و `copilot-credential-switch.spec.ts` در390/1440.
-  مالک‌ها و کلیدها ساختگی، trace/screenshot/video خاموش؛ save، switch، reload، delete و خطای صلاحیت پیش از ارسال زنده بررسی شدند.
-- تست backend با `docker compose exec -T -w /app/backend api python manage.py test <labels> --settings=config.settings.test --keepdb --verbosity 1`؛
-  labels اختصاصی `tests.unit.test_openrouter_copilot tests.unit.test_openrouter_settings` و regressionها
-  `tests.unit.test_provider_credentials tests.unit.test_user_credentials tests.unit.test_copilot_context tests.unit.test_gapgpt_copilot tests.api.test_stream_events`.
-- مرورگر با `NODE_PATH=$PWD/frontend/node_modules PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080 node frontend/node_modules/@playwright/test/cli.js test --config frontend/playwright.config.ts tests/e2e/copilot-openrouter.spec.ts tests/e2e/copilot-credential-switch.spec.ts --reporter=list`.
-
-T096 فقط به‌عنوان اتصال فنی تکمیل شد؛ T101 و feature001 T039 بازند. بررسی ledger پس از سفر مرورگر: صفر invocation و بدون مصرف شمارندهٔ پایلوت.
-نتیجهٔ commit/push و تطابق hash در پاسخ نهایی ثبت می‌شود.
-Spec Kit analyze محدود FR-092: یک الزام، دو تسک T096/T101، پوشش۱۰۰٪ و تعارض بحرانی صفر؛ implement فقط دامنهٔ همین اصلاح.
-مهارت‌های موجود پروژه/AI/backend/TDD/debugging/verification/Playwright و Spec Kit استفاده شدند؛ بدون ابزار یا زیرساخت تازه.
-چهار screenshot نامرتبط حفظ و از commit کنار گذاشته می‌شوند؛ secret، dump، runtime و trace کلید وارد Git نمی‌شوند.
-
----
-
-# سابقهٔ تحویل: بررسی محدود OpenRouter و اصلاح فونت منوها — 2026-11-16
-
-Baseline: `8cb7c12c7a542c5c5fb894cc49d0388cca79915b`؛ شاخه `002-personalized-shopping-copilot`.
-نتیجهٔ این تحویل: اصلاح typography مستقل انجام شد؛ **اتصال رایگان OpenRouter پیاده/فعال نشده است**.
-طبق شرط درخواست، integration مسدود دیگری ساخته نشد. T096 و feature001 T039 باز هستند.
-
-## نتیجهٔ امکان‌سنجی
-
-- فقط `nvidia/nemotron-3.5-lightning:free` با `nvidia/nvfp4` و
-  `baidu/ernie-5.5-flash-preview:free` با `baidu` بررسی شدند. API عمومی هر دو قیمت ورودی/خروجی صفر نشان داد؛
-  این مشاهده نه تأیید حساب است و نه صورتحساب. مدل انتخاب‌شده برای runtime: **هیچ‌کدام**.
-- NVIDIA قرارداد trial، ثبت داده و الزامات export/sanctions دارد؛ پارامتر structured-output در endpoint بررسی‌شده
-  فهرست نشده بود. Baidu structured-output را فهرست کرده، اما قرارداد regional access را مشروط و نگهداری/استفاده
-  از محتوا را مجاز می‌کند. انطباق مسیر دقیق با کاربران/backend ایران و رضایت آگاهانهٔ داده هنوز احراز نشده است.
-  «احراز نشدن» به معنی «ممنوعیت قطعی ایران» نیست. کیفیت فارسی هیچ‌کدام اندازه‌گیری نشد.
-- منابع رسمی، قراردادهای upstream، quota تاریخ‌دار، شرایط حساب بدون شارژ و متن دقیق سؤال پشتیبانی در
-  [free-provider-readiness.md](../specs/002-personalized-shopping-copilot/free-provider-readiness.md) ثبت شده است.
-  هیچ پیام پشتیبانی از طرف کاربر ارسال نشده است.
-- OpenRouter هنوز informational است. کلید آن را در فرم OpenAI/GapGPT وارد نکنید؛ فرم اختصاصی تا بسته‌شدن gate و
-  اجرای T096 وجود ندارد. سپس pilot باید با اقدام محلی صریح «آزمایش رایگان»، حداکثر ۱۰ تلاش کل شامل retry/validation،
-  سقف پولی صفر و بدون fallback/ابزار پولی پیاده شود. این کنترل‌ها requirement هستند، نه قابلیت تحویل‌شده.
-- تماس generation واقعی: **۰**؛ usage/صورتحساب/ارزیابی مکالمهٔ واقعی: **وجود ندارد**. تنظیمات حریم خصوصی تغییر نکرد.
-
-## اصلاح رابط و شواهد
-
-- علت تأییدشده: `select` در reset فونت نبود؛ provider/model با Arial 13.33px مقابل ورودی Vazirmatn 16px دیده شد.
-  دستهٔ نمونه Vazirmatn 13.6px داشت. reset بومی و typography کنترل‌های فرم اصلاح شد؛ framework جدید نصب نشد.
-- پس از اصلاح provider/model/category و ورودی/دکمهٔ کنارشان Vazirmatn 16px/weight400 دارند؛ کلید LTR می‌ماند و
-  فرم/منو RTL است. شناسهٔ مدل در option با Unicode isolate و زیر منو با `bdi` کامل و قابل شکستن نمایش داده می‌شود.
-- Chromium برای select تک‌خطی با وجود CSS line-height، مقدار computed `normal` برمی‌گرداند؛ کنترل native حفظ شد.
-  ارتفاع واقعی provider/model حدود51.4px و دسته45px است؛ ورودی/دکمه line-height28px دارند. popup سیستم‌عامل را
-  نمی‌توان در همهٔ پلتفرم‌ها با CSS یکسان کرد؛ دستگاه فیزیکی iOS/Android آزموده نشده است.
-- تصاویر قبل: `artifacts/screenshots/typography-before-settings-{390,1440}.png` و
-  `typography-before-category-390.png`. تصاویر بعد: `typography-after-{settings,model,category}-{390,1440}.png`.
-  تصاویر موبایل مدل/دسته و تنظیمات دسکتاپ بازبینی بصری شدند؛ فقط مالک و متن مصنوعی و فرم کلید خالی دارند.
-- آزمون RED واقعی Arial/اندازهٔ ناهماهنگ را ثبت کرد. در توسعهٔ harness، timeout بارگذاری، فرض نادرست وجود مدل دوم
-  OpenAI و نیاز به تأیید brief قبل از دسته اصلاح شدند؛ آن اجراها موفق محسوب نشدند. انتظار line-height بومی نیز
-  پس از مشاهدهٔ computed style به کنترل اندازه/ارتفاع واقعی اصلاح شد؛ رگرسیون خانواده/اندازهٔ فونت حفظ شده است.
-
-## بررسی‌های اجراشده و عملیات
-
-- `AssistantSettings.test.tsx`: **7/7** موفق، شامل خطای load، switching و duplicate/stale mutations.
-- ESLint فایل تغییرکرده موفق؛ یک build تصویر web با TypeScript/Vite موفق. قبل از build فضای آزاد میزبان 1.7GiB،
-  Docker پاسخ‌گو، فایل‌سیستم داخل کانتینر 918GiB آزاد و PostgreSQL ready بود. هیچ cleanup/volume operation انجام نشد.
-- Backend: `docker compose exec -T -w /app/backend api python manage.py test tests.unit.test_provider_credentials tests.unit.test_gapgpt_copilot --settings=config.settings.test --keepdb --verbosity 1`
-  نتیجه **9/9**، صفر failure/error/skip؛ transport ساختگی (از جمله SDK با MockTransport)، نه تماس GapGPT واقعی.
-- NGINX واقعی در `http://127.0.0.1:58080`: credential-switch **2/2** موفق با مالک تازه و کلید مصنوعی/حذف همان کلید؛
-  typography **2/2** موفق در 390 و1440، computed font، انتخاب keyboard/type-ahead، Escape/focus، مدل بلند و viewport.
-  بازاجرای نهایی با tap روی خود select و Escape/focus در هر دو اندازه **2/2** موفق در1.5دقیقه بود؛
-  touch فقط شبیه‌سازی مرورگر است. نتایج نامرتبط قبلی مجدداً اجرا نشدند.
-- فقط web با `up -d --no-deps web` از overlay فعلی بازسازی شد. API/DB و keyring قبلی حفظ شدند؛ mount موجود و
-  مقادیر مؤثر Django `mock / OFFLINE` بررسی شد. دستور canonical بدون تغییر:
-
-```sh
-COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
-```
-
-Spec Kit: FR-090/091 و T098–T100 اضافه شدند؛ analyze محدود پوشش2/2 الزام با3task، صفر مسئلهٔ بحرانی/تعارض قانون،
-و gate صریح eligibility داشت. checklist موجود16/16، بدون hook ثبت‌شده. scoped implement فقط همین اصلاحات؛ نه
-full-product convergence. hash نهایی commit و hash مشاهده‌شدهٔ remote در پاسخ تحویل گزارش می‌شود.
-
----
-
-# اصلاح تنظیمات ارائه‌دهنده — 2026-11-16
-
-مبنای این اصلاح: `9f9e254fdfa1342ccbe19bbbf536bc09f51ba10d`، شاخهٔ `002-personalized-shopping-copilot`.
-تحویل نهایی این اصلاح شامل commit/push روی همین شاخه است؛ hash محلی و hash مشاهده‌شدهٔ remote در پاسخ تحویل
-ثبت می‌شود. تحویل قبلی UX و شواهد اجرای قبلی در ادامه حفظ شده‌اند.
-
-## تکمیل نهایی تنظیمات
-
-- قفل هم‌زمان `ref` جلوی دو mutation پیش از render را می‌گیرد. generation مربوط به lifecycle تمام ادامه‌های
-  async پس از خروج/reload را باطل می‌کند؛ پاسخ قدیمی نه credential منتشر می‌کند و نه قفل جدید را آزاد می‌کند.
-  فرم فقط با provider منطبق قابل ذخیره/حذف است؛ هنگام تغییر یا حذف پاک و در خطا قابل بازیابی است.
-- سه تست جدید پیش از اصلاح شکست واقعی داشتند: دو PATCH، دو PUT، و ادامهٔ GET پس از unmount.
-  پس از اصلاح، suite متمرکز `AssistantSettings.test.tsx` هفت تست موفق دارد، شامل double-delete و مقصد OpenAI.
-- ESLint دو فایل تغییرکرده موفق بود. تصویر web فقط یک‌بار برای کد جدید ساخته شد؛ TypeScript و Vite موفق.
-  نتیجه‌های backend/فرانت‌اند نامرتبط قبلی استفاده شدند، نه اینکه اجرای تازه ادعا شود.
-- اجرای اول مرورگر نهایی در دو اندازه هنگام بارگذاری تنظیمات timeout شد؛ هم‌زمان curl محلی نیز timeout داشت.
-  بعداً API و gateway پاسخ 200 دادند، PostgreSQL آماده بود و بررسی محدود لاگ‌ها خطای storage/I/O نشان نداد.
-  بار CPU سرویس‌های دیگر مشاهده شد ولی علت قطعی اعلام نشد؛ هیچ سرویس نامرتبط یا storage تغییر نکرد.
-- بازاجرای همان `copilot-credential-switch.spec.ts` بدون تغییر assertionها: 2/2 موفق در 52.4 ثانیه، عرض‌های
-  390 و1440 روی NGINX واقعی. هر تست browser context/مالک مهمان تازه، کلید ساختگی، reload و حذف خودش را داشت؛
-  key/trace/video/screenshot واقعی ثبت نشد. شواهد run قبلی زیر با این اجرای تازه اشتباه نشوند.
-
-فرمان‌های بررسی متمرکز این تحویل (node نسخهٔ 20.19.0 محلی):
-
-```sh
-# frontend/
-node node_modules/vitest/vitest.mjs run src/features/copilot/memory/AssistantSettings.test.tsx --maxWorkers=1
-node node_modules/eslint/bin/eslint.js src/features/copilot/memory/AssistantSettings.tsx src/features/copilot/memory/AssistantSettings.test.tsx
-# repository root, after the single web build/recreation
-NODE_PATH=$PWD/frontend/node_modules PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080 node frontend/node_modules/@playwright/test/cli.js test --config frontend/playwright.config.ts tests/e2e/copilot-credential-switch.spec.ts --reporter=list
-```
-
-- API با فرمان canonical زیر و گزینه‌های `--no-deps --force-recreate api` دوباره ساخته شد؛ inspect وجود
-  `/run/secrets/copilot_master_keyring` و بررسی `keyring()` دسترس‌پذیری رمزنگاری را تأیید کرد.
-  کلید اصلی ساخته/تعویض یا چاپ نشد. startup یک‌بارهٔ بدون overlay و با `COPILOT_MASTER_KEY_FILE=` نیز
-  `python backend/manage.py check` را با صفر مشکل گذراند؛ کانتینر اصلی دست‌نخورده در حالت دارای secret ماند.
-- حالت مشاهده‌شده: AI=mock، research=OFFLINE، مجوز Phase12=false، نرخ تبدیل و همهٔ capها صفر؛ margin=0.15.
-  هیچ provider call/purchase انجام نشد. OpenRouter فقط لینک اطلاعاتی است، نه گزینهٔ انتخاب یا اتصال آماده.
-- Spec Kit: FR-088/089 به T093–T097 نگاشت دارند؛ T096 خارج تحویل و باز است؛ بررسی محدود تعارض بحرانی ندارد،
-  checklist برابر 16 checked/0 unchecked و extension hook موجود نیست. T039 feature001 باز مانده است.
-
-فرمان canonical از ریشه، با همان فایل موجود در این دستگاه:
-
-```sh
-COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
-```
-
-برای نصب آفلاین بدون ذخیرهٔ credential، `docker compose -f compose.yaml up -d` با AI mock و research OFFLINE
-پشتیبانی می‌شود؛ آن را برای بازسازی کانتینری که باید ذخیرهٔ کلیدش فعال بماند استفاده نکنید.
-
-### پیش‌نیازهای یک گفتگوی واقعی GapGPT — هنوز اجرا نشده
-
-1. حساب دارای دسترسی/اعتبار کافی برای `gapgpt-deepseek-v4.1-flash`؛ ذخیرهٔ کلید GapGPT فقط در تنظیمات همان
-   مالک مرورگر، با secret mount موجود. کلید واقعی این کاربر بررسی نشده است.
-2. مجوز صریح جدید هزینه برای validation، گفتگو و retry؛ مبلغ پیشنهادی قبلی مجوز نیست. تنظیم
-   `COPILOT_PHASE12_SPENDING_AUTHORIZED=1`، سقف کل `COPILOT_PHASE12_TOTAL_CAP_TOMAN`، نرخ تاریخ‌دار
-   `COPILOT_USD_TO_TOMAN_RATE`، حاشیهٔ محافظه‌کارانه `COPILOT_EXCHANGE_MARGIN_RATIO` و سقف‌های مثبت و کافی
-   `COPILOT_OPERATION_CAP_MICROUSD`، `COPILOT_SESSION_CAP_MICROUSD`، `COPILOT_DAILY_CAP_MICROUSD`.
-   ledger قبلی/مصرف موجود حفظ شود؛ هیچ مبلغی در این تحویل مجاز یا reset نشده است.
-3. پس از مجوز، اقدام صریح «بررسی صریح مدل‌های حساب» باید پاسخ واقعی معتبر بدهد و همان revision را VALIDATED کند؛
-   این مرحله خودش تماس مولد قابل‌هزینه است، نه بررسی رایگان. تغییر دستی وضعیت دیتابیس ممنوع است.
-4. فقط پس از این شروط، `COPILOT_AI_MODE=live` و بازسازی API با فرمان canonical؛ research همچنان OFFLINE.
-   گفتگو متنی/مصنوعی بدون تصویر و دادهٔ حساس، با provider/model صریح و بدون fallback؛ clarification محلی
-   را پاسخ مدل واقعی نشمارید. evidence تماس/usage/cost و پاسخ نهایی را ثبت کنید؛ کیفیت انسانی و انتشار عمومی gate جدا دارند.
-   مدت دقیق نگه‌داری API نزد provider همچنان unresolved است؛ قبل از استفاده از دادهٔ شخصی باید روشن شود.
-
-## نتیجهٔ اصلاح فعلی
-
-- علت ذخیره‌نشدن کلید: کانتینر API فقط `/app` داشت و mount فایل رمزنگاری اصلی حذف شده بود.
-  همان `/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key` با مجوز 0600 دوباره در
-  `/run/secrets/copilot_master_keyring` mount شد؛ هیچ کلید اصلی/اعتبارنامهٔ واقعی تعویض یا خوانده و چاپ نشد.
-- خطای جابه‌جایی: پس از موفقیت PATCH و شکست GET کلید، فرم ارائه‌دهندهٔ قبلی باقی می‌ماند.
-  اکنون وضعیت کلید پاک می‌شود، فرم فقط برای provider منطبق نمایش/ارسال می‌شود و بازیابی تنظیمات ممکن است.
-  پیام ذخیرهٔ موفق از فعال‌بودن اتصال زنده تفکیک شده است.
-- `scripts/dev-with-credentials.sh` برای حفظ secret overlay در startupهای بعدی اضافه شد؛ دستور در README و
-  `docs/backend-operations.md` آمده است. مسیر خالی، نسبی یا فایل ناموجود قبل از Docker رد می‌شود.
-- راهنمای OpenRouter و لینک رسمی ساخت حساب/کلید در تنظیمات اضافه شد؛ **اتصال رایگان هنوز پیاده‌سازی نشده**.
-  جزئیات مقایسهٔ OpenRouter/Groq و سؤال‌های لازم از پشتیبانی در
-  `specs/002-personalized-shopping-copilot/free-provider-readiness.md` است. اجازهٔ ارائهٔ سرویس به کاربران/سرور
-  ایران و قرارداد مدل رایگان/داده مشخص نشده؛ T096 باز است. کلید OpenRouter را در کادر OpenAI وارد نکنید.
-
-## شواهد تازه
-
-- تست regression ابتدا به‌علت باقی‌ماندن فرم قبلی شکست خورد؛ بعد از اصلاح موفق شد.
-- Vitest: 8 فایل، 28 تست، همگی موفق؛ ESLint و TypeScript exit 0.
-- build تصویر web با TypeScript/Vite موفق؛ فقط API با overlay و سپس web محلی بازسازی شدند؛ DB/volume دست‌نخورده.
-- `copilot-credential-switch.spec.ts`: دو تست واقعی Chrome/NGINX در عرض 390 و1440 موفق: ذخیرهٔ کلید ساختگی
-  OpenAI، جدایی کلید GapGPT، رفت‌وبرگشت provider، حفظ پس از reload، حذف کلید ساختگی.
-  اجرای اول به‌علت locator دقیق label که متن optionها را نیز می‌خواند شکست خورد؛ با locator نقش combobox
-  و نام دسترس‌پذیر صحیح اصلاح شد. assertionهای رفتار ضعیف نشده‌اند.
-- تست مرورگر trace/video/screenshot ندارد؛ هیچ اعتبارنامهٔ واقعی وارد تست نشد. backend کد جدید ندارد؛
-  سوئیت کامل قبلی دوباره اجرا نشد، ولی مسیر واقعی ذخیره/بازیابی/حذف از API و DB در تست مرورگر اجرا شد.
-- Runtime: encryption available=true، AI=mock، research=OFFLINE. صفر تماس inference/validation با provider؛
-  فقط مستندات عمومی برای تحقیق خوانده شد. هزینهٔ ارزیابی جدید صفر؛ مجوزهای هزینه reset نشده‌اند.
-- بررسی Spec Kit محدود: FR-088/089 به T093–T096 نگاشت شدند؛ تناقض بحرانی صفر؛
-  checklist موجود 16 checked/0 unchecked، extension hook موجود نیست. T039 feature001 و تمام gateهای live/public بازند.
-- حذف نامرتبط `test.txt` و چهار screenshot از قبل دست‌نخورده‌اند؛ secret، dump یا runtime artifact به Git افزوده نشده.
-
----
-
-# تحویل بازطراحی محدود UX — Beforebuy
-
-تاریخ: 2026-11-16؛ شاخه: `002-personalized-shopping-copilot`.
-مبنای شروع: `94c63db0332785d4ed86a4aab56ddcae0864ed4a`.
-تحویل قبلی: `docs/archive/phase-12-handoff.md`. پذیرش طراحی توسط مدیر محصول یا تکمیل کل محصول ادعا نمی‌شود.
-
-## تجربهٔ جدید
-
-- صفحهٔ اصلی `http://127.0.0.1:58080/` و `/copilot`؛ نسخهٔ قبلی `/legacy`.
-  لینک‌های `/?analysis=<id>` و `/?view=history` و API/مالکیت قبلی حفظ شدند؛ NGINX موجود SPA fallback دارد.
-- اولین پیام گفتگو می‌سازد. شش دسته و مثال‌های متنوع شروع گفتگو هستند، نه وعدهٔ پوشش بازار.
-- Concept 2: زمینهٔ گرم، Vazirmatn محلی، SVG، گفتگوی راست و میز انتخاب چپ؛ نمایش تدریجی نیاز، گزینه، مقایسه و پیشنهاد فروش.
-- composer خط مبنا در 1280×720 تا y=774 بیرون می‌رفت. اکنون پیمایش thread/desk مستقل و composer چندخطی محدود است؛ ارسال/توقف در پنجرهٔ کوتاه و موبایل در دسترس‌اند.
-  محفظهٔ responsive مشکل zoom را حل می‌کند؛ overflow سراسری برای پنهان‌کردن اشکال اضافه نشد.
-- دنبال‌کردن فقط نزدیک انتهای گفتگو، حفظ محل خواندن و «پیام‌های جدید»؛ draft/scroll/research وابسته به گفتگو، جداسازی subscription/timer هنگام جابه‌جایی.
-- پاسخ اختیاری دسته/مخاطب/تأیید یا حفظ بودجه/تأیید یا اصلاح نیاز از مسیر عادی پیام و idempotency عبور می‌کند.
-  سؤال، conversation و revision کنترل می‌شوند؛ تأیید دستی جدید نیز گزینه/پرسش قدیمی را باطل می‌کند.
-- «بودجه‌ام ۱۵ میلیون تومان است» user-reported و هنوز تأییدنشده ثبت می‌شود؛ «۱۵ میلیون ریال» پیشنهاد ۱٫۵ میلیون تومان است، نه بازنویسی خاموش ۱۵ میلیون.
-  تأیید یا حفظ مبلغ داخل گفتگو انجام می‌شود؛ ۱۰ ریال = ۱ تومان. parser محدود است، نه درک عمومی زبان طبیعی.
-- تاریخچه: جستجوی صادقانه فقط در عنوان‌های بارگذاری‌شده، تاریخ، pagination، بازکردن/تازه، حذف تک و پاک‌کردن همه با تأیید.
-  حافظهٔ مشتق‌شده حذف می‌شود؛ credential، تنظیمات مستقل و حسابداری حفظ می‌شوند؛ undo ادعا نمی‌شود.
-- race پاسخ REST قدیمی با پیام نهایی و race توقف با پایان عملیات اصلاح شد؛ وضعیت واقعی سرور ملاک است.
-
-## حالت اجرا
-
-AI برابر `mock` و پژوهش `OFFLINE` باقی ماند. UI حالت مؤثر، provider/model و وضعیت ذخیره/اعتبارسنجی credential را از backend می‌گیرد.
-پیش‌فرض نشست تازه GapGPT / `gapgpt-deepseek-v4.1-flash` است؛ انتخاب موجود کاربر یا کلید OpenAI تغییر، منتقل، چاپ یا اعتبارسنجی نشد.
-کلید OpenAI نشانهٔ تنظیم GapGPT نیست؛ gate منطقه‌ای دور زده نشد. فراخوانی زندهٔ provider/منبع، هزینه، خرید و deployment عمومی این فاز: صفر.
-
-## حفاظت داده و rollback
-
-migration افزایشی `0017_conversational_ux` اعمال شد. قبل از آن API متوقف و backup محافظت‌شده تهیه شد:
-`/Users/mehdi/Backups/beforebuy/ux-redesign-7fUJFR/pre-ux.dump`
-پوشه 0700، فایل 0600، اندازه 276705 بایت؛ SHA-256:
-`41f9d49f10167083af29c46b059aec16fffd48689f86a1274879d230ac082b6a`.
-`pg_restore --list` موفق، خروجی 241 خط؛ این بررسی خوانایی است نه restore rehearsal.
-volume `beforebuy_beforebuy_pgdata_v18` و داده‌های موجود حفظ شدند؛ backup خارج Git/Trash باقی می‌ماند.
-rollback رابط: frontend قبلی با schema افزایشی حفظ‌شده. rollback DB فقط به volume تازه پس از توقف نوشتن و بررسی restore/حسابداری؛ هرگز بازنویسی volume فعال.
-
-## شواهد تأیید
-
-- backend: `./scripts/test-backend.sh --keepdb --verbosity 1`، ۳۲۰ کشف/اجرا/موفق؛ صفر skipped/failure/error و system check پاک.
-- Playwright روی NGINX واقعی: ۷/۷ موفق در ۳٫۲ دقیقه؛ چهار اندازهٔ 1440×900، 1280×720، 390×844 و 360×640، دو regression مقایسه و یک مسیر بلند/legacy. صفر failure/skipped؛ axe serious/critical صفر در بررسی‌های اجراشده.
-- React: `vitest run --maxWorkers=1`، ۲۶/۲۶ موفق در ۸ فایل؛ lint موفق.
-- `docker compose build web`: typecheck و Vite موفق؛ `makemigrations --check --dry-run`: بدون تغییر.
-- YAML قراردادها خوانده شد؛ `git diff --check` پاک بود.
-- تست‌های قرمز بودجه، سؤال قدیمی، refresh، Escape، zoom و توقف قبل از اصلاح مشاهده شدند.
-  یک timeout پنج‌ثانیه‌ای در اجرای پربار فرانت‌اند و انتظار اشتباه رشتهٔ خالی به‌جای null در تست backend اصلاح/بازاجرا شدند؛ شکست‌ها موفق شمرده نشده‌اند.
-  فرض نادرست لغو همیشگی پاسخ بسیار کوتاه با بررسی دقیق 200/CANCELLED یا 409/OPERATION_TERMINAL و وضعیت واقعی COMPLETED جایگزین شد؛ انتظار پایان handler هنگام unroute، خطای ابزار «Route is already handled» را رفع کرد. اجرای میانی متوقف‌شده موفق شمرده نشد؛ اجرای کامل نهایی هر هفت مورد را گذراند.
-- تصاویر مصنوعی: `artifacts/screenshots/ux-home-{1440,1280,390,360}.png`،
-  `ux-chat-{1440,1280,390,360}.png`، `ux-comparison-{1440,390}.png`؛ تصاویر دسکتاپ/موبایل بصری بازبینی شدند.
-- مرورگر واقعی NGINX: چهار اندازهٔ خواسته‌شده، thread بلند، تاریخچهٔ ۵۳تایی، جابه‌جایی هنگام stream، بودجه/پاسخ دلخواه،
-  تنظیمات/پروفایل و draft، کاهش ارتفاع، keyboard/focus، reduced motion، axe، zoom و گزارش legacy.
-  تأخیر کنترل‌شده فقط تحویل SSE به مرورگر است، نه اندازه‌گیری latency مدل.
-- صفحه‌کلید فیزیکی موبایل، دستگاه واقعی و zoom بومی مرورگر آزمایش نشد؛ CSS zoom و کاهش viewport معادل آن‌ها نیست.
-  کیفیت مدل/بازار زنده و عبور همهٔ suiteهای تاریخی مرورگر ادعا نمی‌شود؛ HTTPهای provider در backend stub هستند.
-
-## Spec Kit و ابزار
-
-FR-082–087 به T086–T092 نگاشت دارند؛ analyze غیرمخرب محدوده: ۶ الزام، ۷ تسک، پوشش ۱۰۰٪، تعارض بحرانی صفر.
-implement محدود به همین فاز بود. مهارت‌های موجود project، frontend-design، Django/DRF، TDD، systematic-debugging،
-Playwright، verification و Spec Kit استفاده شدند؛ ابزار/مهارت تازه نصب نشد و snapshotهای غیرفعال فعال نشدند.
-feature001 T039، T066، gateهای live/human و Milestone E باز می‌مانند.
-
-## مرور پنج‌دقیقه‌ای
-
-۱. صفحهٔ اصلی: «گوشی من شکسته، می‌خواهم آیفون ده بخرم.»
-۲. سپس «بودجه‌ام ۱۵ میلیون تومان است» و «۱۵ میلیون ریال»؛ پیشنهاد تغییر را تأیید یا مبلغ قبلی را حفظ کنید.
-۳. یک پاسخ پیشنهادی، سپس کاربرد با متن خودتان و تأیید نیاز؛ نمونهٔ آموزشی مقایسه اختیاری و صریحاً مصنوعی است.
-۴. پیش‌نویس بنویسید، تنظیمات/شناخت من را باز و برگردید؛ تاریخچه را جستجو و فقط گفتگوی آزمایشی خود را با تأیید حذف کنید.
-۵. پنجرهٔ کوتاه/موبایل، پیمایش متن بلند و «نسخهٔ قبلی» با گزارش قبلی را امتحان کنید. هیچ اعتبارسنجی کلید لازم نیست.
-
-## Git
-
-نتیجهٔ commit/push و hash دقیق در پاسخ تحویل ثبت می‌شود؛ فقط تغییرات مرتبط مجازند.
-حذف نامرتبط `test.txt` و چهار تصویر قدیمی phase8/phase9-2 خارج commit و در working tree محفوظ‌اند.
-هیچ secret، dump، trace مرورگر، دیتابیس یا runtime artifact وارد Git نمی‌شود.
+Spec Kit analyze/implement محدود به FR-093–095 / T102–T104؛ سه الزام پوشش دارند، تعارض بحرانی صفر؛ framework/ابزار جدید نصب نشد.
+T066 (استخراج واقعی)، T101 (مکالمهٔ واقعی)، feature001 T039 و gateهای public release باز هستند. همگرایی کامل محصول ادعا نمی‌شود.
+نتیجهٔ commit/push و hash مشاهده‌شدهٔ remote در پاسخ نهایی ثبت خواهد شد؛ هیچ موفقیت Git بدون شاهد ادعا نمی‌شود.

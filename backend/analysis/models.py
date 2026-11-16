@@ -470,7 +470,7 @@ class ResearchJob(models.Model):
     brief_revision = models.PositiveIntegerField()
     generation_epoch = models.PositiveBigIntegerField()
     request_hash = models.CharField(max_length=64)
-    mode = models.CharField(max_length=16, choices=[("FIXTURE", "Fixture"), ("LIVE", "Live")])
+    mode = models.CharField(max_length=16, choices=[("FIXTURE", "Fixture"), ("LIVE", "Live"), ("MANUAL", "Manual")])
     source_ids = models.JSONField(default=list)
     targets = models.JSONField(default=list)
     limits = models.JSONField(default=dict)
@@ -583,7 +583,7 @@ class Offer(models.Model):
     merchant_url = models.URLField(max_length=1000, null=True)
     observation_kind = models.CharField(
         max_length=32,
-        choices=[("COMPARISON_OBSERVED", "Comparison observed"), ("MERCHANT_PAGE_VERIFIED", "Merchant page verified")],
+        choices=[("COMPARISON_OBSERVED", "Comparison observed"), ("MERCHANT_PAGE_VERIFIED", "Merchant page verified"), ("USER_REPORTED", "User reported")],
         default="MERCHANT_PAGE_VERIFIED",
     )
     warranty = models.CharField(max_length=200, null=True)

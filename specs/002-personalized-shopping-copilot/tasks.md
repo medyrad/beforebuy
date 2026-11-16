@@ -176,6 +176,12 @@ quality, account model access and live market coverage remain unevaluated.
 - [ ] T101 [US4] Run an actual eligible, consented OpenRouter free pilot after a local key and explicit action; record provider/usage/cost and Persian multi-turn/non-phone evidence separately from T096 technical completion.
   Checkpoint 2026-11-16 (baseline c09f5f6): existing NGINX homepage/settings journey inspected in isolated Chrome; action visible and safely disabled without key/consent. Runtime eligibility remains unresolved/false, no OpenRouter credential or recorded consent, public exact-route pricing rechecked zero, zero invocations and ten attempts remaining. No model generation or response-quality assessment; see current handoff. No requirements/implementation change.
 
+## Real-market purchase checkpoint (FR-093–095)
+
+- [x] T102 [US2] Fresh bounded reviewed-source preflight (30 attempts maximum); successful source must traverse normal API/persistence/Choice Desk before live success is claimed. Result: 4/30 conservative attempt units, DNS/deadline failures, zero valid real offers; no successful source to publish. T066 stays pending; see source-feasibility.md.
+- [x] T103 [US3] Add tested owner/revision guarded manual-offer fallback, explicit variant confirmation, original units/timestamps, safe links, and USER_REPORTED provenance excluded from technical ranking; reuse existing entities and Choice Desk. Empty parsed brief no longer hides explicit need editing. No actual market observations fabricated.
+- [x] T104 [US3] Verify focused backend/frontend and NGINX mobile/desktop journeys, document actual source results versus synthetic checks, archive/update handoff and operations, prepare related-only Git delivery. Evidence: 48 backend and18 frontend passed; actual NGINX desktop1440/mobile390 passed, axe serious/critical zero. Commit/push and remote equality are a separate delivery check reported with observed hashes; not live-market success.
+
 ## Bounded free-route feasibility and native typography (2026-11-16)
 
 - [x] T098 [US4] Review at most two exact OpenRouter free text routes, their upstream terms, Iran eligibility, privacy, unfunded access and zero-price evidence in `free-provider-readiness.md`; do not implement a blocked integration (FR-090).

@@ -4,10 +4,11 @@ import { choiceApi } from './api'
 import type { Candidate, Choice, ChoiceItem } from './api'
 import './choice-desk.css'
 import { labels } from './labels'
+import { ManualOffers, ObservedOffers, manualLabel } from './ManualOffers'
 const label = (key: string) => labels[key] ?? key
 const money = (value: number | null) => value === null ? 'نامعلوم' : `${value.toLocaleString('fa-IR')} تومان`
 const valueText = (value: number | boolean | null) => value === null ? 'نامعلوم' : typeof value === 'boolean' ? value ? 'بله' : 'خیر' : value.toLocaleString('fa-IR')
-const attribution = (value: string) => ({ SYNTHETIC: 'دادهٔ مصنوعی آموزشی', CAPTURED_FIXTURE: 'ثبت واقعیِ تاریخی', VERIFIED_SOURCE: 'منبع بررسی‌شده' })[value] ?? 'نامعلوم'
+const attribution = (value: string) => ({ USER_REPORTED: manualLabel, SYNTHETIC: 'دادهٔ مصنوعی آموزشی', CAPTURED_FIXTURE: 'ثبت واقعیِ تاریخی', VERIFIED_SOURCE: 'منبع بررسی‌شده' })[value] ?? 'نامعلوم'
 const groupLabel = (value: string) => ({ SUPPORTED: 'سازگار با نیازهای معلوم', UNRESOLVED: 'نیازمند اطلاعات', INCOMPATIBLE: 'ناسازگار با شرط شما' })[value]
 const outcomeLabel = (value: string) => ({ TIED: 'شواهد، برندهٔ یکتا نشان نمی‌دهند', SUPPORTED_CHOICE: 'یک انتخاب با پشتوانهٔ نیازهای معلوم', UNRESOLVED: 'اطلاعات برای تصمیم قطعی کافی نیست', NO_SUPPORTED_CHOICE: 'هیچ انتخاب سازگارِ پشتیبانی‌شده‌ای نداریم' })[value]
 
@@ -97,6 +98,12 @@ export function ChoiceDesk({ conversation, evidenceRevision = '' }: { conversati
     : null
   return <section className="personal-choice" aria-labelledby="comparison-title">
     <header className="choice-heading"><div><h2 id="comparison-title">گزینه‌های پیشنهادی</h2><p>مقایسه بر اساس نیاز تأییدشده و شواهد موجود؛ نه حدس مدل.</p></div><span className="choice-version">مقایسه</span></header>
+    <ManualOffers key={stamp} conversationId={conversation.id} revision={conversation.brief_revision} category={conversation.brief.category ?? ''} candidates={candidates} onSaved={async id => {
+      const available = await choiceApi.candidates(conversation.id)
+      if (active.current !== stamp) return
+      setCandidates(available.items); setSelected([id]); setIntended(id); setChoice(null)
+    }} />
+    <ObservedOffers candidates={candidates} />
     {!conversation.brief.confirmed && <p className="choice-notice">ابتدا برداشت از نیاز خرید را تأیید کنید.</p>}
     <details className="choice-controls" open={!choice}>
       <summary>محصول موردنظر و جایگزین‌ها</summary>
@@ -124,7 +131,7 @@ export function ChoiceDesk({ conversation, evidenceRevision = '' }: { conversati
         <details><summary>نامعلوم‌ها و آنچه می‌تواند نتیجه را تغییر دهد</summary><p>{item.unknowns.length ? item.unknowns.map(label).join('، ') : 'در معیارهای بررسی‌شده نامعلومی ثبت نشده است.'}</p><p>نتیجه با روشن‌شدن {item.would_change_if.map(label).join('، ')} ممکن است تغییر کند.</p></details>
         <p className="coverage">پوشش: {item.coverage.known.toLocaleString('fa-IR')} از {item.coverage.total.toLocaleString('fa-IR')} مورد معلوم؛ {item.sources.every((s) => s.fresh) ? 'شواهد در بازهٔ تازگی' : 'بخشی از شواهد قدیمی است'}</p>
         <button className="text-button" onClick={() => setDrawer(item)}>شواهد و منابع <span className="sr-status">{item.name}</span></button>
-        <details><summary>پیشنهادهای فروش همین محصول ({item.offers.length.toLocaleString('fa-IR')})</summary><p>مرتب‌سازی قیمت کالا فقط در همین variant؛ هزینهٔ نهایی نامعلوم با قیمت کالا یکسان نیست.</p>{[...item.offers].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity) || a.id.localeCompare(b.id)).map((offer) => <div className="attached-offer" key={offer.id}><strong>{offer.seller ?? 'فروشنده نامعلوم'}</strong><p>{money(offer.price)}؛ ارسال: {money(offer.shipping)}؛ هزینهٔ اجباری: {money(offer.mandatory)}</p><p>{attribution(offer.attribution)}؛ {offer.observation_kind === 'COMPARISON_OBSERVED' ? 'مشاهده در مقایسه‌گر، نه تأیید فروشنده' : 'مشاهدهٔ صفحهٔ فروشنده'}؛ {offer.fresh ? 'در بازهٔ تازگی' : 'قدیمی'}</p><p>موجودی: {offer.stock === 'IN_STOCK' ? 'موجود' : offer.stock === 'OUT_OF_STOCK' ? 'ناموجود' : 'نامعلوم'}؛ <time dateTime={offer.observed_at}>{new Date(offer.observed_at).toLocaleString('fa-IR')}</time></p>{offer.url && <a href={offer.url} target="_blank" rel="noreferrer">صفحهٔ پیشنهاد</a>}</div>)}</details>
+        <details><summary>پیشنهادهای فروش همین محصول ({item.offers.length.toLocaleString('fa-IR')})</summary><p>مرتب‌سازی قیمت کالا فقط در همین variant؛ هزینهٔ نهایی نامعلوم با قیمت کالا یکسان نیست.</p>{[...item.offers].sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity) || a.id.localeCompare(b.id)).map((offer) => <div className="attached-offer" key={offer.id}><strong>{offer.seller ?? 'فروشنده نامعلوم'}</strong><p>{money(offer.price)}؛ ارسال: {money(offer.shipping)}؛ هزینهٔ اجباری: {money(offer.mandatory)}</p><p>{attribution(offer.attribution)}؛ {offer.observation_kind === 'USER_REPORTED' ? 'مشاهدهٔ اعلامی کاربر' : offer.observation_kind === 'COMPARISON_OBSERVED' ? 'مشاهده در مقایسه‌گر، نه تأیید فروشنده' : 'مشاهدهٔ صفحهٔ فروشنده'}؛ {offer.fresh ? 'در بازهٔ تازگی' : 'قدیمی'}</p><p>موجودی: {offer.stock === 'IN_STOCK' ? 'موجود' : offer.stock === 'OUT_OF_STOCK' ? 'ناموجود' : 'نامعلوم'}؛ <time dateTime={offer.observed_at}>{new Date(offer.observed_at).toLocaleString('fa-IR')}</time></p>{offer.url && <a href={offer.url} target="_blank" rel="noreferrer">صفحهٔ پیشنهاد</a>}</div>)}</details>
       </article>)}</div>
       <p className="conditional-path">اگر هیچ گزینه‌ای شرط شما را برآورده نمی‌کند، خرید را تا روشن‌شدن شواهد نگه دارید یا یک variant دارای شاهد را انتخاب کنید؛ هزینهٔ تعمیر، تخفیف آینده یا موجودی دست‌دوم فرض نشده است.</p>
     </>}
