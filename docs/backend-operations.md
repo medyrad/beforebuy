@@ -1,5 +1,19 @@
 # عملیات backend و بستهٔ production تا M4
 
+## Source-to-screen diagnostic follow-up (2026-11-16)
+
+Host and API-container direct probes of the reviewed exact Takkalaban NA230 URL both timed out
+at TCP after successful DNS. Stop this environment: no live SafeFetcher/API retry. Current
+checkpoint2/12 connection attempts; previous ledgers remain unchanged. Full stage evidence and
+the standalone no-key/no-DB command are in
+`specs/002-personalized-shopping-copilot/source-feasibility.md` (latest section).
+The diagnostic is standard-library-only and accepts reviewed target names, not arbitrary URLs.
+One default budget unit per invocation; direct never follows redirects or falls back. Safe mode
+uses the actual validated/pinned/TLS-verified SafeFetcher and explicitly caps redirects/fallback.
+All invocations must be added to the checkpoint ledger; a new process is not a budget reset.
+No proxy values or response bodies are printed. No startup, secret overlay, policy or volume change.
+Separate-network diagnosis is not public deployment and needs no application database or credentials.
+
 ## Real-market checkpoint — manual fallback (2026-11-16)
 
 Local startup remains:

@@ -1,5 +1,38 @@
 # Source Feasibility Register
 
+## Source-to-screen follow-up — 2026-11-16 (UTC)
+
+Reviewed exact target: https://takkalaban.com/product/philips-na230/ (merchant; prior captured
+JSON-LD extraction evidence is historical, not a current offer). Same headers as SafeFetcher,
+explicit direct sockets, validated public IP, verified TLS when reached; no ambient proxies.
+
+| Layer / start UTC | DNS | TCP | TLS / HTTP headers / body / extraction / publication | Total |
+|---|---|---|---|---|
+| Host direct / 11:29:57.967577 | 109.70.78.2; 4.3387s | TimeoutError; 10.0012s | Not reached / not run | 14.3486s |
+| API-container direct / 11:30:52.775880 | 109.70.78.2; 0.2984s | TimeoutError; 10.0161s | Not reached / not run | 10.3207s |
+
+Sequential, no overlapping probe; one outbound connection each, no redirect/fallback. Both
+reports had `proxy_env_present=false`, `system_proxy_types=[]`. **2/12 attempts used** in this
+checkpoint; earlier4/30 ledger below is preserved, not reset. No provider calls. The observed
+failure is TCP connection establishment, not an HTTP rejection, TLS or parser failure. The
+underlying network/origin cause remains unresolved; these observations do not prove ISP,
+firewall or origin responsibility. Per the explicit stop rule, live SafeFetcher and application
+API comparison were NOT run after both direct failures. No independently reachable alternative
+was established, so no further source attempts were spent. No real offer was persisted/displayed.
+
+Next step: on a separately available network/host with this checkout and Python3, run from root:
+
+```sh
+python3 scripts/diagnose-research.py --target takkalaban-na230 --layer direct --max-attempts 1
+```
+
+Return its JSON and exit status. No API key, Django installation, database, secret, backup,
+credential export or public deployment is required. Stop if it fails. Only after successful
+extraction, compare `--layer safe --max-attempts 1` using the same code/URL. Every invocation
+counts toward the remaining10 units; this standalone process does not reset or replace the
+checkpoint ledger. Normal application publication/mobile+desktop reload remains T106 pending;
+T066's broader acceptance is unchanged. Prepared commands are not successful extraction evidence.
+
 ## Fresh bounded checkpoint — 2026-11-16 (UTC)
 
 Target: previously supported Samsung Q60D 55-inch exact product. No new authoritative variant or offer

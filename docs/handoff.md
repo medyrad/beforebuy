@@ -1,66 +1,71 @@
-# تحویل خرید با دادهٔ بازار — 2026-11-16
+# Source-to-screen checkpoint — 2026-11-16
 
-شاخه: `002-personalized-shopping-copilot`؛ baseline: `e6de2fc2b4c497904d1fcd7a91821c83914ed504`.
-گزارش قبلی در `docs/archive/t101-before-market-handoff.md` محفوظ است؛ وضعیت تاریخی کلیدها، وضعیت امروز فرض نشده است.
+شاخه: `002-personalized-shopping-copilot`؛ baseline: `d989ea1a23c560a4144dd7a72ea5c6b978f21e28`.
+گزارش قبلی بدون تغییر در `docs/archive/market-manual-checkpoint-handoff.md` محفوظ است.
 
 ## نتیجهٔ واقعی
 
-**استخراج زنده همچنان مسدود است؛ مسیر مقایسهٔ دستی در برنامه پیاده و تأیید شده است.**
-هدف Samsung Q60D 55 بود؛ Torob در دو تلاش هم‌پوشان قبل از دریافت نتیجه timeout داد.
-بررسی محدود جایگزین Philips NA230: Bkalaa خطای DNS و Takkalaban timeout داد؛ محصول دوم وارد مسیر کامل نشد.
-زمان‌های UTC: Torob `09:49:31.356790` و `09:49:33.822001`، Bkalaa `09:50:15.350999`، Takkalaban `09:50:15.621579`.
-کد timeout برابر `JOB_DEADLINE_EXCEEDED` در FETCH، بدون HTTP status؛ تفکیک TCP/TLS از این شاهد ممکن نیست.
-مصرف محافظه‌کارانه **۴ از ۳۰ تلاش**؛ پس از نتیجه، endpoint ناموفق تکرار نشد. جزئیات/لینک‌ها در `source-feasibility.md` همین feature.
-منابع: [Torob Q60D](https://torob.com/p/bb037069-fba8-4964-a758-6adcec22898f/q60d/)،
-[Bkalaa NA230](https://bkalaa.com/product/na230/)، [Takkalaban NA230](https://takkalaban.com/product/philips-na230/).
-تعداد پیشنهاد واقعی قابل‌مقایسه **صفر**؛ ورودی واقعی کاربر هم ارائه نشد. قیمت تاریخی یا آزمونی به‌عنوان قیمت امروز گزارش نمی‌شود.
-جایگزین واقعی پشتیبانی‌شده نداریم: هویت دقیق، مشخصات معیارهای نیاز و پیشنهاد فروش تاریخ‌دار لازم است.
+**Source-to-screen blocked at TCP connection**
 
-## مسیر قابل استفاده
+هدف بررسی‌شده: https://takkalaban.com/product/philips-na230/ ؛ شواهد استخراج JSON-LD قبلی تاریخی است، نه قیمت امروز.
+دو درخواست مستقیم، متوالی، با همان URL/headerهای SafeFetcher و بدون proxy اجرا شد:
 
-`http://127.0.0.1:58080/` → پیام خرید → «میز انتخاب» در موبایل → «اصلاح نیاز خرید» → تعیین دسته/بودجه و تأیید نیاز →
-«ثبت پیشنهادی که خودم دیده‌ام». لینک دقیق HTTPS، نسخه، فروشنده، مبلغ/واحد، موجودی، زمان مشاهده و هزینه‌های معلوم را وارد کنید.
-برای فروشندهٔ بعدی همان نسخه را صریحاً تأیید کنید؛ نسخهٔ متفاوت جدا ثبت می‌شود. قیمت‌ها و لینک منبع در همان میز انتخاب دیده می‌شوند.
-هیچ خرید خودکاری انجام نمی‌شود. فقط اطلاعاتی را وارد کنید که واقعاً مشاهده کرده‌اید؛ قیمت نمونه پیش‌فرض وجود ندارد.
+| محیط / شروع UTC | DNS | TCP | کل زمان |
+|---|---|---|---|
+| host / 11:29:57.967577 | 109.70.78.2، 4.3387s | TimeoutError، 10.0012s | 14.3486s |
+| API-container / 11:30:52.775880 | 109.70.78.2، 0.2984s | TimeoutError، 10.0161s | 10.3207s |
 
-هر پیشنهاد: **«واردشده توسط کاربر؛ مستقلاً تأیید نشده»**. مبلغ اصلی و تبدیل دقیق `۱۰ ریال = ۱ تومان` حفظ می‌شود؛
-ارسال/هزینهٔ اجباری نامعلوم صفر نیست و مبلغ نهایی فقط با همهٔ اجزای معلوم نمایش داده می‌شود.
-زمان ادعایی مشاهده از ثبت سرور جداست؛ قدیمی، ناموجود و متعارض از کمینهٔ قابل‌استفاده کنار گذاشته می‌شوند ولی پنهان نمی‌شوند.
-مالکیت/CSRF/revision/expiry، لینک امن، جلوگیری از ارسال دوباره و عدم انتشار پس از تغییر نیاز آزمون دارند.
-پیشنهاد دستی ادعای فنی تولید نمی‌کند، به محصول استخراج‌شده خودکار متصل نمی‌شود و رتبه‌بندی فنی را معتبر نمی‌کند.
-فرم اصلاح نیاز حتی هنگام تشخیص‌ندادن متن توسط mock قابل دسترسی شد؛ parser/ارائه‌دهنده تغییر نکرد.
-شکست بعضی منابع، پیشنهادهای موفق قبلی را حذف نمی‌کند و پیام فارسی منبع ناموفق باقی می‌ماند.
+هر دو: proxy environment موجود نبود؛ system proxy types خالی بود. هیچ مقدار proxy یا کلیدی چاپ نشد.
+TLS، HTTP headers، body و extraction نرسیدند؛ publication اجرا نشد. این شاهد علت پایین‌دستی
+مانند ISP/firewall/origin را تعیین نمی‌کند و خطای parser، HTTP rejection یا transport اختصاصی برنامه را ثابت نمی‌کند.
+طبق شرط توقف، SafeFetcher و API زنده دوباره در این محیط امتحان نشدند؛ منبع جایگزین مستقلِ قابل‌دسترسی احراز نشد.
+مصرف این checkpoint **۲ از۱۲ تلاش**، بدون redirect/fallback؛ **۱۰ واحد باقی**. دفتر قبلی۴ از۳۰ حفظ شده است.
+پیشنهاد واقعی استخراج/ذخیره/نمایش‌داده‌شده: **صفر**. دادهٔ fixture یا دستی به‌عنوان موفقیت شمرده نشد.
 
-## آزمون و محدودیت
+## اصلاح مستقل و آزمون
 
-Chrome واقعی روی NGINX: desktop1440 موفق در۱۸٫۶ثانیه و mobile390 در اجرای اصلاح‌شدهٔ مستقل موفق در۲۱٫۴ثانیه؛
-هر دو مسیر سه پیشنهاد را از فرم ثبت کردند، واحد/موجودی/هزینه و لینک‌ها را بررسی و بعد از reload از «ادامهٔ گفت‌وگو» دوباره باز کردند.
-axe serious/critical در صفحات بررسی‌شده صفر؛ بدون سرریز افقی. تصاویر مصنوعی `artifacts/screenshots/market-manual-{1440,390}.png` بصری بازبینی شدند.
-backend هدفمند PostgreSQL: ۴۸ کشف/اجرا/موفق، صفر skip/failure/error؛ frontend هدفمند: ۱۸/۱۸ موفق، lint پاک.
-بدنهٔ نامعتبر ابتدا ۵۰۰ می‌داد؛ تست قرمز و اصلاح ۴۲۲ تأیید شد.
-دو اجرای اولیهٔ مرورگر موفق نبودند: desktop انتظار کوتاه پس از درخواست‌های سرد حدود۱۵ثانیه‌ای؛ mobile فرم اصلاح نیاز پنهان بود.
-دومی با regression قرمز بازتولید و با نمایش همان فرم موجود رفع شد؛ اولی با انتظار محدود وضعیت، نه تکرار نوشتن یا sleep، اصلاح شد.
-فرض غلط تست دربارهٔ بازشدن خودکار گفتگو بعد از reload و کلیک پیش از پایان بارگذاری موبایل نیز اصلاح شد؛
-اجرای میانی متوقف‌شده/ناموفق موفق شمرده نشد. نتیجهٔ دسکتاپ معتبر دوباره اجرا نشد؛ فقط موبایل اصلاح‌شده بازاجرا شد.
-تست‌ها فقط رکورد مصنوعی با نام و دامنهٔ `.example` می‌سازند؛ مدرک بازار/مدل واقعی نیستند.
+ابزار موجود `scripts/diagnose-research.py` اکنون exact targetهای بررسی‌شده، حالت مستقیم بدون proxy،
+زمان/مرحلهٔ DNS→TCP→TLS→headers→body→extraction و شمارش تلاش را گزارش می‌کند؛ body ذخیره/چاپ نمی‌شود.
+safe mode همان SafeFetcher واقعی را با مشاهده‌گر زمان‌بندی به‌کار می‌گیرد؛ TLS/SSRF/IP pinning و سقف‌ها تضعیف نشده‌اند.
+regression گزارش مرحلهٔ شکستِ قدیمی پس از fallback ابتدا قرمز و سپس اصلاح شد.
+هیچ تغییر در transport تولیدی، extractor، UI، ویژگی دستی، provider یا schema پایگاه داده انجام نشد.
 
-## اجرا و حفاظت داده
+فرمان‌های اجراشده از ریشه:
+
+```sh
+PYTHONPATH=backend .venv/bin/python -m unittest discover -s backend/tests/unit -p test_research_diagnostic.py -v
+PYTHONPATH=backend .venv/bin/python -m unittest discover -s backend/tests/unit -p test_safe_fetch.py -v
+PYTHONPATH=backend .venv/bin/python -m unittest discover -s backend/tests/unit -p test_extractors.py -v
+```
+
+به‌ترتیب۸،۲۱ و۸ تست کشف/اجرا/موفق؛ مجموع۳۷، صفر skipped/failure/error. شبکهٔ این تست‌ها stub یا loopback است، نه دریافت بازار.
+پوشش شامل header یکسان، TCP/TLS/HTTP مجزا، محدودیت fallback، رد IP خصوصی، عدم افشای proxy، استخراج مصنوعی و عدم publication است.
+build یا مرورگر تکرار نشد: UI تغییری نکرد و استخراج زنده پیش‌نیاز مسیر واقعی بود.
+Spec Kit analyze محدود FR-096→T105/T106: یک الزام، دو task، پوشش۱۰۰٪، تعارض بحرانی/ابهام/تکرار صفر؛
+implement فقط اصلاح تشخیص T105. T106 و T066، T101 و feature001 T039 باز هستند؛ همگرایی کامل ادعا نمی‌شود.
+
+## تنها اقدام بعدی موردنیاز
+
+روی یک شبکه/میزبان مستقلِ ازقبل‌موجود، از ریشهٔ همین checkout فرمان زیر را اجرا و JSON و exit status را ارسال کنید:
+
+```sh
+python3 scripts/diagnose-research.py --target takkalaban-na230 --layer direct --max-attempts 1
+```
+
+فقط Python3 و کد مخزن لازم است؛ بدون نصب Django، API key، database، backup، credential export یا public deployment.
+اگر شکست خورد توقف کنید. فقط پس از استخراج موفق، همان فرمان با `--layer safe` قابل مقایسه است؛
+هر اجرا از۱۰ واحد باقی کم می‌کند. آماده‌بودن دستور، موفقیت checkpoint نیست.
+پس از موفقیت باید API عادی، هویت/واحد/موجودی/زمان/هزینهٔ نامعلوم، مالکیت و mobile/desktop reload واقعاً بررسی شود.
+
+## حفاظت اجرا و داده
+
+فرمان canonical بدون تغییر:
 
 ```sh
 COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
 ```
 
-runtime بررسی‌شده: AI `mock`، research `OFFLINE` و mount کلید موجود؛ هیچ کلید خوانده/چاپ/اعتبارسنجی یا جابه‌جا نشد.
-فراخوانی LLM، هزینه، خرید سرویس و deployment عمومی: صفر. فضای آزاد پیش از build حدود۲۷GiB؛ PostgreSQL آماده و Docker پاسخ‌گو بود.
-build شامل TypeScript/Vite موفق؛ `makemigrations --check --dry-run` بدون تغییر، OpenAPI YAML خوانا و `git diff --check` پاک.
-گزارش‌ها و trace مرورگر از build contextهای بعدی مستثنی شدند.
-migration0019 فقط choices است؛ SQL دو no-op، اعمال موفق. backup خوانا با پوشه0700/فایل0600:
-`/Users/mehdi/Backups/beforebuy/market-checkpoint-KHiSbC/beforebuy.dump`؛ بررسی خوانایی، نه restore rehearsal تازه.
-volume `beforebuy_beforebuy_pgdata_v18` حفظ شد. rollback کد با حفظ داده؛ restore ضروری فقط پس از توقف نوشتن به volume تازه و بررسی مالکیت/حسابداری.
-هیچ backup، secret، trace، runtime data یا تصویر قدیمی نامرتبط وارد commit نمی‌شود.
-
-## وضعیت دامنه و Git
-
-Spec Kit analyze/implement محدود به FR-093–095 / T102–T104؛ سه الزام پوشش دارند، تعارض بحرانی صفر؛ framework/ابزار جدید نصب نشد.
-T066 (استخراج واقعی)، T101 (مکالمهٔ واقعی)، feature001 T039 و gateهای public release باز هستند. همگرایی کامل محصول ادعا نمی‌شود.
-نتیجهٔ commit/push و hash مشاهده‌شدهٔ remote در پاسخ نهایی ثبت خواهد شد؛ هیچ موفقیت Git بدون شاهد ادعا نمی‌شود.
+هیچ restart/build، تغییر تنظیمات AI mock یا research OFFLINE، فعال‌سازی policy، خواندن کلید، فراخوانی مدل،
+خرید سرویس، تغییر DNS/VPN/proxy یا deployment عمومی انجام نشد. volumeها، backupها، secretها و تصاویر نامرتبط حفظ شدند.
+بررسی فقط سه setting غیرمحرمانه در API جاری تأیید کرد: `COPILOT_AI_MODE=mock`، `BEFOREBUY_AI_MODE=mock` و `BEFOREBUY_RESEARCH_MODE=OFFLINE`.
+تغییرات مرتبط فقط commit/push می‌شوند؛ hash محلی و remote مشاهده‌شده در پاسخ نهایی ثبت می‌شود، نه ادعای پیشاپیش همگامی.

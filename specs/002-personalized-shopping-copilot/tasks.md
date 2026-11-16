@@ -188,6 +188,11 @@ quality, account model access and live market coverage remain unevaluated.
 - [x] T099 [US5] Reproduce native select font mismatch with computed-style and before screenshots; fix existing Vazirmatn inheritance/bidi and verify provider/model/category, keyboard and mobile layout through NGINX in `tests/e2e/copilot-typography.spec.ts` (FR-091).
 - [x] T100 [US5] Record verified results, native-popup limitations and precise free-route prerequisites in operations/handoff; prepare related-only Git delivery (FR-090/091; observed remote hash reported in final delivery). T096 remains conditional on route eligibility, not on merely supplying a key.
 
+## Source-to-screen follow-up (FR-096)
+
+- [x] T105 [US2] Extend existing reviewed-target diagnostic with tested stage timing/accounting and proxy-free matching headers; run sequential bounded host/container/SafeFetcher comparison under FR-096, stop after both direct failures and document exact uncertainty. Evidence: host/container DNS succeeded, TCP timed out on both; 2/12 attempts, SafeFetcher/API live stages not run under the stop rule. Eight diagnostic,21 transport and8 extractor tests passed.
+- [ ] T106 [US2] After successful extraction, publish one real offer through existing research API and verify owner-scoped mobile/desktop reload/provenance. If network-blocked, leave this task open and supply the existing-code standalone diagnostic plus precise missing environment. Does not complete T066.
+
 ## Dependencies
 
 `A → B evidence models/controlled fixtures → offline C`; public extraction and T066 gate live coverage, not offline C. T055–T057 block T058 and T058 blocks T059. Memory work in D depends on A, adapter work depends on A streaming, and E depends on selected completed milestones. T009 may implement only NGINX buffering/timeouts and Gunicorn request-thread capacity required to verify A; T043 remains open for full graceful-shutdown/production rehearsal criteria. T049 follows T003/T005 and blocks image use. T013 gates general source integration; FR-055 separately authorizes the narrow factual pilot. T034 blocks credential implementation. T037/T040 and official region support block live AI calls. T050 follows A/D data ownership. T047 never completes merely from a key. Feature 001 `T039` remains independent and pending.

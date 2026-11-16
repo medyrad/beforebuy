@@ -4,6 +4,8 @@
 
 ## Summary
 
+Current follow-up FR-096 / T105–T106: extend only scripts/diagnose-research.py with reviewed-target selection and stage timing; reuse actual SafeFetcher and extractor, preserve all transport validation. Direct probes use matching headers, validated pinned IP and verified TLS; no ambient proxies. Ceiling12 separate from historical ledgers. Stop after matching host/container failures; otherwise extraction must precede normal API publication. No DB/key needed for portable diagnostics; no changes to UI/manual/provider scope. T066 remains its original broader gate.
+
 Current real-market checkpoint: FR-093–095, T102–T104 only; AI issues are deferred. Reuse SafeFetcher and reviewed adapters, ceiling30 attempts. If blocked, add one synchronous owner/revision-guarded manual-offer endpoint under existing choices, using ResearchJob/SourceSnapshot/Variant/Offer and source marker USER-ENTRY-v1. No new catalog, background worker or network in manual submission. Keep original currency/amount in Offer; snapshot retrieval_time is claimed observation, created_at is server entry. Distinct USER_REPORTED observation/mode labels; no EvidenceClaim technical facts. Ranking excludes this attribution; a separate price-only table inside the same Choice Desk may compare reported offers. Exact variant grouping requires explicit confirmation; no inferred identity merging. Preserve source review/enable flags and secret startup. No real prices will be invented if sources fail.
 
 T096 correction supersedes the previous feasibility-before-implementation boundary: build technical integration
