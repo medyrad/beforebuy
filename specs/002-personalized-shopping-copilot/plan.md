@@ -4,13 +4,23 @@
 
 ## Summary
 
-Current bounded follow-up: T098–T100, FR-090/091. Research two exact OpenRouter free routes before any adapter.
+T096 correction supersedes the previous feasibility-before-implementation boundary: build technical integration
+independently (FR-092), leaving T101 actual activation/evaluation pending. Reuse provider encryption and worker/SSE;
+pin Baidu ERNIE free/baidu at the official Chat Completions endpoint. A singleton database attempt counter survives
+guest/conversation deletion and limits the whole initial pilot to ten generation attempts, without resetting by day.
+Record each attempt in AIInvocation, retain returned USD cost separately from local estimates. No automatic retries.
+Separate service/route eligibility configuration, informed synthetic-data consent, saved key and tested account.
+Explicit connection testing consumes one attempt and creates a new temporary synthetic-only conversation on success.
+Only that conversation can use the free route while normal runtime remains mock. Strip memory/evidence/images from
+pilot context, reject uploads, preserve ownership/manifest/lease publication checks and allow no implicit fallback.
+
+Historical bounded follow-up (superseded by FR-092 above): T098–T100, FR-090/091. Research two exact OpenRouter free routes before any adapter.
 If eligibility/privacy cannot be established, document the precise unresolved question and leave T096 pending;
 do not build another unusable provider. Independently fix native select typography in existing CSS, isolate Latin
 model IDs, and use real NGINX computed-style/keyboard/mobile regression tests and screenshots. Preserve existing
 secret-aware startup, credentials, database volumes and mock/OFFLINE runtime. No new framework or paid usage.
 
-Current settings correction scope: T093–T095 and T097 (FR-088/089); T096 is deferred. Clear credential state on every provider transition,
+Historical settings correction scope: T093–T095 and T097 (FR-088/089); T096 was deferred in that delivery. Clear credential state on every provider transition,
 provide recoverable reload on partial failures, guard save/delete by provider identity and serialize updates.
 Use a synchronous ref lock for same-render events and a lifecycle generation for every asynchronous continuation;
 late responses cannot release the current lock or load/publish another credential. No new provider in delivery.

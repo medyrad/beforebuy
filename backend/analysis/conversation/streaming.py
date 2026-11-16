@@ -188,9 +188,13 @@ def finalize_operation(operation_id, lease_owner, text):
     if operation is None or operation.status != "RUNNING":
         return False
     if operation.credential_revision is not None:
-        from analysis.ai.credentials import active_credential
-        credential = active_credential(conversation.guest_context_id)
-        if credential is None or credential.revision != operation.credential_revision:
+        if operation.credential_provider in ('gapgpt', 'openrouter'):
+            from analysis.ai.provider_credentials import active_provider_credential
+            credential = active_provider_credential(conversation.guest_context_id, operation.credential_provider)
+        else:
+            from analysis.ai.credentials import active_credential
+            credential = active_credential(conversation.guest_context_id)
+        if credential is None or credential.state != 'VALIDATED' or credential.revision != operation.credential_revision:
             _terminalize_locked(operation, conversation, 'operation.failed', {'code': 'CREDENTIAL_UNAVAILABLE'},
                                 'INTERRUPTED', 'CREDENTIAL_UNAVAILABLE', now)
             return False
@@ -340,10 +344,16 @@ def _execute(operation_id):
                 return
             text += chunk
         finalize_operation(operation_id, _worker_identity, getattr(generator, 'final_text', None) or text)
-    except Exception:
-        fail_owned_operation(operation_id, _worker_identity, "FIXTURE_FAILED"
+    except Exception as exc:
+        from analysis.ai.openai_copilot import CopilotProviderError
+        safe_codes = {'FREE_ATTEMPT_LIMIT', 'PRICE_UNVERIFIED', 'NONZERO_RETURNED_COST',
+                      'OPENROUTER_RATE_LIMIT', 'OPENROUTER_AUTH_FAILED', 'OPENROUTER_ACCESS_DENIED',
+                      'OPENROUTER_CREDIT_REQUIRED', 'OPENROUTER_TIMEOUT', 'OPENROUTER_UNAVAILABLE',
+                      'SERVICE_ELIGIBILITY_REQUIRED', 'ROUTE_ELIGIBILITY_REQUIRED', 'FREE_CONFIGURATION_REQUIRED'}
+        code = str(exc) if isinstance(exc, CopilotProviderError) and str(exc) in safe_codes else None
+        fail_owned_operation(operation_id, _worker_identity, code or ("FIXTURE_FAILED"
                              if generator is not None and generator.kind.startswith('DEVELOPMENT_')
-                             else "GENERATION_FAILED")
+                             else "GENERATION_FAILED"))
     finally:
         close_old_connections()
         _capacity.release()

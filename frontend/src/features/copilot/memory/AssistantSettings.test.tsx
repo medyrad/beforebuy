@@ -5,6 +5,48 @@ import { AssistantSettings } from './AssistantSettings'
 
 afterEach(() => vi.unstubAllGlobals())
 
+it('stores only the OpenRouter key without validation and requires explicit synthetic consent', async () => {
+  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.includes('/credential')) return json({ ...credentialFor('openrouter'),
+      ...(init?.method === 'PUT' ? { masked: '••••', state: 'STORED_UNVALIDATED' } : {}) })
+    return json(settingsFor('openrouter'))
+  })
+  vi.stubGlobal('fetch', fetcher)
+  render(<AssistantSettings />)
+  const input = await screen.findByLabelText('کلید OpenRouter')
+  fireEvent.change(input, { target: { value: 'synthetic-openrouter-only' } })
+  fireEvent.submit(input.closest('form')!)
+  await screen.findByText('کلید ذخیره شد؛ اتصال زنده فعال نشده است.')
+  expect(fetcher.mock.calls.filter(([url]) => url.includes('/models/refresh'))).toHaveLength(0)
+  const put = fetcher.mock.calls.find(([, init]) => init?.method === 'PUT')!
+  expect(JSON.parse(String(put[1]?.body)).provider).toBe('openrouter')
+  expect(screen.getByRole('button', { name: 'آزمایش رایگان' })).toBeDisabled()
+})
+
+it('clears the old key on failed OpenRouter loading and serializes rapid switching', async () => {
+  const pending = delayedResponse()
+  const fetcher = vi.fn(async (url: string, init?: RequestInit) => {
+    if (init?.method === 'PATCH') return pending.promise
+    if (url.includes('provider=openrouter')) return new Response('{}', { status: 503 })
+    return json(url.includes('/credential') ? { ...credentialFor('gapgpt'), masked: '••••' } : settingsFor('gapgpt'))
+  })
+  vi.stubGlobal('fetch', fetcher)
+  render(<AssistantSettings />)
+  fireEvent.change(await screen.findByLabelText('کلید GapGPT'), { target: { value: 'synthetic-old-key' } })
+  const select = screen.getByRole('combobox', { name: 'ارائه‌دهنده' })
+  act(() => {
+    fireEvent.change(select, { target: { value: 'openrouter' } })
+    fireEvent.change(select, { target: { value: 'openai' } })
+  })
+  await act(async () => pending.resolve(json(settingsFor('openrouter'))))
+  await screen.findByRole('alert')
+  expect(select).toHaveValue('openrouter')
+  expect(screen.queryByLabelText('کلید GapGPT')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('کلید OpenRouter')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'حذف کلید' })).not.toBeInTheDocument()
+  expect(fetcher.mock.calls.filter(([, init]) => init?.method === 'PATCH')).toHaveLength(1)
+})
+
 function delayedResponse() {
   let resolve!: (response: Response) => void
   const promise = new Promise<Response>(done => { resolve = done })
@@ -162,6 +204,6 @@ it('labels free-provider onboarding as pending rather than an active connection'
   render(<AssistantSettings />)
   await userEvent.setup().click(screen.getByText('سهمیهٔ رایگان API — در حال بررسی'))
   expect(screen.getByRole('link', { name: 'ساخت حساب و کلید در OpenRouter' })).toHaveAttribute('href', 'https://openrouter.ai/settings/keys')
-  expect(screen.getByText(/اتصال OpenRouter هنوز پیاده‌سازی و تأیید نشده/)).toBeInTheDocument()
+  expect(screen.getByText(/فرم مستقل آماده است؛ فعال‌سازی واقعی به شرایط مسیر و حساب بستگی دارد/)).toBeInTheDocument()
   await screen.findByRole('alert')
 })

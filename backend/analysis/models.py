@@ -132,6 +132,8 @@ class AIInvocation(models.Model):
     reserved_cost_microusd = models.PositiveBigIntegerField(default=0)
     estimated_cost_microusd = models.PositiveBigIntegerField(default=0)
     provider_request_id = models.CharField(max_length=128, null=True)
+    provider_reported_cost_usd = models.DecimalField(max_digits=20, decimal_places=10, null=True)
+    hosting_provider = models.CharField(max_length=64, null=True)
     provider_estimated_cost_toman = models.DecimalField(max_digits=18, decimal_places=6, null=True)
     evaluation_authorization = models.ForeignKey(
         AIEvaluationAuthorization, null=True, on_delete=models.PROTECT, related_name="invocations"
@@ -189,6 +191,7 @@ class Conversation(models.Model):
     status = models.CharField(max_length=16, default="ACTIVE")
     title = models.CharField(max_length=120, default="گفت‌وگوی خرید")
     temporary = models.BooleanField(default=False)
+    openrouter_pilot = models.BooleanField(default=False)
     brief_revision = models.PositiveIntegerField(default=0)
     generation_epoch = models.PositiveBigIntegerField(default=0)
     last_eligible_activity_at = models.DateTimeField()
@@ -208,6 +211,7 @@ class Conversation(models.Model):
 class CopilotSettings(models.Model):
     guest_context = models.OneToOneField(GuestContext, primary_key=True, on_delete=models.CASCADE)
     memory_enabled = models.BooleanField(default=False)
+    openrouter_data_consent = models.BooleanField(default=False)
     provider = models.CharField(max_length=32, default="gapgpt")
     model = models.CharField(max_length=64, default="gapgpt-deepseek-v4.1-flash")
     revision = models.PositiveIntegerField(default=0)
@@ -237,8 +241,18 @@ class ProviderCredential(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["guest_context", "provider"], name="copilot_provider_credential_unique"),
-            models.CheckConstraint(condition=models.Q(provider__in=["gapgpt"]), name="copilot_provider_credential_supported"),
+            models.CheckConstraint(condition=models.Q(provider__in=["gapgpt", "openrouter"]), name="copilot_provider_credential_supported"),
         ]
+
+
+class OpenRouterFreePilot(models.Model):
+    id = models.CharField(primary_key=True, max_length=16, default='initial')
+    attempts = models.PositiveSmallIntegerField(default=0)
+    blocked = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [models.CheckConstraint(condition=models.Q(id='initial', attempts__lte=10),
+                                               name='openrouter_initial_ten_attempts')]
 
 
 class PreferenceMemory(models.Model):

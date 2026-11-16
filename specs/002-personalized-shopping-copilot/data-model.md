@@ -1,5 +1,16 @@
 # Data Model
 
+## T096 OpenRouter boundary (0018)
+
+ProviderCredential permits `openrouter` independently of OpenAI/GapGPT. CopilotSettings stores an explicit
+synthetic-data consent boolean; consent is not eligibility or validation. Conversation adds immutable
+`openrouter_pilot` default false, set only by successful explicit pilot creation, always temporary.
+OpenRouterFreePilot is a deployment-wide singleton (`initial`, attempts <=10, blocked flag) with no guest FK:
+deleting a guest/history/key or restarting cannot reset authorization. No prompt/secret is stored there.
+AIInvocation reuses existing ownership-null-on-delete and retention, adding nullable provider-reported USD cost
+and hosting provider; null cost is unknown, not invoice zero. Attempts reserved before network remain consumed
+on cancellation/crash; no automatic retries. No existing rows, credentials or spending authorizations are reset.
+
 ## Bounded UX migration 0017
 
 Additive `ShoppingBrief.conversation_state` JSON defaults to `{}`: pending_budget stores an explicitly proposed

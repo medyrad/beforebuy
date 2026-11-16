@@ -42,7 +42,15 @@ class CopilotSettingsView(ObjectBodyAPIView):
                 mode = 'LIVE_READY'
             except CopilotProviderError:
                 pass
-        return Response({'memory_enabled': item.memory_enabled, 'provider': item.provider,
+        from analysis.models import OpenRouterFreePilot
+        allowance = OpenRouterFreePilot.objects.filter(id='initial').first()
+        readiness = {'service_eligible': settings.COPILOT_OPENROUTER_SERVICE_ELIGIBLE,
+                     'route_eligible': bool(settings.COPILOT_OPENROUTER_ROUTE_ELIGIBLE and settings.COPILOT_OPENROUTER_ELIGIBILITY_REFERENCE.strip()),
+                     'data_consent': item.openrouter_data_consent,
+                     'account_verified': bool(item.provider == 'openrouter' and connection == 'VALIDATED'),
+                     'remaining_attempts': max(0, 10 - allowance.attempts) if allowance else 10,
+                     'blocked': bool(allowance and allowance.blocked)}
+        return Response({'openrouter': readiness, 'memory_enabled': item.memory_enabled, 'provider': item.provider,
                          'model': item.model, 'revision': item.revision,
                          'mode': mode,
                          'credential_state': 'NOT_CONFIGURED' if credential is None else credential.state,
@@ -87,6 +95,9 @@ class CopilotModelsRefreshView(ObjectBodyAPIView):
         from analysis.ai.openai_adapter import ProviderTransientError
         guest = get_or_create_guest(request)
         preferences, _ = CopilotSettings.objects.get_or_create(guest_context=guest)
+        if preferences.provider == 'openrouter':
+            from .openrouter import start_pilot
+            return start_pilot(request, guest, preferences)
         if preferences.provider == 'gapgpt':
             credential = active_provider_credential(guest.id, 'gapgpt')
             if credential is None:

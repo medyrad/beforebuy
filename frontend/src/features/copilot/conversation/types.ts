@@ -40,6 +40,7 @@ export interface Operation {
 }
 
 export interface Conversation {
+  openrouter_pilot?: boolean
   messages_truncated?: boolean
   temporary?: boolean
   id: string

@@ -5,6 +5,10 @@ from .openai_copilot import CopilotProviderError
 
 
 def ensure_provider_live_eligible(provider):
+    if provider == 'openrouter':
+        from .openrouter_copilot import ensure_eligible
+        ensure_eligible()
+        return
     if provider == "openai":
         from .openai_copilot import ensure_live_eligible
         ensure_live_eligible()

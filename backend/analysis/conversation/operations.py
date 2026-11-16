@@ -55,21 +55,27 @@ def accept_message(*, conversation_id, guest, text, upload_ids, expected_revisio
     credential_revision = None
     credential_provider = None
     from django.conf import settings
-    if settings.COPILOT_AI_MODE != 'mock':
+    if settings.COPILOT_AI_MODE != 'mock' or conversation.openrouter_pilot:
         from analysis.ai.provider_readiness import ensure_provider_live_eligible
         from analysis.ai.openai_copilot import CopilotProviderError
         from analysis.models import CopilotSettings
         preferences, _ = CopilotSettings.objects.get_or_create(guest_context=guest)
         credential_provider = preferences.provider
+        if conversation.openrouter_pilot:
+            if credential_provider != 'openrouter' or not preferences.openrouter_data_consent or uploads:
+                raise OperationConflict('SYNTHETIC_ONLY', 'آزمایش فقط با OpenRouter، رضایت داده و بدون تصویر مجاز است.')
+        elif credential_provider == 'openrouter':
+            raise OperationConflict('SYNTHETIC_ONLY', 'از تنظیمات یک گفت‌وگوی آزمایشی تازه شروع کنید.')
         try:
             ensure_provider_live_eligible(credential_provider)
         except CopilotProviderError as exc:
             code = str(exc)
             if code not in {'REGION_BLOCKED', 'SPENDING_AUTHORIZATION_REQUIRED', 'CONFIGURATION_MISSING',
-                            'PROVIDER_UNAVAILABLE'}:
+                            'PROVIDER_UNAVAILABLE', 'SERVICE_ELIGIBILITY_REQUIRED',
+                            'ROUTE_ELIGIBILITY_REQUIRED', 'FREE_CONFIGURATION_REQUIRED'}:
                 code = 'PROVIDER_UNAVAILABLE'
             raise OperationConflict(code, 'فعال‌سازی اتصال زنده کامل نشده است.') from None
-        if credential_provider == 'gapgpt':
+        if credential_provider in ('gapgpt', 'openrouter'):
             from analysis.ai.provider_credentials import active_provider_credential
             credential = active_provider_credential(guest.id, credential_provider)
         else:

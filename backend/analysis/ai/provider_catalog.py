@@ -16,8 +16,16 @@ GAPGPT_CATALOG = {GAPGPT_MODEL: {
     "source": "https://aigap.app/platform-v2/docs/models/deepseek-v4-1-flash-iran",
 }}
 
-CATALOGS = {"gapgpt": GAPGPT_CATALOG, "openai": OPENAI_CATALOG}
-DEFAULT_MODELS = {"gapgpt": GAPGPT_MODEL, "openai": "gpt-6-luna"}
+OPENROUTER_MODEL = 'baidu/ernie-5.5-flash-preview:free'
+OPENROUTER_CATALOG = {OPENROUTER_MODEL: {
+    'id': OPENROUTER_MODEL, 'provider': 'openrouter', 'hosting_provider': 'baidu',
+    'protocol': 'CHAT_COMPLETIONS', 'streaming': True, 'structured_output': True,
+    'image_input': False, 'verified_on': '2026-11-16',
+    'source': 'https://openrouter.ai/api/v1/models/baidu/ernie-5.5-flash-preview:free/endpoints',
+    'readiness': 'TECHNICALLY_SUPPORTED_ACCOUNT_UNVERIFIED',
+}}
+CATALOGS = {"gapgpt": GAPGPT_CATALOG, "openai": OPENAI_CATALOG, 'openrouter': OPENROUTER_CATALOG}
+DEFAULT_MODELS = {"gapgpt": GAPGPT_MODEL, "openai": "gpt-6-luna", 'openrouter': OPENROUTER_MODEL}
 
 
 def catalog_for(provider, saved_model):

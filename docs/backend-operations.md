@@ -1,5 +1,33 @@
 # عملیات backend و بستهٔ production تا M4
 
+## T096 OpenRouter free synthetic pilot
+
+Technical integration is installed independently of activation. Local UI:
+`http://127.0.0.1:58080/copilot` → تنظیمات دستیار → OpenRouter → کلید OpenRouter.
+Use the existing canonical secret-overlay command below; do not regenerate the keyring.
+Migration `0018_openrouter_free_pilot` adds provider-bound credential support, temporary-pilot marker,
+separate consent, actual returned USD cost/hosting provider and a deployment-wide ten-attempt allowance.
+Do not delete/reset that allowance, including when deleting a guest, restarting or restoring data.
+
+Default remains mock/OFFLINE. The **only** live exception is a new temporary synthetic conversation created
+after an explicit successful «آزمایش رایگان». Save/delete/settings reads never call OpenRouter.
+The normal Compose `env_file` loads these non-secret settings; production Compose explicitly interpolates them:
+`COPILOT_OPENROUTER_SERVICE_ELIGIBLE=0`, `COPILOT_OPENROUTER_ROUTE_ELIGIBLE=0`,
+`COPILOT_OPENROUTER_ELIGIBILITY_REFERENCE=`. Keep defaults until an attributable review supports this exact
+account/route/deployment; a successful HTTP response or user data consent is not such evidence.
+Paid authorization and all copilot monetary limits must remain zero. API key enters ONLY the local encrypted UI.
+No secret environment variable, alternate base URL, paid fallback or self-hosted inference is introduced.
+
+Price preflight uses the official exact model endpoints API on every generation. All applicable reported prices
+must be known and zero; route is fixed to Baidu and price filters are zero. No retries. Ten total generations
+include validation and errors, across users and days. API limits of zero billable usage are operational controls,
+not a guarantee about an upstream invoice. Nonzero returned cost freezes further attempts.
+Gateway/model account access, route eligibility and measured Persian/context quality remain pending T101.
+See feature002 `free-provider-readiness.md` for exact terms, privacy disclosure and one unsent support question.
+
+Rollback: retain additive migration/data and counters; keep eligibility flags false and restore prior application
+image/code if necessary. Never unapply the migration to discard accounting or touch stored existing credentials.
+
 ## Credential mount recovery — 2026-11-16
 
 The running API had only `/app`, no `/run/secrets/copilot_master_keyring`; `keyring()` was unavailable.
@@ -22,7 +50,7 @@ Frontend rebuild/recreation uses `build web`, then `up -d --no-deps web` through
 No secret contents printed or embedded; existing volumes and credentials are preserved. Browser verification uses
 fresh guest contexts with disposable synthetic credentials only. Do not collect traces/screenshots of key entry.
 
-Free-provider integration is pending; see `specs/002-personalized-shopping-copilot/free-provider-readiness.md`.
+Free-provider **live activation/evaluation** is pending; technical T096 supersedes the earlier integration deferral.
 
 ## Bounded UX redesign — local operation and rollback (2026-11-16)
 

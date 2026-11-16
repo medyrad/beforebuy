@@ -262,6 +262,7 @@ export function CopilotApp() {
   }
   const attach = async (file?: File) => {
     if (!file) return
+    if (conversation?.openrouter_pilot) { setError('آزمایش رایگان فقط متن ساختگی می‌پذیرد؛ تصویر ارسال نمی‌شود.'); return }
     const epoch = epochRef.current
     if (file.size > 5 * 1024 * 1024) { setError('حجم تصویر باید حداکثر ۵ مگابایت باشد.'); return }
     try {
@@ -326,12 +327,16 @@ export function CopilotApp() {
     if (id) delete draftsRef.current[id]; else draftsRef.current = {}
     void refreshList()
   }} />}
-  {view !== 'desk' && <main className="personal-page">{view === 'settings' ? <AssistantSettings /> : <MemoryPanel />}</main>}
+  {view !== 'desk' && <main className="personal-page">{view === 'settings' ? <AssistantSettings onPilot={id => {
+    void Promise.all([memoryApi.settings(), copilotApi.list()]).then(async ([next, list]) => {
+      setSettings(next); setItems(list.items); await open(id)
+    }).catch(() => setError('گفت‌وگوی آزمایشی ایجاد شد؛ برای بارگذاری دوباره از تاریخچه باز کنید.'))
+  }} /> : <MemoryPanel />}</main>}
   <div className="copilot-shell" dir="rtl" style={view !== 'desk' ? { display: 'none' } : undefined}>
     <a className="skip-link" href="#copilot-main">رفتن به محتوای اصلی</a>
     <aside className={`conversation-pane ${pane === 'conversation' ? 'mobile-active' : ''}`} aria-label="گفت‌وگو">
       <header className="copilot-heading"><div><p className="overline">یک خرید، یک تصمیم روشن‌تر</p><h1>{conversation ? 'همراه خرید' : 'برای چه خریدی کمکت کنم؟'}</h1></div><button className="text-button" disabled={loading || sending} onClick={fresh}><Icon name="plus" />خرید تازه</button></header>
-      <div className="provider-strip"><span>{!settings ? 'وضعیت اتصال در دسترس نیست' : settings.mode === 'DEMONSTRATION' ? 'نسخهٔ نمایشی' : settings.mode === 'LIVE_READY' ? 'آمادهٔ اتصال زنده' : 'اتصال زنده غیرفعال'}</span>
+      <div className="provider-strip"><span>{conversation?.openrouter_pilot ? 'آزمایش رایگان OpenRouter — فقط متن ساختگی؛ بدون حافظه و تصویر' : !settings ? 'وضعیت اتصال در دسترس نیست' : settings.mode === 'DEMONSTRATION' ? 'نسخهٔ نمایشی' : settings.mode === 'LIVE_READY' ? 'آمادهٔ اتصال زنده' : 'اتصال زنده غیرفعال'}</span>
         {settings && <details><summary>وضعیت دستیار</summary><p>ارائه‌دهندهٔ منتخب: <bdi>{settings.provider}</bdi> · مدل: <bdi>{settings.model}</bdi></p><p>{settings.credential_state === 'VALIDATED' ? 'کلید منتخب اعتبارسنجی شده است؛ حالت اجرا مستقل است.' : settings.credential_state === 'STORED_UNVALIDATED' ? 'کلید منتخب ذخیره شده، اما اعتبارسنجی نشده است.' : 'اتصال منتخب تأیید نشده؛ جزئیات در تنظیمات دستیار است.'} {settings.connection === 'VALIDATION_BLOCKED' ? ' اعتبارسنجی این ارائه‌دهنده برای منطقهٔ فعلی مسدود است.' : ''} ذخیرهٔ کلید، مجوز هزینه یا فعال‌سازی نیست.</p></details>}
       </div>
       <div className="thread" ref={threadRef} tabIndex={0} aria-label="پیام‌های گفت‌وگو" aria-live="off" onScroll={() => { const el = threadRef.current; if (el) { nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; if (nearBottom.current) setNewMessages(false) } }}>

@@ -54,6 +54,7 @@ def serialize_conversation(conversation, *, detail=False):
         "status": conversation.status,
         "title": conversation.title,
         "temporary": conversation.temporary,
+        "openrouter_pilot": conversation.openrouter_pilot,
         "brief_revision": conversation.brief_revision,
         "created_at": conversation.created_at.isoformat(),
         "updated_at": conversation.updated_at.isoformat(),

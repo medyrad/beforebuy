@@ -12,7 +12,7 @@ from django.views.decorators.debug import sensitive_variables
 from analysis.models import GuestContext, ProviderCredential
 from .credentials import CredentialUnavailable, keyring
 
-SUPPORTED_PROVIDERS = {"gapgpt"}
+SUPPORTED_PROVIDERS = {"gapgpt", "openrouter"}
 
 
 def active_provider_credential(guest_id, provider):

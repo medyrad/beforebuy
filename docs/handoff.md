@@ -1,4 +1,73 @@
-# بررسی محدود OpenRouter و اصلاح فونت منوها — 2026-11-16
+# T096 — اتصال فنی OpenRouter و آزمایش رایگان محدود — 2026-11-16
+
+Baseline: `122226250f3066d267b1b26cb34f4ef2cd9ac46b`؛ شاخهٔ موجود `002-personalized-shopping-copilot`.
+این بخش جانشین گزارش تاریخیِ «اتصال پیاده نشده» در پایین است. پیاده‌سازی از صلاحیت خدمت/مسیر، رضایت پردازش داده و آزمایش حساب جدا شد.
+
+## آنچه ساخته شد
+
+- ارائه‌دهنده و فرم مستقل OpenRouter، رمزنگاری و مالکیت قبلی، جداسازی کلید از OpenAI/GapGPT و حفظ guardهای تغییر سریع/پاسخ دیررس/ارسال دوباره.
+- یک مدل فنی: `baidu/ernie-5.5-flash-preview:free` با مسیر ثابت `baidu`، endpoint رسمی Chat Completions و stream واقعیِ SSE در آداپتر.
+  JSON object mode و اعتبارسنجی محلی قرارداد؛ ادعای کیفیت فارسی یا رعایت JSON Schema اندازه‌گیری‌شده نداریم.
+- قیمت رسمی پیش از هر تلاش باید صفر و معلوم باشد؛ بدون routing خودکار، fallback، ابزار، plugin یا retry. سقف پولی صفر است.
+  شمارندهٔ deployment-wide ده تلاش، شامل اعتبارسنجی و خطاها، با restart/تغییر مالک/حذف گفتگو یا روز تازه reset نمی‌شود.
+- usage و هزینهٔ برگشتی USD جدا ثبت می‌شوند؛ نبود آن‌ها موفقیت تلقی نمی‌شود. هزینهٔ غیرصفر ادامهٔ آزمایش را مسدود می‌کند.
+  context16KiB به‌علاوهٔ دستور/قرارداد ثابت، answer16KiB، wire64KiB، max_tokens1024، timeout شبکه8s و deadline کنترل‌شدهٔ stream20s؛ توقف هنگام انتظار شبکه ممکن است تا timeout طول بکشد.
+- «آزمایش رایگان» فقط با اقدام صریح و رضایت ساختگی، پس از gateها یک درخواست اعتبارسنجی مصرف می‌کند؛ موفقیت با کلید/تنظیمات بدون تغییر، گفت‌وگوی تازهٔ موقت می‌سازد.
+  حافظه/شواهد قبلی/تصویر وارد prompt نمی‌شوند. گفتگوهای عادی mock می‌مانند؛ research OFFLINE. رفتار fallback پنهان وجود ندارد.
+- publication نهایی کلید مربوط به خود provider را بررسی می‌کند؛ اشتباه قبلیِ بررسی صرفاً کلید OpenAI برای سایر providerها اصلاح شد.
+
+## ورود محلی و پیش‌نیاز واقعی
+
+نشانی: `http://127.0.0.1:58080/copilot` → «تنظیمات دستیار» → ارائه‌دهندهٔ OpenRouter → «کلید OpenRouter» → «ذخیرهٔ کلید».
+ذخیره هیچ درخواست provider ایجاد نمی‌کند. ورود حساب در سایت خود OpenRouter است؛ کلید فقط در همین فرم محلی وارد می‌شود.
+
+```sh
+COPILOT_MASTER_KEYRING_PATH=/Users/mehdi/.local/share/beforebuy/secrets/copilot-phase11.key bash scripts/dev-with-credentials.sh up -d
+```
+
+کلید master موجود تولید/تعویض نشد. migration افزایشی0018 اعمال شد؛ mount موجود بعد از بازسازی API خواندنی و runtime mock/OFFLINE تأیید شد.
+پرچم‌های `COPILOT_OPENROUTER_SERVICE_ELIGIBLE` و `COPILOT_OPENROUTER_ROUTE_ELIGIBLE` false و مرجع صلاحیت خالی ماندند.
+رضایت داده یا HTTP200 دلیل تغییر این پرچم‌ها نیست. Compose production آن‌ها را صریح سیم‌کشی می‌کند؛ development از env_file موجود می‌خواند.
+
+منابع دقیق و تفکیک شرط/ابهام/ممنوعیت در [گزارش مسیر](../specs/002-personalized-shopping-copilot/free-provider-readiness.md) است:
+OpenRouter §§2/5.1/5.7، قرارداد Baidu متصل از صفحهٔ همان provider §§1.4/2.3/3.2/3A.3–4؛
+اعمال شرایط trial NVIDIA از notice همان مدل OpenRouter استنباط می‌شود، نه از فرض یکسان‌بودن API مستقیم.
+برای ایران ممنوعیت قطعی از سکوت متن نتیجه گرفته نشد؛ انطباق همین حساب/کانال با شروط منطقه‌ای هنوز روشن نیست.
+پرسش کوتاهِ آمادهٔ پشتیبانی در گزارش هست و ارسال نشده؛ تنظیمات privacy/training حساب تغییر نکرده است.
+
+تماس generation واقعی: **۰**. هزینهٔ مصرف واقعی ایجادشده توسط این کار: **۰**؛ usage/صورتحساب یا کیفیت مکالمهٔ زنده قابل گزارش نیست.
+پس از احراز شرایط و کلید محلی، T101 باید دو جملهٔ گوشی شکسته/بودجه۱۵میلیون و یک خرید غیرگوشی را در برنامه ارزیابی کند؛
+حفظ زمینه، عدم پرسش بودجهٔ تکراری و عدم اختراع شواهد/قیمت باید واقعاً بررسی شوند. T039 و gateهای human/live باز می‌مانند.
+
+## راستی‌آزمایی و تحویل
+
+نتایج مشاهده‌شده:
+
+- backend: در آخرین اجرای اختصاصی **۱۵/۱۵ موفق**؛ ۳۴ regression مرتبط credentials/context/GapGPT/SSE نیز موفق.
+  اجرای ۴۸تایی ابتدا یک خطای نگاشت401 داشت؛ اصلاح exception ordering و اجرای دوبارهٔ ۱۴تایی موفق شد.
+  سه تست API پس از افزودن invalidation برای401/402/403 دوباره موفق شدند. HTTPهای provider در این تست‌ها MockTransport هستند.
+  تست افزودهٔ metadata قیمت نیز مسیر/قابلیت/قیمت و عدم ارسال Authorization را بررسی کرد؛ خطای double-open در fixture تست اصلاح و suite۱۵تایی دوباره موفق شد.
+- frontend: ۲۱ تست تنظیمات/گفتگو موفق با `--maxWorkers=1 --testTimeout=30000`؛ اجرای پیشین با مهلت۵ثانیه
+  در محیط با load average حدود۲۶۳، ده timeout داشت و به‌عنوان موفق شمرده نشد.
+- ESLint فایل‌های تغییرکرده، `makemigrations --check --dry-run`، `docker compose config --quiet` و `git diff --check` موفق.
+- build آخرین وب شامل TypeScript و Vite موفق و NGINX محلی بازسازی شد. یک build قدیمیِ درحال اجرا زیر بار سیستم لغو شد؛
+  خروجی آن استفاده نشد. هیچ خطای storage مشاهده نشد و هیچ داده/volume یا فرایند پروژهٔ دیگر حذف/متوقف نشد.
+- Playwright واقعی NGINX: **۴/۴ موفق**، `copilot-openrouter.spec.ts` و `copilot-credential-switch.spec.ts` در390/1440.
+  مالک‌ها و کلیدها ساختگی، trace/screenshot/video خاموش؛ save، switch، reload، delete و خطای صلاحیت پیش از ارسال زنده بررسی شدند.
+- تست backend با `docker compose exec -T -w /app/backend api python manage.py test <labels> --settings=config.settings.test --keepdb --verbosity 1`؛
+  labels اختصاصی `tests.unit.test_openrouter_copilot tests.unit.test_openrouter_settings` و regressionها
+  `tests.unit.test_provider_credentials tests.unit.test_user_credentials tests.unit.test_copilot_context tests.unit.test_gapgpt_copilot tests.api.test_stream_events`.
+- مرورگر با `NODE_PATH=$PWD/frontend/node_modules PLAYWRIGHT_BASE_URL=http://127.0.0.1:58080 node frontend/node_modules/@playwright/test/cli.js test --config frontend/playwright.config.ts tests/e2e/copilot-openrouter.spec.ts tests/e2e/copilot-credential-switch.spec.ts --reporter=list`.
+
+T096 فقط به‌عنوان اتصال فنی تکمیل شد؛ T101 و feature001 T039 بازند. بررسی ledger پس از سفر مرورگر: صفر invocation و بدون مصرف شمارندهٔ پایلوت.
+نتیجهٔ commit/push و تطابق hash در پاسخ نهایی ثبت می‌شود.
+Spec Kit analyze محدود FR-092: یک الزام، دو تسک T096/T101، پوشش۱۰۰٪ و تعارض بحرانی صفر؛ implement فقط دامنهٔ همین اصلاح.
+مهارت‌های موجود پروژه/AI/backend/TDD/debugging/verification/Playwright و Spec Kit استفاده شدند؛ بدون ابزار یا زیرساخت تازه.
+چهار screenshot نامرتبط حفظ و از commit کنار گذاشته می‌شوند؛ secret، dump، runtime و trace کلید وارد Git نمی‌شوند.
+
+---
+
+# سابقهٔ تحویل: بررسی محدود OpenRouter و اصلاح فونت منوها — 2026-11-16
 
 Baseline: `8cb7c12c7a542c5c5fb894cc49d0388cca79915b`؛ شاخه `002-personalized-shopping-copilot`.
 نتیجهٔ این تحویل: اصلاح typography مستقل انجام شد؛ **اتصال رایگان OpenRouter پیاده/فعال نشده است**.

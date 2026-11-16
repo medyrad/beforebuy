@@ -1,6 +1,42 @@
 # Free API onboarding review — 2026-11-16
 
-## Current bounded OpenRouter review (T098, supersedes the general shortlist below)
+## T096 correction: implemented technical route, independent activation gates
+
+The latest explicit instruction supersedes the implementation deferral below. The dedicated encrypted
+OpenRouter form and fixed `baidu/ernie-5.5-flash-preview:free` / `baidu` streaming adapter are implemented.
+Historical statements below saying no form/route exists describe baseline 1222262, not the current delivery.
+Technical implementation does not certify service eligibility, route eligibility, consent or account access.
+
+| Evidence and applicability | Classification for this application |
+|---|---|
+| [OpenRouter terms](https://openrouter.ai/terms) §§2, 5.1, 5.7 govern the API account, flow down upstream terms and prohibit circumventing geographic restrictions. Applies because this app sends via OpenRouter with Iranian account/backend/end users. | Compliance requirement; specific Iran/Baidu availability unresolved, not an inferred blanket prohibition. |
+| [OpenRouter Baidu provider page](https://openrouter.ai/provider/baidu) links [Baidu international terms](https://intl.cloud.baidu.com/en/doc/Agreements/s/bmesahnjh-intl-en). §1.4 distinguishes channel-partner billing; §§2.3/3.2 condition regional access. | Relevant route-specific contractual pointer, not an assumption based on open weights. Which regional access applies to this channel/account is unresolved. |
+| Same Baidu terms §§3A.3–4 discuss storage, improvement, cross-border processing and consent. | Disclosure/consent requirement; retention duration and exact channel handling unresolved. Synthetic pilot sends no real profile, personal history, images or secret in its prompt. Consent does not override eligibility. |
+| [NVIDIA exact OpenRouter model notice](https://openrouter.ai/nvidia/nemotron-3.5-lightning:free) explicitly refers users of this free endpoint to [NVIDIA trial terms](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf), §15.4 export/sanctions compliance. | Route notice is the applicability evidence—not an assumption about direct NVIDIA traffic. Compliance requirement, not by itself a finding of an Iran prohibition. Not selected; endpoint lacks the needed documented response-format capability. |
+
+Current public Baidu endpoint metadata lists zero USD/token input/output and both response_format and
+structured_outputs. Runtime uses JSON object mode plus local strict semantic validation, NOT a claim of
+measured provider JSON Schema adherence. Persian quality and account access remain unmeasured.
+Before **every** attempt, fetch the exact public endpoint metadata; unknown/nonzero charge fields fail closed.
+Pin `only:[baidu]`, no fallbacks, no tools/plugins, zero max_price, max_tokens1024, dynamic context16KiB plus fixed instructions/contract,
+output16KiB / wire64KiB, 8-second network timeout and 20-second checked stream deadline; no retries.
+Global persistent allowance10 includes validation and failed generations, independent of owner/day/deletion.
+Returned usage/cost is recorded separately; unknown usage/cost remains unknown, not an invoice assertion.
+Unexpected nonzero returned cost freezes the pilot. No currency conversion or monetary authorization is added.
+
+Local entry: `http://127.0.0.1:58080/copilot` → تنظیمات دستیار → OpenRouter → کلید OpenRouter.
+Save never contacts the provider. Explicit «آزمایش رایگان» discloses one synthetic validation request and,
+only on success with unchanged credential/settings, creates a new temporary pilot conversation. Existing
+normal conversations remain mock. Research stays OFFLINE. Account training/privacy settings are untouched.
+Missing eligibility flags/reference remain false/empty; **do not set them merely because a key works**.
+T101 remains pending for real pilot and context/Persian review. No live generations were performed.
+
+One ready-to-send question (not sent):
+“May an Iran-resident account with Iran-hosted backend and Iranian end users use
+`baidu/ernie-5.5-flash-preview:free` pinned to `baidu` through OpenRouter, and which channel-specific
+regional-access and prompt-retention/training terms govern that exact route?”
+
+## Historical bounded OpenRouter review (T098, superseded for implementation by T096 above)
 
 Decision: no runtime route selected. Exactly two free text-chat candidates reviewed; no third model/provider
 evaluation, authenticated request, account creation, inference, privacy-setting change or credit purchase.

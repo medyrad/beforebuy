@@ -172,7 +172,8 @@ quality, account model access and live market coverage remain unevaluated.
 - [x] T093 [US5] Reproduce provider-switch partial failure; test then fix provider-bound credential state, retry and safe OpenAI saving in `frontend/src/features/copilot/memory/AssistantSettings.tsx` and its tests (FR-088).
 - [x] T094 [US5] Restore the existing protected keyring mount, add a repeatable secret-aware local startup command and verify synthetic key storage without provider calls; preserve existing data/keyring (FR-088).
 - [x] T095 [US4] Compare OpenRouter/Groq official free API terms/quotas/eligibility, record blockers and onboarding requirements; verify affected UI and update handoff (FR-089). Live integration stays pending without an eligible contract.
-- [ ] T096 [US4] After documented Iran eligibility and a fixed free-model/privacy contract, implement the requested provider-bound connection/settings and stubbed adapter tests. Blocked on `free-provider-readiness.md` questions; external sign-in links do not complete integration (FR-089).
+- [x] T096 [US4] Implement independent OpenRouter encrypted credentials/settings, fixed Baidu free streaming adapter, synthetic pilot and durable ten-attempt/zero-price controls; unresolved activation gates do not block implementation (FR-092). Verified: 15 dedicated backend checks, related regressions, 21 frontend checks and four real NGINX settings journeys. Technical integration only; live activation/evaluation remains T101.
+- [ ] T101 [US4] Run an actual eligible, consented OpenRouter free pilot after a local key and explicit action; record provider/usage/cost and Persian multi-turn/non-phone evidence separately from T096 technical completion.
 
 ## Bounded free-route feasibility and native typography (2026-11-16)
 

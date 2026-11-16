@@ -18,13 +18,15 @@ def configured_copilot_generator(operation_id):
     operation = StreamOperation.objects.select_related("conversation", "user_message").get(id=operation_id)
     bundle = pin_context(operation_id, operation.lease_owner)
     if bundle.limited_reason:
+        if operation.conversation.openrouter_pilot:
+            raise CopilotProviderError('INPUT_UNSUPPORTED')
         return LimitedContextGenerator()
     from analysis.conversation.replies import local_question
-    if local_question(bundle.provider_input.get('brief', {})):
+    if not operation.conversation.openrouter_pilot and local_question(bundle.provider_input.get('brief', {})):
         generator = ContextualFixtureGenerator(bundle.provider_input)
         generator.kind = 'DETERMINISTIC_CLARIFICATION'
         return generator
-    if settings.COPILOT_AI_MODE == "mock":
+    if settings.COPILOT_AI_MODE == "mock" and not operation.conversation.openrouter_pilot:
         return ContextualFixtureGenerator(bundle.provider_input)
 
     preferences, _ = CopilotSettings.objects.get_or_create(
@@ -39,7 +41,7 @@ def configured_copilot_generator(operation_id):
 
     def still_current():
         now = timezone.now()
-        if provider == "gapgpt":
+        if provider in ("gapgpt", "openrouter"):
             from .provider_credentials import active_provider_credential
             row = active_provider_credential(guest_id, provider)
         else:
@@ -58,6 +60,18 @@ def configured_copilot_generator(operation_id):
 
     if operation.user_message is None or not still_current():
         raise CopilotProviderError("CREDENTIAL_UNVALIDATED")
+    if provider == 'openrouter':
+        from .openrouter_copilot import OpenRouterCopilotGenerator, current_prices, sdk_events
+        from .provider_credentials import decrypt_provider_credential
+        if not operation.conversation.openrouter_pilot or not preferences.openrouter_data_consent:
+            raise CopilotProviderError('SYNTHETIC_ONLY')
+        context = dict(bundle.provider_input, choice=None, confirmed_memory=[], uploads=[])
+        if bundle.provider_input.get('uploads'):
+            raise CopilotProviderError('SYNTHETIC_ONLY')
+        return OpenRouterCopilotGenerator(guest_id=guest_id, operation_id=operation_id, context=context,
+            pricing=current_prices, transport=sdk_events,
+            credential=lambda: decrypt_provider_credential(guest_id, provider, operation.credential_revision),
+            still_current=still_current)
     if provider == "gapgpt":
         from .gapgpt_copilot import GapGPTCopilotGenerator, sdk_chat_events
         from .provider_credentials import decrypt_provider_credential
